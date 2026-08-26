@@ -27,9 +27,9 @@ export const WishlistDrawer = () => {
           bottom: 0,
           width: '100%',
           maxWidth: '440px',
-          backgroundColor: '#0c0e14',
+          backgroundColor: '#ffffff',
           borderLeft: '1px solid var(--border-gold)',
-          boxShadow: '-10px 0 40px rgba(0, 0, 0, 0.8)',
+          boxShadow: '-10px 0 40px rgba(15, 23, 42, 0.15)',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 1000
@@ -38,20 +38,21 @@ export const WishlistDrawer = () => {
         {/* Header */}
         <div style={{
           padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: '#07080a'
+          background: '#fbfbf9'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Heart size={18} color="#e11d48" fill="#e11d48" />
             <h3 style={{
               fontSize: '1rem',
-              color: '#f8fafc',
+              color: '#0f172a',
               fontFamily: 'var(--font-brand)',
               letterSpacing: '0.12em',
-              textTransform: 'uppercase'
+              textTransform: 'uppercase',
+              fontWeight: 700
             }}>
               Private Wishlist ({wishlist.length})
             </h3>
@@ -62,7 +63,7 @@ export const WishlistDrawer = () => {
             style={{
               background: 'none',
               border: 'none',
-              color: '#94a3b8',
+              color: '#64748b',
               cursor: 'pointer',
               padding: '4px'
             }}
@@ -89,8 +90,8 @@ export const WishlistDrawer = () => {
               alignItems: 'center',
               gap: '1rem'
             }}>
-              <Heart size={48} color="#475569" strokeWidth={1} />
-              <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
+              <Heart size={48} color="#94a3b8" strokeWidth={1} />
+              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
                 Your private horology wishlist is empty.
               </p>
               <button
@@ -109,13 +110,13 @@ export const WishlistDrawer = () => {
                   display: 'flex',
                   gap: '1rem',
                   paddingBottom: '1rem',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+                  borderBottom: '1px solid rgba(0, 0, 0, 0.06)'
                 }}
               >
                 <img
                   src={product.images?.[0]}
                   alt={product.name}
-                  style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '4px', background: '#000', cursor: 'pointer' }}
+                  style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '4px', background: '#f8f7f4', cursor: 'pointer' }}
                   onClick={() => {
                     setIsWishlistOpen(false);
                     setSelectedProductDetails(product);
@@ -130,24 +131,24 @@ export const WishlistDrawer = () => {
                           setIsWishlistOpen(false);
                           setSelectedProductDetails(product);
                         }}
-                        style={{ fontSize: '0.85rem', color: '#f8fafc', fontFamily: 'var(--font-brand)', cursor: 'pointer' }}
+                        style={{ fontSize: '0.85rem', color: '#0f172a', fontFamily: 'var(--font-brand)', cursor: 'pointer', fontWeight: 700 }}
                       >
                         {product.name}
                       </h4>
                       <button
                         onClick={() => toggleWishlist(product)}
-                        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+                        style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
                       >
                         <Trash2 size={14} />
                       </button>
                     </div>
-                    <span style={{ fontSize: '0.72rem', color: '#d4af37' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#8a6709', fontWeight: 600 }}>
                       {product.category}
                     </span>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f3e5ab' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
                       {formatPrice(product.price)}
                     </span>
 

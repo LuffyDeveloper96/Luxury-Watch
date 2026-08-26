@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { formatCurrency } from '../utils/currency';
 import {
   X, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Tag, Gift,
   Truck, CheckCircle, Sparkles, Zap
@@ -11,7 +10,6 @@ export const CartDrawer = () => {
     isCartOpen,
     setIsCartOpen,
     cart,
-    currency,
     updateCartQuantity,
     removeFromCart,
     clearCart,
@@ -21,8 +19,9 @@ export const CartDrawer = () => {
     applyCoupon,
     removeCoupon,
     freeShippingThreshold,
+    openCartCheckout,
     triggerCartCheckout,
-    triggerBuyNow
+    setIsCheckoutOpen
   } = useStore();
 
   const [couponCodeInput, setCouponCodeInput] = useState('');
@@ -30,19 +29,32 @@ export const CartDrawer = () => {
 
   if (!isCartOpen) return null;
 
-  // Free shipping progress calculation
-  const shippingProgress = Math.min(100, (cartSubtotal / freeShippingThreshold) * 100);
-  const remainingForFreeShipping = Math.max(0, freeShippingThreshold - cartSubtotal);
+  // Safe numerical calculations for free shipping
+  const threshold = Number(freeShippingThreshold) || 999;
+  const currentSubtotal = Number(cartSubtotal) || 0;
+  const shippingProgress = Math.min(100, Math.max(0, (currentSubtotal / threshold) * 100));
+  const remainingForFreeShipping = Math.max(0, threshold - currentSubtotal);
 
   const handleApplyCoupon = (e) => {
     e.preventDefault();
     if (couponCodeInput.trim()) {
-      const success = applyCoupon(couponCodeInput);
+      const success = applyCoupon(couponCodeInput.trim().toUpperCase());
       if (success) setCouponCodeInput('');
     }
   };
 
-  const finalTotal = Math.max(0, cartSubtotal - discountAmount);
+  const finalTotal = Math.max(0, currentSubtotal - (discountAmount || 0));
+
+  const handleProceedToCheckout = () => {
+    if (typeof openCartCheckout === 'function') {
+      openCartCheckout();
+    } else if (typeof triggerCartCheckout === 'function') {
+      triggerCartCheckout();
+    } else {
+      setIsCartOpen(false);
+      setIsCheckoutOpen(true);
+    }
+  };
 
   return (
     <div
@@ -55,29 +67,29 @@ export const CartDrawer = () => {
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%',
-          maxWidth: '480px',
+          maxWidth: '460px',
           height: '100vh',
-          backgroundColor: '#0c0e14',
-          borderLeft: '1px solid rgba(212, 175, 55, 0.3)',
+          backgroundColor: '#ffffff',
+          borderLeft: '1px solid rgba(180, 140, 30, 0.35)',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '-10px 0 40px rgba(0,0,0,0.9)',
+          boxShadow: '-10px 0 40px rgba(15, 23, 42, 0.15)',
           position: 'relative'
         }}
       >
         {/* Drawer Header */}
         <div style={{
-          padding: '1.5rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '1.25rem 1.5rem',
+          borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: '#08090d'
+          backgroundColor: '#fbfbf9'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <ShoppingBag size={20} style={{ color: '#d4af37' }} />
-            <h3 style={{ fontSize: '1.1rem', color: '#ffffff', letterSpacing: '0.08em' }}>
-              BESPOKE SHOPPING BAG
+            <ShoppingBag size={18} style={{ color: '#8a6709' }} />
+            <h3 style={{ fontSize: '1rem', color: '#0f172a', letterSpacing: '0.08em', fontWeight: 700, margin: 0 }}>
+              BESPOKE SHOPPING BAG ({cart.reduce((acc, it) => acc + it.quantity, 0)})
             </h3>
           </div>
 
@@ -86,7 +98,7 @@ export const CartDrawer = () => {
             style={{
               background: 'none',
               border: 'none',
-              color: '#94a3b8',
+              color: '#64748b',
               cursor: 'pointer',
               padding: '0.2rem',
               display: 'flex',
@@ -99,24 +111,24 @@ export const CartDrawer = () => {
 
         {/* Free Insured Delivery Progress Bar */}
         <div style={{
-          backgroundColor: '#12151e',
+          backgroundColor: '#f8f7f4',
           padding: '0.85rem 1.5rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+          borderBottom: '1px solid rgba(0, 0, 0, 0.06)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.75rem' }}>
-            <span style={{ color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Truck size={14} style={{ color: '#d4af37' }} />
-              {cartSubtotal >= freeShippingThreshold ? (
-                <strong style={{ color: '#10b981' }}>Complimentary Insured Courier Unlocked!</strong>
+            <span style={{ color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Truck size={14} style={{ color: '#8a6709' }} />
+              {currentSubtotal >= threshold ? (
+                <strong style={{ color: '#059669' }}>Complimentary Insured Courier Unlocked!</strong>
               ) : (
-                <span>Add <strong>{formatCurrency(remainingForFreeShipping, currency)}</strong> for Free Armoured Courier</span>
+                <span>Add <strong>₹{remainingForFreeShipping.toLocaleString('en-IN')}</strong> for Free Armoured Courier</span>
               )}
             </span>
-            <span style={{ color: '#d4af37', fontWeight: 600 }}>{Math.round(shippingProgress)}%</span>
+            <span style={{ color: '#8a6709', fontWeight: 700 }}>{Math.round(shippingProgress)}%</span>
           </div>
 
           {/* Bar track */}
-          <div style={{ width: '100%', height: '5px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '5px', backgroundColor: 'rgba(0, 0, 0, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
             <div style={{
               width: `${shippingProgress}%`,
               height: '100%',
@@ -130,178 +142,160 @@ export const CartDrawer = () => {
         <div style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '1.5rem',
+          padding: '1.25rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.25rem'
+          gap: '1rem'
         }}>
           {cart.length > 0 ? (
-            cart.map((item) => (
-              <div
-                key={item.cartItemId}
-                style={{
-                  display: 'flex',
-                  gap: '1rem',
-                  backgroundColor: '#141722',
-                  padding: '1rem',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  position: 'relative'
-                }}
-              >
-                {/* Item Image */}
-                <img
-                  src={item.product.images[0]}
-                  alt={item.product.name}
+            cart.map((item, idx) => {
+              const prodId = item.product?.id || `prod-${idx}`;
+              return (
+                <div
+                  key={`${prodId}-${idx}`}
                   style={{
-                    width: '80px',
-                    height: '80px',
-                    objectFit: 'cover',
-                    borderRadius: '4px',
-                    backgroundColor: '#07080b',
-                    flexShrink: 0
+                    display: 'flex',
+                    gap: '1rem',
+                    backgroundColor: '#ffffff',
+                    padding: '0.85rem',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(0, 0, 0, 0.08)',
+                    boxShadow: 'var(--shadow-sm)',
+                    position: 'relative'
                   }}
-                />
+                >
+                  {/* Item Image */}
+                  <img
+                    src={item.product?.images?.[0] || '/images/watches/rolex_submariner.jpg'}
+                    alt={item.product?.name || 'Watch'}
+                    style={{
+                      width: '75px',
+                      height: '75px',
+                      objectFit: 'cover',
+                      borderRadius: '4px',
+                      backgroundColor: '#f8f7f4',
+                      flexShrink: 0
+                    }}
+                  />
 
-                {/* Item Details */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                    <h4 style={{
-                      fontSize: '0.88rem',
-                      color: '#ffffff',
-                      fontWeight: 600,
-                      lineHeight: 1.3,
-                      marginBottom: '0.2rem',
-                      paddingRight: '1.2rem'
-                    }}>
-                      {item.product.name}
-                    </h4>
+                  {/* Item Details */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                      <h4 style={{
+                        fontSize: '0.85rem',
+                        color: '#0f172a',
+                        fontWeight: 700,
+                        lineHeight: 1.3,
+                        marginBottom: '0.2rem',
+                        paddingRight: '1.2rem',
+                        margin: 0
+                      }}>
+                        {item.product?.name}
+                      </h4>
 
-                    {/* Delete Item */}
-                    <button
-                      onClick={() => removeFromCart(item.cartItemId)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#64748b',
-                        cursor: 'pointer',
-                        padding: '0.2rem'
-                      }}
-                      title="Remove Timepiece"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>
-                    Edition: <span style={{ color: '#f3e5ab' }}>{item.selectedColor}</span>
-                  </div>
-
-                  {item.selectedStrap && (
-                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>
-                      Strap: <span style={{ color: '#cbd5e1' }}>{item.selectedStrap}</span>
-                    </div>
-                  )}
-
-                  {item.engraving && (
-                    <div style={{
-                      fontSize: '0.7rem',
-                      color: '#10b981',
-                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                      padding: '2px 6px',
-                      borderRadius: '2px',
-                      display: 'inline-block',
-                      marginBottom: '0.4rem'
-                    }}>
-                      Engraved: "{item.engraving}"
-                    </div>
-                  )}
-
-                  {/* Price & Quantity Adjuster */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      backgroundColor: '#0c0e14',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '3px'
-                    }}>
+                      {/* Delete Item */}
                       <button
-                        onClick={() => updateCartQuantity(item.cartItemId, -1)}
+                        onClick={() => removeFromCart(item.product?.id)}
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#fff',
-                          padding: '0.2rem 0.5rem',
+                          color: '#94a3b8',
                           cursor: 'pointer',
-                          fontSize: '0.85rem'
+                          padding: '0.2rem'
                         }}
+                        title="Remove Timepiece"
                       >
-                        -
-                      </button>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600, padding: '0 0.4rem' }}>
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => updateCartQuantity(item.cartItemId, 1)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#fff',
-                          padding: '0.2rem 0.5rem',
-                          cursor: 'pointer',
-                          fontSize: '0.85rem'
-                        }}
-                      >
-                        +
+                        <Trash2 size={15} />
                       </button>
                     </div>
 
-                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f3e5ab', fontFamily: 'var(--font-brand)' }}>
-                      {formatCurrency(item.product.price * item.quantity, currency)}
-                    </span>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: '0.2rem' }}>
+                      Brand: <span style={{ color: '#8a6709', fontWeight: 600 }}>{item.product?.brand}</span>
+                    </div>
+
+                    {item.selectedColor && (
+                      <div style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '0.2rem' }}>
+                        Edition: <span style={{ color: '#0f172a' }}>{item.selectedColor}</span>
+                      </div>
+                    )}
+
+                    {/* Price & Quantity Adjuster */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        backgroundColor: '#f8f7f4',
+                        border: '1px solid rgba(0, 0, 0, 0.12)',
+                        borderRadius: '3px'
+                      }}>
+                        <button
+                          onClick={() => updateCartQuantity(item.product?.id, -1)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#0f172a',
+                            padding: '0.15rem 0.45rem',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0 0.4rem', color: '#0f172a' }}>
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateCartQuantity(item.product?.id, 1)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#0f172a',
+                            padding: '0.15rem 0.45rem',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>
+                        ₹{((item.product?.price || 0) * item.quantity).toLocaleString('en-IN')}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
-            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94a3b8' }}>
-              <ShoppingBag size={48} style={{ color: 'rgba(212, 175, 55, 0.3)', margin: '0 auto 1rem auto' }} />
-              <h4 style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Your Bag is Empty</h4>
-              <p style={{ fontSize: '0.8rem', marginBottom: '1.5rem' }}>
-                Explore our curated horology collections and select your handcrafted timepiece.
-              </p>
-              <button
-                onClick={() => setIsCartOpen(false)}
-                className="btn-gold"
-                style={{ fontSize: '0.78rem' }}
-              >
-                EXPLORE TIMEPIECES
-              </button>
+            <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#94a3b8' }}>
+              <ShoppingBag size={42} style={{ color: '#cbd5e1', margin: '0 auto 1rem auto' }} />
+              <p style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 600 }}>Your bespoke vault bag is empty</p>
+              <p style={{ fontSize: '0.78rem', color: '#64748b' }}>Explore our horological catalog to curate your collection.</p>
             </div>
           )}
         </div>
 
-        {/* Drawer Footer (Summary, Coupons, Checkout) */}
+        {/* Drawer Footer / Totals & Checkout */}
         {cart.length > 0 && (
           <div style={{
-            padding: '1.5rem',
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-            backgroundColor: '#08090e'
+            padding: '1.25rem 1.5rem',
+            borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+            backgroundColor: '#fbfbf9'
           }}>
             {/* Promo Code Input */}
             <form onSubmit={handleApplyCoupon} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <input
-                  type="text"
-                  placeholder="PROMO CODE (e.g. LUXE10)"
-                  value={couponCodeInput}
-                  onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
-                  className="lux-input"
-                  style={{ fontSize: '0.78rem', padding: '0.5rem 0.75rem', textTransform: 'uppercase' }}
-                />
-              </div>
-              <button type="submit" className="btn-dark" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}>
+              <input
+                type="text"
+                value={couponCodeInput}
+                onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
+                placeholder="PROMO CODE (E.G. LUXE10)"
+                className="lux-input"
+                style={{ fontSize: '0.78rem', padding: '0.5rem 0.8rem', background: '#ffffff' }}
+              />
+              <button type="submit" className="btn-outline-gold" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', flexShrink: 0 }}>
                 APPLY
               </button>
             </form>
@@ -311,93 +305,78 @@ export const CartDrawer = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 border: '1px solid rgba(16, 185, 129, 0.3)',
                 padding: '0.4rem 0.75rem',
-                borderRadius: '3px',
-                marginBottom: '1rem',
-                fontSize: '0.75rem'
+                borderRadius: '4px',
+                marginBottom: '0.85rem',
+                fontSize: '0.75rem',
+                color: '#065f46'
               }}>
-                <span style={{ color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <Tag size={12} />
-                  <span>Code <strong>{appliedCoupon.code}</strong> applied (-{appliedCoupon.discountPercent}%)</span>
-                </span>
+                <span>Code <strong>{appliedCoupon.code}</strong> applied ({appliedCoupon.discountPercent}% OFF)</span>
                 <button
+                  type="button"
                   onClick={removeCoupon}
-                  style={{ background: 'none', border: 'none', color: '#fb7185', cursor: 'pointer', fontSize: '0.7rem' }}
+                  style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600 }}
                 >
                   Remove
                 </button>
               </div>
             )}
 
-            {/* Gift Wrap Checkbox */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '1rem',
-              padding: '0.5rem',
-              backgroundColor: '#12141c',
-              borderRadius: '4px',
-              border: '1px solid rgba(255,255,255,0.05)'
-            }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#cbd5e1', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={includeGiftWrap}
-                  onChange={(e) => setIncludeGiftWrap(e.target.checked)}
-                  style={{ accentColor: '#d4af37' }}
-                />
-                <Gift size={14} style={{ color: '#d4af37' }} />
-                <span>Complimentary Lacquered Wooden Gift Vault</span>
-              </label>
-              <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 600 }}>FREE</span>
-            </div>
-
-            {/* Totals Breakdown */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1.25rem', fontSize: '0.82rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8' }}>
+            {/* Price Calculations */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
                 <span>Subtotal</span>
-                <span>{formatCurrency(cartSubtotal, currency)}</span>
+                <span style={{ color: '#0f172a', fontWeight: 600 }}>₹{currentSubtotal.toLocaleString('en-IN')}</span>
               </div>
 
               {discountAmount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981' }}>
-                  <span>VIP Discount</span>
-                  <span>-{formatCurrency(discountAmount, currency)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669' }}>
+                  <span>VIP Privilege Discount</span>
+                  <span style={{ fontWeight: 600 }}>-₹{discountAmount.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
                 <span>Insured Global Shipping</span>
-                <span style={{ color: '#10b981', fontWeight: 600 }}>COMPLIMENTARY</span>
+                <span style={{ color: '#059669', fontWeight: 600 }}>
+                  {currentSubtotal >= threshold ? 'COMPLIMENTARY' : '₹499'}
+                </span>
               </div>
 
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                color: '#ffffff',
+                alignItems: 'center',
+                borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+                paddingTop: '0.6rem',
+                fontSize: '1rem',
                 fontWeight: 700,
-                fontSize: '1.1rem',
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-                paddingTop: '0.5rem',
-                marginTop: '0.2rem'
+                color: '#0f172a'
               }}>
                 <span>Total Due</span>
-                <span style={{ color: '#f3e5ab', fontFamily: 'var(--font-brand)' }}>
-                  {formatCurrency(finalTotal, currency)}
-                </span>
+                <span style={{ color: '#8a6709', fontSize: '1.15rem' }}>₹{finalTotal.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Buy Now Button */}
             <button
-              onClick={triggerCartCheckout}
+              onClick={handleProceedToCheckout}
               className="btn-gold"
-              style={{ width: '100%', padding: '0.9rem', fontSize: '0.85rem' }}
+              style={{
+                width: '100%',
+                padding: '0.95rem',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.6rem',
+                letterSpacing: '0.12em'
+              }}
             >
-              <span>PROCEED TO SECURE CHECKOUT</span>
+              <Zap size={16} fill="#d4af37" stroke="#d4af37" />
+              <span>BUY NOW</span>
               <ArrowRight size={16} />
             </button>
           </div>
@@ -406,3 +385,5 @@ export const CartDrawer = () => {
     </div>
   );
 };
+
+export default CartDrawer;

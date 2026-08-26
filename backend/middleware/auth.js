@@ -1,28 +1,68 @@
 import jwt from 'jsonwebtoken';
+import { db } from '../config/db.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'akiki_london_master_horology_secret_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'luxury_watch_geneva_master_jwt_secret_2026';
 
-export const generateToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+/**
+ * Generate signed JWT token
+ */
+export const generateToken = (payload, expiresIn = '7d') => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 };
 
+/**
+ * Require valid JWT authentication for any registered user
+ */
+export const requireAuth = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication token required. Please sign in.'
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or expired session token. Please sign in again.'
+    });
+  }
+};
+
+/**
+ * Strict Single Administrator Guard
+ * Verifies that the authenticated session strictly belongs to the single designated Master Administrator account.
+ */
 export const requireAdmin = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: 'Authentication token required. Master admin access only.'
+        message: 'Master Admin authorization required.'
       });
     }
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    if (decoded.role !== 'admin' && decoded.role !== 'Grand Horologist / Master Administrator') {
+    const authorizedEmail = (
+      db.getMeta('authorizedAdminGmail') ||
+      process.env.AUTHORIZED_ADMIN_GMAIL ||
+      process.env.ADMIN_EMAIL ||
+      'admin@luxurywatch.com'
+    ).trim().toLowerCase();
+
+    if (!decoded.email || decoded.email.trim().toLowerCase() !== authorizedEmail) {
       return res.status(403).json({
         success: false,
-        message: 'Forbidden. Master admin clearance required.'
+        message: 'Access Denied: Only the single designated Master Administrator account has access.'
       });
     }
 
@@ -31,8 +71,13 @@ export const requireAdmin = (req, res, next) => {
   } catch (err) {
     return res.status(401).json({
       success: false,
-      message: 'Invalid or expired authorization token.',
-      error: err.message
+      message: 'Admin authorization session expired. Please re-authenticate.'
     });
   }
+};
+
+export default {
+  generateToken,
+  requireAuth,
+  requireAdmin
 };

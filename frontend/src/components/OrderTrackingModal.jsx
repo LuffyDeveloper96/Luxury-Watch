@@ -3,10 +3,10 @@ import { useStore } from '../context/StoreContext';
 import { formatCurrency } from '../utils/currency';
 import {
   X, Search, Package, CheckCircle2, Clock, Truck, ShieldCheck,
-  AlertCircle, Sparkles, MapPin, PhoneCall, ExternalLink
+  AlertCircle, Sparkles, MapPin, PhoneCall, ExternalLink, RotateCcw
 } from 'lucide-react';
 
-export const OrderTrackingModal = () => {
+export const OrderTrackingModal = ({ onOpenReturnForOrder }) => {
   const { isOrderTrackingOpen, setIsOrderTrackingOpen, orders, currency } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('ORD-AK-98421');
@@ -60,10 +60,11 @@ export const OrderTrackingModal = () => {
           width: '100%',
           maxHeight: '90vh',
           overflowY: 'auto',
-          backgroundColor: '#0c0e14',
-          border: '1px solid rgba(212, 175, 55, 0.4)',
+          backgroundColor: '#ffffff',
+          border: '1px solid rgba(180, 140, 30, 0.35)',
           padding: '2rem',
-          position: 'relative'
+          position: 'relative',
+          boxShadow: '0 25px 60px rgba(15, 23, 42, 0.15)'
         }}
       >
         <button
@@ -72,9 +73,9 @@ export const OrderTrackingModal = () => {
             position: 'absolute',
             top: '1.25rem',
             right: '1.25rem',
-            background: 'rgba(255,255,255,0.06)',
+            background: 'rgba(0, 0, 0, 0.05)',
             border: 'none',
-            color: '#94a3b8',
+            color: '#64748b',
             borderRadius: '50%',
             width: '34px',
             height: '34px',
@@ -89,13 +90,13 @@ export const OrderTrackingModal = () => {
 
         {/* Modal Title */}
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: '#d4af37', marginBottom: '0.3rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: '#8a6709', marginBottom: '0.3rem' }}>
             <Package size={20} />
-            <span style={{ fontSize: '0.72rem', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.72rem', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700 }}>
               CONCIERGE TRACKING
             </span>
           </div>
-          <h2 style={{ fontSize: '1.5rem', color: '#ffffff' }}>Track Your Timepiece Consignment</h2>
+          <h2 style={{ fontSize: '1.5rem', color: '#0f172a', fontWeight: 700 }}>Track Your Timepiece Consignment</h2>
         </div>
 
         {/* Search Bar */}
@@ -118,12 +119,13 @@ export const OrderTrackingModal = () => {
           <div style={{
             backgroundColor: 'rgba(225, 29, 72, 0.12)',
             border: '1px solid rgba(225, 29, 72, 0.3)',
-            color: '#fb7185',
+            color: '#e11d48',
             padding: '0.75rem',
             borderRadius: '4px',
             fontSize: '0.78rem',
             marginBottom: '1.5rem',
-            textAlign: 'center'
+            textAlign: 'center',
+            fontWeight: 600
           }}>
             {errorMessage}
           </div>
@@ -133,8 +135,8 @@ export const OrderTrackingModal = () => {
           <div className="animate-fade-in">
             {/* Header info */}
             <div style={{
-              backgroundColor: '#12151e',
-              border: '1px solid rgba(212, 175, 55, 0.25)',
+              backgroundColor: '#fbfbf9',
+              border: '1px solid rgba(180, 140, 30, 0.25)',
               padding: '1.25rem',
               borderRadius: '6px',
               marginBottom: '2rem',
@@ -142,19 +144,20 @@ export const OrderTrackingModal = () => {
               justifyContent: 'space-between',
               alignItems: 'center',
               flexWrap: 'wrap',
-              gap: '1rem'
+              gap: '1rem',
+              boxShadow: 'var(--shadow-sm)'
             }}>
               <div>
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Consignment ID</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f3e5ab' }}>{searchedOrder.id}</div>
-                <div style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>Tracking: {searchedOrder.trackingNumber}</div>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase' }}>Consignment ID</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>{searchedOrder.id}</div>
+                <div style={{ fontSize: '0.75rem', color: '#8a6709', fontWeight: 600 }}>Tracking: {searchedOrder.trackingNumber}</div>
               </div>
 
               <div style={{ textAlign: 'right' }}>
                 <span className="badge-luxury badge-gold" style={{ fontSize: '0.72rem' }}>
                   {searchedOrder.orderStatus.toUpperCase()}
                 </span>
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.3rem' }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.3rem' }}>
                   Carrier: {searchedOrder.shippingSpeed}
                 </div>
               </div>
@@ -179,23 +182,23 @@ export const OrderTrackingModal = () => {
                         width: '36px',
                         height: '36px',
                         borderRadius: '50%',
-                        backgroundColor: isDone ? '#d4af37' : '#1a1d26',
-                        color: isDone ? '#000' : '#64748b',
+                        backgroundColor: isDone ? '#8a6709' : '#f1f5f9',
+                        color: isDone ? '#ffffff' : '#64748b',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         margin: '0 auto 0.75rem auto',
                         fontWeight: 700,
                         fontSize: '0.8rem',
-                        boxShadow: isCurrent ? '0 0 15px rgba(212,175,55,0.6)' : 'none',
-                        border: isCurrent ? '2px solid #fff' : 'none'
+                        boxShadow: isCurrent ? '0 0 15px rgba(180,140,30,0.4)' : 'none',
+                        border: isCurrent ? '2px solid #8a6709' : 'none'
                       }}>
                         {isDone ? '✓' : stageNum}
                       </div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: isDone ? '#f8fafc' : '#64748b', marginBottom: '0.2rem' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: isDone ? 700 : 500, color: isDone ? '#0f172a' : '#64748b', marginBottom: '0.2rem' }}>
                         {stg.title}
                       </div>
-                      <div style={{ fontSize: '0.65rem', color: '#94a3b8', lineHeight: 1.3 }}>
+                      <div style={{ fontSize: '0.65rem', color: '#64748b', lineHeight: 1.3 }}>
                         {stg.desc}
                       </div>
                     </div>
@@ -206,26 +209,63 @@ export const OrderTrackingModal = () => {
 
             {/* Items inside consignment */}
             <div style={{
-              backgroundColor: '#12141c',
+              backgroundColor: '#fbfbf9',
               padding: '1.25rem',
               borderRadius: '6px',
-              border: '1px solid rgba(255,255,255,0.06)'
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              boxShadow: 'var(--shadow-sm)',
+              marginBottom: '1.25rem'
             }}>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem', fontWeight: 700 }}>
                 Included Pieces & Bespoke Specifications
               </div>
               {searchedOrder.items.map((it, idx) => (
                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.6rem' }}>
-                  <img src={it.image} alt={it.name} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '4px' }} />
+                  <img src={it.image} alt={it.name} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '4px', backgroundColor: '#f8f7f4' }} />
                   <div>
-                    <div style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.85rem' }}>{it.name} (x{it.quantity})</div>
-                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{it.color} • {it.strap}</div>
+                    <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.85rem' }}>{it.name} (x{it.quantity})</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{it.color} • {it.strap}</div>
                     {it.engraving && (
-                      <div style={{ fontSize: '0.68rem', color: '#10b981' }}>Engraving Inscription: "{it.engraving}"</div>
+                      <div style={{ fontSize: '0.68rem', color: '#059669', fontWeight: 600 }}>Engraving Inscription: "{it.engraving}"</div>
                     )}
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Return / Exchange Privilege Banner & Action */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '1rem 1.25rem',
+              background: '#ffffff',
+              border: '1.5px dashed rgba(180, 140, 30, 0.5)',
+              borderRadius: '6px',
+              flexWrap: 'wrap',
+              gap: '1rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(180, 140, 30, 0.1)', color: '#8a6709', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <RotateCcw size={18} />
+                </div>
+                <div>
+                  <h5 style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: 700, margin: 0 }}>7-Day Complimentary Return Privilege</h5>
+                  <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '2px 0 0 0' }}>Exchange for another timepiece model or receive a 100% full refund.</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOrderTrackingOpen(false);
+                  if (onOpenReturnForOrder) onOpenReturnForOrder(searchedOrder.id);
+                }}
+                className="btn-outline-gold"
+                style={{ padding: '0.5rem 1.2rem', fontSize: '0.75rem' }}
+              >
+                <span>Initiate Return / Exchange</span>
+              </button>
             </div>
           </div>
         )}

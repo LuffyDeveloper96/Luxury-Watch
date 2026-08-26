@@ -1,48 +1,47 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_PRODUCTS, INITIAL_ORDERS, INITIAL_REVIEWS, INITIAL_COUPONS } from '../data/initialProducts';
-import { productsAPI, ordersAPI, reviewsAPI, couponsAPI, analyticsAPI } from '../services/api';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import {
+  productsAPI, brandsAPI, categoriesAPI, ordersAPI,
+  reviewsAPI, couponsAPI, analyticsAPI, homepageAPI, settingsAPI
+} from '../services/api';
 import { formatCurrency } from '../utils/currency';
 
 const StoreContext = createContext();
 
 export const StoreProvider = ({ children }) => {
   // Products Catalog
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('akiki_products');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
-  });
-
+  const [products, setProducts] = useState([]);
+  // Brands
+  const [brands, setBrands] = useState([]);
+  // Categories
+  const [categories, setCategories] = useState([]);
   // Orders
-  const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem('akiki_orders');
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
-  });
-
+  const [orders, setOrders] = useState([]);
   // Reviews
-  const [reviews, setReviews] = useState(() => {
-    const saved = localStorage.getItem('akiki_reviews');
-    return saved ? JSON.parse(saved) : INITIAL_REVIEWS;
-  });
-
+  const [reviews, setReviews] = useState([]);
   // Coupons
-  const [coupons, setCoupons] = useState(() => {
-    const saved = localStorage.getItem('akiki_coupons');
-    return saved ? JSON.parse(saved) : INITIAL_COUPONS;
-  });
+  const [coupons, setCoupons] = useState([]);
 
   // Cart state
   const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem('akiki_cart');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('luxury_cart') || localStorage.getItem('akiki_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   // Wishlist state
   const [wishlist, setWishlist] = useState(() => {
-    const saved = localStorage.getItem('akiki_wishlist');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('luxury_wishlist') || localStorage.getItem('akiki_wishlist');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
-  // Currency (Locked to INR Only)
+  // Currency (Locked to INR)
   const [currency, setCurrency] = useState('INR');
 
   // Applied coupon
@@ -50,493 +49,364 @@ export const StoreProvider = ({ children }) => {
 
   // Live Activity Log
   const [activityLog, setActivityLog] = useState([
-    { id: 'act-1', text: 'Collector in Mayfair, London viewed Royal Chronograph Master', time: 'Just now', type: 'view' },
-    { id: 'act-2', text: 'New order ORD-AK-98421 placed for ₹4,95,000', time: '12m ago', type: 'order' },
-    { id: 'act-3', text: '5-star review posted by Dr. Alistair Sterling (Zurich)', time: '45m ago', type: 'review' }
+    { id: 'act-1', text: 'Collector in Mumbai viewed Rolex Submariner Date 41mm', time: 'Just now', type: 'view' },
+    { id: 'act-2', text: 'New consignment ORD-LW-98421 placed for ₹5,499', time: '12m ago', type: 'order' },
+    { id: 'act-3', text: '5-star review posted by Vikramaditya S. (Mumbai)', time: '45m ago', type: 'review' }
   ]);
 
-  // Store Settings
+  // Store Settings & Homepage CMS
   const [storeSettings, setStoreSettings] = useState({
-    supportPhone: '+44 (0) 20 7946 0192',
+    storeName: 'LUXURY WATCH',
+    tagline: 'TIMELESS WATCHES. EXCEPTIONAL VALUE.',
+    supportPhone: '+91 22 6940 8800',
     supportEmail: 'concierge@luxurywatch.com',
-    announcement: 'COMPLIMENTARY BESPOKE ENGRAVING & INSURED WORLDWIDE EXPRESS SHIPPING',
-    freeShippingThreshold: 250000,
+    announcement: 'FREE SHIPPING ABOVE ₹999 | SECURE PAYMENTS | EASY RETURNS',
+    freeShippingThreshold: 999,
+    standardShippingFee: 0,
+    expressShippingFee: 499,
     warrantyYears: 5
   });
 
+  const [homepageContent, setHomepageContent] = useState(null);
+
   // Modals & Navigation state
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutItems, setCheckoutItems] = useState([]);
   const [isOrderTrackingOpen, setIsOrderTrackingOpen] = useState(false);
   const [selectedProductDetails, setSelectedProductDetails] = useState(null);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [activeBrand, setActiveBrand] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [toasts, setToasts] = useState([]);
   const [isBackendConnected, setIsBackendConnected] = useState(false);
 
-  // Sync with Backend API on mount
-  useEffect(() => {
-    const syncBackendData = async () => {
-      try {
-        const token = localStorage.getItem('akiki_admin_token') || localStorage.getItem('luxury_admin_token');
-        const fetchTasks = [
-          productsAPI.getAll(),
-          reviewsAPI.getAll(),
-          couponsAPI.getAll(),
-          analyticsAPI.getActivity()
-        ];
-        
-        if (token) {
-          fetchTasks.push(ordersAPI.getAll());
-        }
-
-        const results = await Promise.allSettled(fetchTasks);
-        const [prodRes, revRes, cpnRes, actRes, ordRes] = results;
-
-        if (prodRes?.status === 'fulfilled' && prodRes.value?.products) {
-          setProducts(prodRes.value.products);
-          setIsBackendConnected(true);
-        }
-        if (revRes?.status === 'fulfilled' && revRes.value?.reviews) {
-          setReviews(revRes.value.reviews);
-        }
-        if (cpnRes?.status === 'fulfilled' && cpnRes.value?.coupons) {
-          setCoupons(cpnRes.value.coupons);
-        }
-        if (actRes?.status === 'fulfilled' && actRes.value?.activityLog) {
-          setActivityLog(actRes.value.activityLog);
-        }
-        if (ordRes?.status === 'fulfilled' && ordRes.value?.orders) {
-          setOrders(ordRes.value.orders);
-        }
-      } catch (err) {
-        console.warn('Backend sync failed, using offline storage:', err.message);
-      }
-    };
-
-    syncBackendData();
-  }, []);
-
-  // Persist items locally as cache
-  useEffect(() => {
-    localStorage.setItem('akiki_products', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
-    localStorage.setItem('akiki_orders', JSON.stringify(orders));
-  }, [orders]);
-
-  useEffect(() => {
-    localStorage.setItem('akiki_reviews', JSON.stringify(reviews));
-  }, [reviews]);
-
-  useEffect(() => {
-    localStorage.setItem('akiki_coupons', JSON.stringify(coupons));
-  }, [coupons]);
-
-  useEffect(() => {
-    localStorage.setItem('akiki_cart', JSON.stringify(cart));
-  }, [cart]);
-
-  useEffect(() => {
-    localStorage.setItem('akiki_wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
-
-  useEffect(() => {
-    localStorage.setItem('akiki_currency', currency);
-  }, [currency]);
-
-  // Log activity helper
-  const logActivity = (text, type = 'general') => {
-    const newEntry = {
-      id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      text,
-      time: 'Just now',
-      type
-    };
-    setActivityLog(prev => [newEntry, ...prev.slice(0, 19)]);
-
-    // Call backend
-    analyticsAPI.logActivity(text, type).catch(() => {});
-  };
-
-  // Toast Helper
-  const showToast = (message, type = 'gold') => {
+  // Toast notification helper
+  const addToast = useCallback((message, type = 'success') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 4000);
-  };
+  }, []);
+
+  // Sync data with Backend API
+  const refreshStoreData = useCallback(async () => {
+    try {
+      const results = await Promise.allSettled([
+        productsAPI.getAll(),
+        brandsAPI.getAll(),
+        categoriesAPI.getAll(),
+        reviewsAPI.getAll(),
+        couponsAPI.getAll(),
+        analyticsAPI.getActivity(),
+        homepageAPI.getContent(),
+        settingsAPI.getStoreSettings()
+      ]);
+
+      const [prodRes, brandRes, catRes, revRes, cpnRes, actRes, hpRes, setRes] = results;
+
+      if (prodRes.status === 'fulfilled' && prodRes.value?.products) {
+        setProducts(prodRes.value.products);
+        setIsBackendConnected(true);
+      }
+      if (brandRes.status === 'fulfilled' && brandRes.value?.brands) {
+        setBrands(brandRes.value.brands);
+      }
+      if (catRes.status === 'fulfilled' && catRes.value?.categories) {
+        setCategories(catRes.value.categories);
+      }
+      if (revRes.status === 'fulfilled' && revRes.value?.reviews) {
+        setReviews(revRes.value.reviews);
+      }
+      if (cpnRes.status === 'fulfilled' && cpnRes.value?.coupons) {
+        setCoupons(cpnRes.value.coupons);
+      }
+      if (actRes.status === 'fulfilled' && actRes.value?.activities) {
+        setActivityLog(actRes.value.activities);
+      }
+      if (hpRes.status === 'fulfilled' && hpRes.value?.content) {
+        setHomepageContent(hpRes.value.content);
+        if (hpRes.value.content.announcementBar?.text) {
+          setStoreSettings(prev => ({
+            ...prev,
+            announcement: hpRes.value.content.announcementBar.text
+          }));
+        }
+      }
+      if (setRes.status === 'fulfilled' && setRes.value?.settings) {
+        setStoreSettings(prev => ({ ...prev, ...setRes.value.settings }));
+      }
+    } catch (err) {
+      console.warn('[StoreContext] Backend sync note:', err.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshStoreData();
+  }, [refreshStoreData]);
+
+  // Persist Cart
+  useEffect(() => {
+    localStorage.setItem('luxury_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  // Persist Wishlist
+  useEffect(() => {
+    localStorage.setItem('luxury_wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
 
   // Cart operations
   const addToCart = (product, quantity = 1, options = {}) => {
-    const color = options.color || (product.colors && product.colors[0]?.name) || 'Default Edition';
-    const strap = options.strap || (product.straps && product.straps[0]?.name) || 'Default Strap';
-    const engraving = options.engraving || '';
-    const cartItemId = `${product.id}-${color}-${strap}-${engraving}`;
+    if (!product) return;
+    if (product.stock <= 0) {
+      addToast(`"${product.name}" is currently out of vault stock.`, 'error');
+      return;
+    }
 
     setCart(prev => {
-      const existing = prev.find(item => item.cartItemId === cartItemId);
-      if (existing) {
-        return prev.map(item =>
-          item.cartItemId === cartItemId
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      } else {
-        return [
-          ...prev,
-          {
-            cartItemId,
-            product,
-            quantity,
-            selectedColor: color,
-            selectedStrap: strap,
-            engraving,
-            addedAt: new Date().toISOString()
-          }
-        ];
+      const existingIdx = prev.findIndex(item => item.product.id === product.id);
+      if (existingIdx !== -1) {
+        const updated = [...prev];
+        const newQty = updated[existingIdx].quantity + quantity;
+        if (newQty > product.stock) {
+          addToast(`Maximum available vault stock (${product.stock}) reached.`, 'warning');
+          updated[existingIdx].quantity = product.stock;
+        } else {
+          updated[existingIdx].quantity = newQty;
+          addToast(`Updated quantity for "${product.name}" in vault bag.`);
+        }
+        return updated;
       }
+      addToast(`"${product.name}" added to vault bag.`);
+      return [...prev, {
+        product,
+        quantity: Math.min(quantity, product.stock),
+        selectedColor: options.selectedColor || product.colors?.[0]?.name,
+        selectedStrap: options.selectedStrap || product.straps?.[0]?.name
+      }];
     });
 
-    logActivity(`A client added "${product.name}" to bespoke shopping bag`, 'cart');
-    showToast(`Added "${product.name}" to your shopping bag`, 'gold');
+    // Automatically open the cart drawer so the patron is taken directly to the cart
     setIsCartOpen(true);
   };
 
-  const updateCartQuantity = (cartItemId, delta) => {
+  const updateCartQuantity = (productId, delta) => {
     setCart(prev => {
-      return prev
-        .map(item => {
-          if (item.cartItemId === cartItemId) {
-            const newQty = item.quantity + delta;
-            return newQty > 0 ? { ...item, quantity: newQty } : null;
+      return prev.map(item => {
+        if (item.product.id === productId) {
+          const newQty = item.quantity + delta;
+          if (newQty <= 0) return null;
+          if (newQty > item.product.stock) {
+            addToast(`Only ${item.product.stock} items remaining in stock.`, 'warning');
+            return item;
           }
-          return item;
-        })
-        .filter(Boolean);
+          return { ...item, quantity: newQty };
+        }
+        return item;
+      }).filter(Boolean);
     });
   };
 
-  const removeFromCart = (cartItemId) => {
-    setCart(prev => prev.filter(item => item.cartItemId !== cartItemId));
-    showToast("Item removed from bag", "dark");
+  const removeFromCart = (productId) => {
+    setCart(prev => prev.filter(item => item.product.id !== productId));
+    addToast('Item removed from vault bag.');
   };
 
   const clearCart = () => {
     setCart([]);
+    setAppliedCoupon(null);
   };
 
-  // Instant Buy Now Trigger
-  const triggerBuyNow = (product, quantity = 1, options = {}) => {
-    const color = options.color || (product.colors && product.colors[0]?.name) || 'Default Edition';
-    const strap = options.strap || (product.straps && product.straps[0]?.name) || 'Default Strap';
-    const engraving = options.engraving || '';
-    const singleCheckoutItem = {
-      cartItemId: `buy-now-${product.id}`,
-      product,
-      quantity,
-      selectedColor: color,
-      selectedStrap: strap,
-      engraving
-    };
-    setCheckoutItems([singleCheckoutItem]);
-    setIsCheckoutOpen(true);
-    logActivity(`Initiated instant VIP checkout for "${product.name}"`, 'checkout');
+  // Wishlist operations
+  const toggleWishlist = (product) => {
+    if (!product) return;
+    setWishlist(prev => {
+      const exists = prev.some(p => p.id === product.id);
+      if (exists) {
+        addToast(`Removed "${product.name}" from Wishlist.`);
+        return prev.filter(p => p.id !== product.id);
+      }
+      addToast(`Added "${product.name}" to Private Wishlist.`);
+      return [...prev, product];
+    });
   };
 
-  const triggerCartCheckout = () => {
-    if (cart.length === 0) {
-      showToast("Your shopping bag is empty", "crimson");
+  const isInWishlist = (productId) => {
+    return wishlist.some(p => p.id === productId);
+  };
+
+  const moveWishlistToCart = (product) => {
+    addToCart(product, 1);
+    toggleWishlist(product);
+  };
+
+  // Calculations
+  const cartSubtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const discountAmount = appliedCoupon ? (cartSubtotal * (appliedCoupon.discountPercent || 0)) / 100 : 0;
+  const shippingFee = cartSubtotal >= (storeSettings.freeShippingThreshold || 999) ? 0 : (storeSettings.standardShippingFee || 0);
+  const cartTotal = Math.max(0, cartSubtotal - discountAmount + shippingFee);
+
+  // Apply Coupon
+  const applyCoupon = async (code) => {
+    try {
+      const res = await couponsAPI.validate(code, cartSubtotal, cart);
+      if (res.success && res.coupon) {
+        setAppliedCoupon(res.coupon);
+        addToast(`Promotion "${res.coupon.code}" applied: ${res.coupon.discountPercent}% OFF`);
+        return { success: true, coupon: res.coupon };
+      }
+      return { success: false, message: res.message };
+    } catch (err) {
+      addToast(err.message || 'Invalid promotion code.', 'error');
+      return { success: false, message: err.message };
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    addToast('Promotion removed.');
+  };
+
+  // Direct Buy Now trigger: adds timepiece to cart and opens cart drawer then payment
+  const buyNow = (product, quantity = 1, options = {}) => {
+    if (!product) return;
+    addToCart(product, quantity, options);
+    setIsCartOpen(true);
+  };
+
+  const openCartCheckout = () => {
+    if (!cart || cart.length === 0) {
+      addToast('Your bag is empty. Please select a timepiece first.', 'info');
       return;
     }
     setCheckoutItems([...cart]);
     setIsCartOpen(false);
     setIsCheckoutOpen(true);
-    logActivity(`Collector entered checkout with ${cart.length} luxury timepiece(s)`, 'checkout');
   };
 
-  // Wishlist operations
-  const toggleWishlist = (productId) => {
-    const product = products.find(p => p.id === productId);
-    const prodName = product ? product.name : 'Timepiece';
-    setWishlist(prev => {
-      const exists = prev.includes(productId);
-      if (exists) {
-        showToast(`Removed "${prodName}" from Vault Wishlist`, 'dark');
-        return prev.filter(id => id !== productId);
-      } else {
-        showToast(`Added "${prodName}" to Vault Wishlist`, 'gold');
-        logActivity(`Vault Wishlist added: "${prodName}"`, 'wishlist');
-        return [...prev, productId];
-      }
-    });
-  };
-
-  const isInWishlist = (productId) => wishlist.includes(productId);
-
-  // Cart calculations
-  const cartSubtotal = (checkoutItems.length > 0 && isCheckoutOpen ? checkoutItems : cart).reduce(
-    (acc, item) => acc + item.product.price * item.quantity,
-    0
-  );
-
-  const discountPercent = appliedCoupon ? appliedCoupon.discountPercent : 0;
-  const discountAmount = appliedCoupon ? (cartSubtotal * discountPercent) / 100 : 0;
-  const freeShippingThreshold = 250000;
-  const standardShippingCost = cartSubtotal >= freeShippingThreshold || cartSubtotal === 0 ? 0 : 2500;
-  const cartTotal = Math.max(0, cartSubtotal - discountAmount + standardShippingCost);
-
-  // Coupon validation
-  const applyCoupon = async (code) => {
-    try {
-      const res = await couponsAPI.validate(code, cartSubtotal);
-      if (res.success && res.coupon) {
-        setAppliedCoupon(res.coupon);
-        showToast(`Code "${res.coupon.code}" applied: ${res.coupon.discountPercent}% discount`, "gold");
-        logActivity(`Promotion code ${res.coupon.code} applied successfully`, 'coupon');
-        return true;
-      }
-    } catch (err) {
-      // Fallback local search
-      const found = coupons.find(c => c.code.toUpperCase() === code.trim().toUpperCase());
-      if (!found) {
-        showToast("Invalid promotion code", "crimson");
-        return false;
-      }
-      if (cartSubtotal < found.minSpend) {
-        showToast(`Minimum order of ${formatCurrency(found.minSpend, currency)} required for ${found.code}`, "crimson");
-        return false;
-      }
-      setAppliedCoupon(found);
-      showToast(`Code "${found.code}" applied: ${found.discountPercent}% discount`, "gold");
-      return true;
-    }
-    return false;
-  };
-
-  const removeCoupon = () => {
-    setAppliedCoupon(null);
-    showToast("Promotion code removed", "dark");
-  };
-
-  // Order Placement
-  const placeOrder = async (orderData) => {
-    const newOrder = {
-      ...orderData,
-      id: orderData.id || `ORD-AK-${Math.floor(10000 + Math.random() * 90000)}`,
-      date: new Date().toISOString(),
-      orderStatus: 'Confirmed',
-      paymentStatus: 'Paid',
-      trackingNumber: `AK-EXP-${Math.floor(10000000 + Math.random() * 90000000)}`
-    };
-
-    // Save locally
-    setOrders(prev => [newOrder, ...prev]);
-
-    // Deduct stock locally
-    newOrder.items.forEach(item => {
-      updateStock(item.product ? item.product.id : item.id, -item.quantity);
-    });
-
-    if (checkoutItems.length === cart.length) {
-      clearCart();
-    }
-
-    logActivity(`🎉 New Order #${newOrder.id} confirmed for ${formatCurrency(newOrder.total, 'INR')} by ${newOrder.customer.fullName}`, 'order');
-
-    // Call Backend API
-    try {
-      const res = await ordersAPI.create(newOrder);
-      if (res.success && res.order) {
-        // update with authoritative server order
-        setOrders(prev => prev.map(o => o.id === newOrder.id ? res.order : o));
-      }
-    } catch (err) {
-      console.warn('Backend order sync error:', err.message);
-    }
-
-    return newOrder;
-  };
-
-  // Stock update
-  const updateStock = async (productId, delta) => {
-    setProducts(prev =>
-      prev.map(p => {
-        if (p.id === productId) {
-          const newStock = Math.max(0, p.stock + delta);
-          return { ...p, stock: newStock };
-        }
-        return p;
-      })
-    );
-
-    try {
-      await productsAPI.updateStock(productId, { delta });
-    } catch (err) {
-      console.warn('Backend stock sync error:', err.message);
-    }
-  };
-
-  // Product CRUD
-  const addProduct = async (newProd) => {
-    const id = newProd.id || `ak-${newProd.category.toLowerCase().slice(0, 4)}-${Date.now().toString().slice(-4)}`;
-    const productToAdd = {
-      ...newProd,
-      id,
-      rating: 5.0,
-      reviewsCount: 0,
-      sku: newProd.sku || `AK-${Math.floor(100 + Math.random() * 900)}`
-    };
-
-    setProducts(prev => [productToAdd, ...prev]);
-    showToast(`Masterpiece "${productToAdd.name}" added to catalog`, 'gold');
-
-    try {
-      const res = await productsAPI.create(productToAdd);
-      if (res.success && res.product) {
-        setProducts(prev => prev.map(p => p.id === productToAdd.id ? res.product : p));
-      }
-    } catch (err) {
-      console.warn('Backend product creation error:', err.message);
-    }
-
-    return productToAdd;
-  };
-
-  const updateProduct = async (productId, updatedFields) => {
-    setProducts(prev =>
-      prev.map(p => (p.id === productId ? { ...p, ...updatedFields } : p))
-    );
-    showToast("Product updated successfully", "gold");
-
-    try {
-      await productsAPI.update(productId, updatedFields);
-    } catch (err) {
-      console.warn('Backend product update error:', err.message);
-    }
-  };
-
-  const deleteProduct = async (productId) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
-    showToast("Product removed from catalog", "dark");
-
-    try {
-      await productsAPI.delete(productId);
-    } catch (err) {
-      console.warn('Backend product delete error:', err.message);
-    }
-  };
-
-  // Order Management
-  const updateOrderStatus = async (orderId, newStatus) => {
-    setOrders(prev =>
-      prev.map(o => (o.id === orderId ? { ...o, orderStatus: newStatus } : o))
-    );
-    showToast(`Order #${orderId} updated to ${newStatus}`, 'gold');
-
-    try {
-      await ordersAPI.updateStatus(orderId, newStatus);
-    } catch (err) {
-      console.warn('Backend order status update error:', err.message);
-    }
-  };
-
-  // Reviews Management
-  const addReview = async (reviewData) => {
-    const newRev = {
-      ...reviewData,
-      id: `rev-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
-      verified: true
-    };
-
-    setReviews(prev => [newRev, ...prev]);
-    showToast("Thank you for sharing your experience. Your review is now live!", "gold");
-
-    try {
-      await reviewsAPI.create(newRev);
-    } catch (err) {
-      console.warn('Backend review create error:', err.message);
-    }
-  };
-
-  // Quick View helper
   const openQuickView = (product) => {
     setQuickViewProduct(product);
-    logActivity(`Quick inspection opened for "${product.name}"`, 'view');
   };
 
   const closeQuickView = () => {
     setQuickViewProduct(null);
   };
 
+  const formatPrice = (amount) => {
+    return formatCurrency(amount, currency);
+  };
+
   return (
     <StoreContext.Provider
       value={{
         products,
+        setProducts,
+        brands,
+        setBrands,
+        categories,
+        setCategories,
         orders,
+        setOrders,
         reviews,
+        setReviews,
         coupons,
+        setCoupons,
         cart,
         wishlist,
         currency,
         setCurrency,
+        cartSubtotal,
+        cartTotal,
+        discountAmount,
+        shippingFee,
+        freeShippingThreshold: storeSettings?.freeShippingThreshold || 999,
         appliedCoupon,
-        activityLog,
-        isBackendConnected,
-        isCartOpen,
-        setIsCartOpen,
-        quickViewProduct,
-        openQuickView,
-        closeQuickView,
-        isCheckoutOpen,
-        setIsCheckoutOpen,
-        checkoutItems,
-        setCheckoutItems,
-        triggerBuyNow,
-        triggerCartCheckout,
-        isOrderTrackingOpen,
-        setIsOrderTrackingOpen,
-        selectedProductDetails,
-        setSelectedProductDetails,
-        activeCategory,
-        setActiveCategory,
-        searchQuery,
-        setSearchQuery,
-        toasts,
-        showToast,
+        applyCoupon,
+        removeCoupon,
         addToCart,
         updateCartQuantity,
         removeFromCart,
         clearCart,
         toggleWishlist,
         isInWishlist,
-        cartSubtotal,
-        discountPercent,
-        discountAmount,
-        standardShippingCost,
-        freeShippingThreshold,
-        cartTotal,
-        applyCoupon,
-        removeCoupon,
-        placeOrder,
-        updateStock,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        updateOrderStatus,
-        addReview,
-        logActivity,
+        moveWishlistToCart,
+        buyNow,
+        triggerBuyNow: buyNow,
+        openCartCheckout,
+        triggerCartCheckout: openCartCheckout,
+        openQuickView,
+        closeQuickView,
+        checkoutItems,
+        setCheckoutItems,
+        isCartOpen,
+        setIsCartOpen,
+        isWishlistOpen,
+        setIsWishlistOpen,
+        quickViewProduct,
+        setQuickViewProduct,
+        isCheckoutOpen,
+        setIsCheckoutOpen,
+        isOrderTrackingOpen,
+        setIsOrderTrackingOpen,
+        selectedProductDetails,
+        setSelectedProductDetails,
+        activeCategory,
+        setActiveCategory,
+        activeBrand,
+        setActiveBrand,
+        searchQuery,
+        setSearchQuery,
         storeSettings,
         setStoreSettings,
-        formatPrice: (amount) => formatCurrency(amount, currency)
+        homepageContent,
+        setHomepageContent,
+        activityLog,
+        toasts,
+        addToast,
+        formatPrice,
+        refreshStoreData,
+        isBackendConnected
       }}
     >
       {children}
+
+      {/* Floating Toast Notifications */}
+      <div style={{
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px',
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        pointerEvents: 'none'
+      }}>
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            style={{
+              background: toast.type === 'error' ? '#881337' : toast.type === 'warning' ? '#78350f' : '#0f172a',
+              border: toast.type === 'error' ? '1px solid #f43f5e' : toast.type === 'warning' ? '1px solid #f59e0b' : '1px solid #d4af37',
+              color: '#ffffff',
+              padding: '12px 18px',
+              borderRadius: '4px',
+              fontSize: '0.82rem',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              animation: 'fadeInUp 0.3s ease-out',
+              maxWidth: '360px',
+              pointerEvents: 'auto'
+            }}
+          >
+            <span>{toast.message}</span>
+          </div>
+        ))}
+      </div>
     </StoreContext.Provider>
   );
 };
@@ -548,3 +418,5 @@ export const useStore = () => {
   }
   return context;
 };
+
+export default StoreContext;

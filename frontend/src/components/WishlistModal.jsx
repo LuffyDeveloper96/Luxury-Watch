@@ -27,10 +27,11 @@ export const WishlistModal = ({ isOpen, onClose, onSelectProduct }) => {
           width: '100%',
           maxHeight: '85vh',
           overflowY: 'auto',
-          backgroundColor: '#0c0e14',
-          border: '1px solid rgba(212, 175, 55, 0.4)',
+          backgroundColor: '#ffffff',
+          border: '1px solid rgba(180, 140, 30, 0.35)',
           padding: '2rem',
-          position: 'relative'
+          position: 'relative',
+          boxShadow: '0 25px 60px rgba(15, 23, 42, 0.15)'
         }}
       >
         <button
@@ -39,9 +40,9 @@ export const WishlistModal = ({ isOpen, onClose, onSelectProduct }) => {
             position: 'absolute',
             top: '1.25rem',
             right: '1.25rem',
-            background: 'rgba(255,255,255,0.06)',
+            background: 'rgba(0, 0, 0, 0.05)',
             border: 'none',
-            color: '#94a3b8',
+            color: '#64748b',
             borderRadius: '50%',
             width: '34px',
             height: '34px',
@@ -55,13 +56,13 @@ export const WishlistModal = ({ isOpen, onClose, onSelectProduct }) => {
         </button>
 
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: '#fb7185', marginBottom: '0.3rem' }}>
-            <Heart size={20} fill="#fb7185" />
-            <span style={{ fontSize: '0.72rem', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: '#e11d48', marginBottom: '0.3rem' }}>
+            <Heart size={20} fill="#e11d48" />
+            <span style={{ fontSize: '0.72rem', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700 }}>
               YOUR VAULT WISHLIST
             </span>
           </div>
-          <h2 style={{ fontSize: '1.5rem', color: '#ffffff' }}>Saved Haute Horlogerie Pieces</h2>
+          <h2 style={{ fontSize: '1.5rem', color: '#0f172a', fontWeight: 700 }}>Saved Haute Horlogerie Pieces</h2>
         </div>
 
         {wishlistProducts.length > 0 ? (
@@ -73,10 +74,11 @@ export const WishlistModal = ({ isOpen, onClose, onSelectProduct }) => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  backgroundColor: '#12141c',
+                  backgroundColor: '#ffffff',
                   padding: '1rem',
                   borderRadius: '6px',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  boxShadow: 'var(--shadow-sm)',
                   flexWrap: 'wrap',
                   gap: '1rem'
                 }}
@@ -91,12 +93,12 @@ export const WishlistModal = ({ isOpen, onClose, onSelectProduct }) => {
                   <img
                     src={prod.images[0]}
                     alt={prod.name}
-                    style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '4px', backgroundColor: '#07080b' }}
+                    style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '4px', backgroundColor: '#f8f7f4' }}
                   />
                   <div>
-                    <div style={{ fontSize: '0.7rem', color: '#d4af37', textTransform: 'uppercase' }}>{prod.category}</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#f8fafc' }}>{prod.name}</div>
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: '#f3e5ab', fontFamily: 'var(--font-brand)' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#8a6709', textTransform: 'uppercase', fontWeight: 600 }}>{prod.category}</div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>{prod.name}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', fontFamily: 'var(--font-brand)' }}>
                       {formatCurrency(prod.price, currency)}
                     </div>
                   </div>
@@ -124,13 +126,13 @@ export const WishlistModal = ({ isOpen, onClose, onSelectProduct }) => {
                     className="btn-dark"
                     style={{ padding: '0.5rem 0.9rem', fontSize: '0.75rem' }}
                   >
-                    <ShoppingBag size={13} style={{ color: '#d4af37' }} />
+                    <ShoppingBag size={13} style={{ color: '#8a6709' }} />
                     <span>BAG</span>
                   </button>
 
                   <button
                     onClick={() => toggleWishlist(prod.id)}
-                    style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0.4rem' }}
+                    style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.4rem' }}
                     title="Remove"
                   >
                     <Trash2 size={16} />
@@ -140,10 +142,10 @@ export const WishlistModal = ({ isOpen, onClose, onSelectProduct }) => {
             ))}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94a3b8' }}>
-            <Heart size={44} style={{ color: 'rgba(251, 113, 133, 0.3)', margin: '0 auto 1rem auto' }} />
-            <h4 style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '0.4rem' }}>Your Vault is Empty</h4>
-            <p style={{ fontSize: '0.8rem' }}>
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
+            <Heart size={44} style={{ color: 'rgba(225, 29, 72, 0.3)', margin: '0 auto 1rem auto' }} />
+            <h4 style={{ color: '#0f172a', fontSize: '1.1rem', marginBottom: '0.4rem', fontWeight: 700 }}>Your Vault is Empty</h4>
+            <p style={{ fontSize: '0.8rem', color: '#64748b' }}>
               Save your favorite timepieces to compare calibres and reserve for future occasions.
             </p>
           </div>

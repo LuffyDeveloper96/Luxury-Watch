@@ -37,11 +37,12 @@ export const SearchModal = () => {
           maxWidth: '820px',
           maxHeight: '85vh',
           overflowY: 'auto',
-          backgroundColor: '#0c0e14',
+          backgroundColor: '#ffffff',
           border: '1px solid var(--border-gold)',
           borderRadius: '8px',
           padding: '2rem',
-          position: 'relative'
+          position: 'relative',
+          boxShadow: '0 25px 60px rgba(15, 23, 42, 0.15)'
         }}
       >
         <button
@@ -52,7 +53,7 @@ export const SearchModal = () => {
             right: '1.25rem',
             background: 'none',
             border: 'none',
-            color: '#cbd5e1',
+            color: '#64748b',
             cursor: 'pointer'
           }}
         >
@@ -60,17 +61,17 @@ export const SearchModal = () => {
         </button>
 
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <span style={{ fontSize: '0.72rem', letterSpacing: '0.2em', color: '#d4af37', textTransform: 'uppercase', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.72rem', letterSpacing: '0.2em', color: '#8a6709', textTransform: 'uppercase', fontWeight: 700 }}>
             EXPLORE TIMEPIECE ARCHIVES
           </span>
-          <h3 style={{ fontSize: '1.5rem', color: '#f8fafc', fontFamily: 'var(--font-brand)', margin: '4px 0' }}>
+          <h3 style={{ fontSize: '1.5rem', color: '#0f172a', fontFamily: 'var(--font-brand)', margin: '4px 0', fontWeight: 700 }}>
             Instant Horology Search
           </h3>
         </div>
 
         {/* Search Bar Input */}
         <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
-          <Search size={20} color="#d4af37" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+          <Search size={20} color="#8a6709" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
             type="text"
             placeholder="Search by model name, movement calibre, complication or metal..."
@@ -84,19 +85,20 @@ export const SearchModal = () => {
 
         {/* Quick Tags */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '1.75rem' }}>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase' }}>Suggested:</span>
+          <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase' }}>Suggested:</span>
           {quickSearches.map(q => (
             <button
               key={q}
               onClick={() => setQuery(q)}
               style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#cbd5e1',
+                background: '#f8f7f4',
+                border: '1px solid rgba(0, 0, 0, 0.08)',
+                color: '#475569',
                 padding: '4px 10px',
                 borderRadius: '2px',
                 fontSize: '0.72rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                fontWeight: 500
               }}
             >
               {q}
@@ -107,7 +109,7 @@ export const SearchModal = () => {
         {/* Results Grid */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               {query ? `Search Results (${results.length})` : 'Featured Timepieces'}
             </span>
           </div>
@@ -121,8 +123,9 @@ export const SearchModal = () => {
                   setSelectedProductDetails(prod);
                 }}
                 style={{
-                  background: '#12141a',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: '#ffffff',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  boxShadow: 'var(--shadow-sm)',
                   borderRadius: '6px',
                   padding: '10px',
                   cursor: 'pointer',
@@ -132,19 +135,19 @@ export const SearchModal = () => {
                 <img
                   src={prod.images?.[0]}
                   alt=""
-                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px', background: '#000', marginBottom: '8px' }}
+                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px', background: '#f8f7f4', marginBottom: '8px' }}
                 />
-                <span style={{ fontSize: '0.65rem', color: '#d4af37', textTransform: 'uppercase' }}>{prod.category}</span>
-                <h4 style={{ fontSize: '0.85rem', color: '#f8fafc', fontFamily: 'var(--font-brand)', margin: '2px 0' }}>
+                <span style={{ fontSize: '0.65rem', color: '#8a6709', textTransform: 'uppercase', fontWeight: 600 }}>{prod.category}</span>
+                <h4 style={{ fontSize: '0.85rem', color: '#0f172a', fontFamily: 'var(--font-brand)', margin: '2px 0', fontWeight: 700 }}>
                   {prod.name}
                 </h4>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-                  <span style={{ fontSize: '0.9rem', color: '#f3e5ab', fontWeight: 700 }}>
+                  <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>
                     {formatPrice(prod.price)}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                     <Star size={11} color="#d4af37" fill="#d4af37" />
-                    <span style={{ fontSize: '0.72rem', color: '#f8fafc' }}>{prod.rating}</span>
+                    <span style={{ fontSize: '0.72rem', color: '#0f172a', fontWeight: 600 }}>{prod.rating}</span>
                   </div>
                 </div>
               </div>

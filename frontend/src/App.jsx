@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
+import { UserAuthProvider, useUserAuth } from './context/UserAuthContext';
 import { AnnouncementBar } from './components/AnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
@@ -14,39 +15,87 @@ import { SearchModal } from './components/SearchModal';
 import { CheckoutModal } from './components/CheckoutModal';
 import { OrderConfirmationModal } from './components/OrderConfirmationModal';
 import { OrderTrackingModal } from './components/OrderTrackingModal';
+import { UserAuthModal } from './components/UserAuthModal';
+import { ReturnRequestModal } from './components/ReturnRequestModal';
 import { BrandStory } from './components/BrandStory';
 import { ReviewsSection } from './components/ReviewsSection';
 import { Footer } from './components/Footer';
 import { AdminLogin } from './components/admin/AdminLogin';
 import { AdminDashboard } from './components/admin/AdminDashboard';
-import { SlidersHorizontal, Sparkles, Watch, ShieldCheck } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, Watch, ShieldCheck, Filter } from 'lucide-react';
 
 const Storefront = ({
   onOpenAdmin,
   onOpenTracking,
   onOpenBrandStory,
+  onOpenReturns,
   activeCategory,
-  setActiveCategory
+  setActiveCategory,
+  activeBrand,
+  setActiveBrand
 }) => {
-  const { products, selectedProductDetails, setSelectedProductDetails, setIsOrderTrackingOpen } = useStore();
+  const {
+    products,
+    brands,
+    selectedProductDetails,
+    setSelectedProductDetails,
+    setIsOrderTrackingOpen
+  } = useStore();
+
   const [sortBy, setSortBy] = useState('featured'); // 'featured' | 'price-low' | 'price-high' | 'rating'
+  const [selectedGender, setSelectedGender] = useState('All');
+  const [priceRange, setPriceRange] = useState(10000);
 
   const categories = [
     { id: 'All', label: 'All Masterpieces' },
-    { id: 'Chronograph', label: 'Chronographs' },
-    { id: 'Skeleton Automatic', label: 'Skeleton Automatic' },
-    { id: 'Diamond Collection', label: 'Diamond Collection' },
-    { id: 'Automatic', label: 'Abyss Diver & GMT' },
-    { id: 'Women', label: "Women's Elegance" },
-    { id: 'Men', label: "Men's Collection" }
+    { id: 'Rolex', label: 'Rolex' },
+    { id: 'Titan', label: 'Titan' },
+    { id: 'Casio', label: 'Casio' },
+    { id: 'Fastrack', label: 'Fastrack' },
+    { id: 'Fossil', label: 'Fossil' },
+    { id: 'Timex', label: 'Timex' },
+    { id: 'Sonata', label: 'Sonata' },
+    { id: 'Guess', label: 'Guess' },
+    { id: 'Limestone', label: 'Limestone' },
+    { id: 'Noise', label: 'Noise' },
+    { id: 'Chronographs', label: 'Chronographs' },
+    { id: 'Skeletons', label: 'Skeleton Automatics' },
+    { id: 'Diamond Editions', label: 'Diamond Editions' },
+    { id: 'Dive & Sport', label: 'Diver & Sport' }
   ];
 
   // Filtering products
   let filtered = products.filter(p => {
-    if (activeCategory === 'All') return true;
-    if (activeCategory === 'Men') return p.gender === 'Men' || p.gender === 'Unisex';
-    if (activeCategory === 'Women') return p.gender === 'Women' || p.gender === 'Unisex';
-    return p.category === activeCategory;
+    // Category or Brand filter
+    if (activeCategory && activeCategory !== 'All') {
+      const target = activeCategory.toLowerCase();
+      const pCat = (p.category || '').toLowerCase();
+      const pBrand = (p.brand || '').toLowerCase();
+
+      let matches = false;
+      if (pBrand === target || pCat === target || pCat.includes(target)) matches = true;
+      if (target === 'men' && (p.gender === 'Men' || p.gender === 'Unisex')) matches = true;
+      if (target === 'women' && (p.gender === 'Women' || p.gender === 'Unisex')) matches = true;
+      if (target === 'new arrivals' && (p.isNewArrival || p.isNew)) matches = true;
+      if (target === 'offers' && (p.comparePrice && p.comparePrice > p.price)) matches = true;
+      if (target === 'luxury' && (pBrand.includes('rolex') || pBrand.includes('titan') || pBrand.includes('casio') || pBrand.includes('guess') || pBrand.includes('fossil'))) matches = true;
+      if (target === 'chronographs' && (pCat.includes('chrono') || p.specs?.movement?.toLowerCase().includes('chrono'))) matches = true;
+      if (target === 'skeletons' && pCat.includes('skeleton')) matches = true;
+
+      if (!matches) return false;
+    }
+
+    // Gender Filter
+    if (selectedGender !== 'All') {
+      if (p.gender && p.gender !== selectedGender && p.gender !== 'Unisex') return false;
+    }
+
+    // Price Filter
+    if (priceRange && p.price > priceRange) {
+      return false;
+    }
+
+    return true;
   });
 
   // Sorting products
@@ -58,7 +107,7 @@ const Storefront = ({
     filtered = [...filtered].sort((a, b) => b.rating - a.rating);
   }
 
-  // If a user is viewing full product details, display PDP
+  // If viewing product details page (PDP)
   if (selectedProductDetails) {
     return (
       <>
@@ -78,6 +127,7 @@ const Storefront = ({
           }}
           onOpenAdmin={onOpenAdmin}
           onOpenTracking={() => setIsOrderTrackingOpen(true)}
+          onOpenReturns={onOpenReturns}
         />
         <ProductDetailsPage
           product={selectedProductDetails}
@@ -92,6 +142,7 @@ const Storefront = ({
           onOpenAdmin={onOpenAdmin}
           onOpenBrandStory={onOpenBrandStory}
           onOpenTracking={() => setIsOrderTrackingOpen(true)}
+          onOpenReturns={onOpenReturns}
         />
       </>
     );
@@ -109,6 +160,7 @@ const Storefront = ({
         onOpenBrandStory={onOpenBrandStory}
         onOpenAdmin={onOpenAdmin}
         onOpenTracking={() => setIsOrderTrackingOpen(true)}
+        onOpenReturns={onOpenReturns}
       />
 
       {/* Hero Section */}
@@ -119,7 +171,7 @@ const Storefront = ({
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
         onExploreSkeleton={() => {
-          setActiveCategory('Skeleton Automatic');
+          setActiveCategory('Skeletons');
           const el = document.getElementById('catalog-section');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
@@ -129,25 +181,26 @@ const Storefront = ({
       <CollectionGrid onSelectCategory={setActiveCategory} />
 
       {/* Main Catalog Showcase Section */}
-      <section id="catalog-section" style={{ padding: '5rem 0', background: '#0b0c10' }}>
+      <section id="catalog-section" style={{ padding: 'clamp(3rem, 6vw, 5rem) 0', background: '#fbfbf9' }}>
         <div className="luxury-container">
           {/* Section Header */}
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
             <span style={{
-              fontSize: '0.72rem',
-              letterSpacing: '0.25em',
-              color: '#d4af37',
+              fontSize: 'clamp(0.6rem, 1.8vw, 0.72rem)',
+              letterSpacing: '0.15em',
+              color: '#8a6709',
               textTransform: 'uppercase',
-              fontWeight: 600,
+              fontWeight: 700,
               display: 'block',
               marginBottom: '0.5rem'
             }}>
               HAUTE HORLOGERIE PORTFOLIO
             </span>
             <h2 style={{
-              fontSize: 'clamp(2rem, 4vw, 2.8rem)',
-              color: '#f8fafc',
-              fontFamily: 'var(--font-brand)'
+              fontSize: 'clamp(1.4rem, 4.5vw, 2.8rem)',
+              color: '#0f172a',
+              fontFamily: 'var(--font-brand)',
+              wordBreak: 'break-word'
             }}>
               THE MASTERPIECE CATALOG
             </h2>
@@ -155,23 +208,40 @@ const Storefront = ({
               width: '60px',
               height: '2px',
               background: 'var(--gold-gradient)',
-              margin: '1rem auto 0'
+              margin: '1rem auto'
             }} />
+            <p style={{
+              color: '#475569',
+              fontSize: 'clamp(0.82rem, 2vw, 0.92rem)',
+              maxWidth: '620px',
+              margin: '0 auto',
+              fontWeight: 400
+            }}>
+              Direct atelier allocations from Geneva, Le Brassus, and Glashütte. Hand-calibrated with chronometer accuracy certificates.
+            </p>
           </div>
 
-          {/* Category Tabs & Sorter Bar */}
+          {/* Filter & Sorting Controls */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: '1rem',
-            marginBottom: '2.5rem',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            paddingBottom: '1rem'
+            marginBottom: '2rem',
+            paddingBottom: '1.25rem',
+            borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
           }}>
             {/* Category Filter Pills */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              overflowX: 'auto',
+              maxWidth: '100%',
+              paddingBottom: '6px',
+              scrollbarWidth: 'none'
+            }}>
               {categories.map(cat => {
                 const isSelected = activeCategory === cat.id;
                 return (
@@ -179,16 +249,19 @@ const Storefront = ({
                     key={cat.id}
                     onClick={() => setActiveCategory(cat.id)}
                     style={{
-                      background: isSelected ? 'rgba(212, 175, 55, 0.15)' : '#12141a',
-                      border: isSelected ? '1px solid #d4af37' : '1px solid rgba(255, 255, 255, 0.08)',
-                      color: isSelected ? '#f3e5ab' : '#cbd5e1',
-                      padding: '8px 16px',
+                      background: isSelected ? 'rgba(180, 140, 30, 0.12)' : '#ffffff',
+                      border: isSelected ? '1px solid #d4af37' : '1px solid rgba(0, 0, 0, 0.08)',
+                      color: isSelected ? '#8a6709' : '#475569',
+                      padding: '6px 14px',
                       borderRadius: '3px',
-                      fontSize: '0.78rem',
-                      fontWeight: isSelected ? 600 : 400,
-                      letterSpacing: '0.08em',
+                      fontSize: 'clamp(0.72rem, 1.8vw, 0.78rem)',
+                      fontWeight: isSelected ? 700 : 500,
+                      letterSpacing: '0.04em',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease'
+                      boxShadow: isSelected ? '0 2px 8px rgba(180, 140, 30, 0.15)' : 'none',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0
                     }}
                   >
                     {cat.label}
@@ -199,8 +272,8 @@ const Storefront = ({
 
             {/* Sorter Selector */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <SlidersHorizontal size={14} color="#d4af37" />
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Sort:</span>
+              <SlidersHorizontal size={14} color="#8a6709" />
+              <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Sort:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -217,8 +290,15 @@ const Storefront = ({
 
           {/* Product Grid */}
           {filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#94a3b8' }}>
+            <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#64748b' }}>
               <p>No timepieces found in this category allocation.</p>
+              <button
+                onClick={() => setActiveCategory('All')}
+                className="btn-gold"
+                style={{ marginTop: '1rem', padding: '8px 18px', fontSize: '0.8rem' }}
+              >
+                View All Timepieces
+              </button>
             </div>
           ) : (
             <div className="product-grid">
@@ -246,6 +326,7 @@ const Storefront = ({
         onOpenAdmin={onOpenAdmin}
         onOpenBrandStory={onOpenBrandStory}
         onOpenTracking={() => setIsOrderTrackingOpen(true)}
+        onOpenReturns={onOpenReturns}
       />
     </>
   );
@@ -256,6 +337,34 @@ const MainAppContent = () => {
   const [isAdminView, setIsAdminView] = useState(false);
   const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [activeBrand, setActiveBrand] = useState('All');
+
+  // Returns Modal State
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [returnModalOrderId, setReturnModalOrderId] = useState('');
+
+  // Automatic #admin and /admin route detection
+  useEffect(() => {
+    const checkAdminRoute = () => {
+      const isHashAdmin = window.location.hash === '#admin' || window.location.hash.startsWith('#admin');
+      const isPathAdmin = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin');
+      if (isHashAdmin || isPathAdmin) {
+        if (isAdminAuthenticated) {
+          setIsAdminView(true);
+        } else {
+          setShowAdminLoginModal(true);
+        }
+      }
+    };
+
+    checkAdminRoute();
+    window.addEventListener('hashchange', checkAdminRoute);
+    window.addEventListener('popstate', checkAdminRoute);
+    return () => {
+      window.removeEventListener('hashchange', checkAdminRoute);
+      window.removeEventListener('popstate', checkAdminRoute);
+    };
+  }, [isAdminAuthenticated]);
 
   const handleOpenAdmin = () => {
     if (isAdminAuthenticated) {
@@ -270,6 +379,11 @@ const MainAppContent = () => {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleOpenReturns = (orderId = '') => {
+    setReturnModalOrderId(orderId);
+    setIsReturnModalOpen(true);
+  };
+
   return (
     <div>
       {/* If Admin is Authenticated and in Admin View Mode */}
@@ -279,17 +393,39 @@ const MainAppContent = () => {
         <Storefront
           onOpenAdmin={handleOpenAdmin}
           onOpenBrandStory={handleOpenBrandStory}
+          onOpenReturns={handleOpenReturns}
           activeCategory={activeCategory}
           setActiveCategory={setActiveCategory}
+          activeBrand={activeBrand}
+          setActiveBrand={setActiveBrand}
         />
       )}
 
-      {/* Admin Login Modal (When clicked while unauthenticated) */}
+      {/* Admin Login Modal */}
       {showAdminLoginModal && !isAdminAuthenticated && (
         <AdminLogin
-          onClose={() => setShowAdminLoginModal(false)}
+          onClose={() => {
+            setShowAdminLoginModal(false);
+            if (window.location.hash.includes('admin')) {
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+          }}
+          onSuccess={() => {
+            setShowAdminLoginModal(false);
+            setIsAdminView(true);
+          }}
         />
       )}
+
+      {/* User Authentication Modal (Sign In / Register with Email OTP) */}
+      <UserAuthModal />
+
+      {/* Customer Returns & Exchanges Modal */}
+      <ReturnRequestModal
+        isOpen={isReturnModalOpen}
+        onClose={() => setIsReturnModalOpen(false)}
+        initialOrderId={returnModalOrderId}
+      />
 
       {/* Global Modals & Drawers */}
       <ProductQuickView />
@@ -300,7 +436,9 @@ const MainAppContent = () => {
       <OrderConfirmationModal
         onOpenTracking={() => {}}
       />
-      <OrderTrackingModal />
+      <OrderTrackingModal
+        onOpenReturnForOrder={(orderId) => handleOpenReturns(orderId)}
+      />
     </div>
   );
 };
@@ -309,7 +447,9 @@ export function App() {
   return (
     <StoreProvider>
       <AdminAuthProvider>
-        <MainAppContent />
+        <UserAuthProvider>
+          <MainAppContent />
+        </UserAuthProvider>
       </AdminAuthProvider>
     </StoreProvider>
   );

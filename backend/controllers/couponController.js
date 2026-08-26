@@ -15,7 +15,7 @@ export const getCoupons = (req, res) => {
 
 export const validateCoupon = (req, res) => {
   try {
-    const { code, subtotal } = req.body;
+    const { code, subtotal, items = [] } = req.body;
     if (!code) {
       return res.status(400).json({ success: false, message: 'Promotion code is required.' });
     }
@@ -28,8 +28,12 @@ export const validateCoupon = (req, res) => {
       return res.status(404).json({ success: false, message: 'Invalid promotion code.' });
     }
 
+    if (coupon.active === false) {
+      return res.status(400).json({ success: false, message: 'This promotion code is currently inactive.' });
+    }
+
     const sub = Number(subtotal) || 0;
-    if (sub < coupon.minSpend) {
+    if (coupon.minSpend && sub < coupon.minSpend) {
       return res.status(400).json({
         success: false,
         message: `Minimum order spend of ₹${coupon.minSpend.toLocaleString('en-IN')} required for code ${coupon.code}.`,
@@ -37,7 +41,16 @@ export const validateCoupon = (req, res) => {
       });
     }
 
-    const discountAmount = (sub * coupon.discountPercent) / 100;
+    let discountAmount = 0;
+    if (coupon.discountPercent) {
+      discountAmount = (sub * coupon.discountPercent) / 100;
+    } else if (coupon.discountAmount) {
+      discountAmount = coupon.discountAmount;
+    }
+
+    if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+      discountAmount = coupon.maxDiscount;
+    }
 
     return res.json({
       success: true,
@@ -53,25 +66,30 @@ export const validateCoupon = (req, res) => {
 
 export const createCoupon = (req, res) => {
   try {
-    const { code, discountPercent, minSpend, description } = req.body;
+    const { code, discountPercent, discountAmount, minSpend, maxDiscount, description, brand, category } = req.body;
 
-    if (!code || !discountPercent) {
-      return res.status(400).json({ success: false, message: 'Code and discount percentage are required.' });
+    if (!code || (!discountPercent && !discountAmount)) {
+      return res.status(400).json({ success: false, message: 'Code and discount value are required.' });
     }
 
     const newCoupon = {
       code: code.trim().toUpperCase(),
-      discountPercent: Number(discountPercent),
+      discountPercent: discountPercent ? Number(discountPercent) : undefined,
+      discountAmount: discountAmount ? Number(discountAmount) : undefined,
       minSpend: Number(minSpend) || 0,
-      description: description || `${discountPercent}% VIP discount`
+      maxDiscount: maxDiscount ? Number(maxDiscount) : undefined,
+      description: description || `${discountPercent || discountAmount}% VIP discount`,
+      brand: brand || undefined,
+      category: category || undefined,
+      active: true,
+      createdAt: new Date().toISOString()
     };
 
     const saved = db.insert('coupons', newCoupon);
 
-    // Log Activity
     db.insert('activityLog', {
       id: `act-${Date.now()}`,
-      text: `Admin created new VIP promotion code: "${newCoupon.code}" (${newCoupon.discountPercent}%)`,
+      text: `Master Admin created promotion code: "${newCoupon.code}"`,
       time: 'Just now',
       type: 'admin'
     });
@@ -84,4 +102,51 @@ export const createCoupon = (req, res) => {
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
+};
+
+export const updateCoupon = (req, res) => {
+  try {
+    const { code } = req.params;
+    const updates = req.body;
+    const cleanCode = code.toUpperCase();
+
+    const coupons = db.getCollection('coupons');
+    const idx = coupons.findIndex(c => c.code.toUpperCase() === cleanCode);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Coupon not found.' });
+    }
+
+    coupons[idx] = { ...coupons[idx], ...updates, updatedAt: new Date().toISOString() };
+    db.setCollection('coupons', coupons);
+
+    return res.json({ success: true, message: 'Coupon updated successfully.', coupon: coupons[idx] });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const deleteCoupon = (req, res) => {
+  try {
+    const { code } = req.params;
+    const cleanCode = code.toUpperCase();
+    const coupons = db.getCollection('coupons');
+    const filtered = coupons.filter(c => c.code.toUpperCase() !== cleanCode);
+
+    if (filtered.length === coupons.length) {
+      return res.status(404).json({ success: false, message: 'Coupon not found.' });
+    }
+
+    db.setCollection('coupons', filtered);
+    return res.json({ success: true, message: 'Coupon removed successfully.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export default {
+  getCoupons,
+  validateCoupon,
+  createCoupon,
+  updateCoupon,
+  deleteCoupon
 };

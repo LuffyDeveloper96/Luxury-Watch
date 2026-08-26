@@ -10,6 +10,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
   const {
     currency,
     addToCart,
+    buyNow,
     triggerBuyNow,
     toggleWishlist,
     isInWishlist,
@@ -68,11 +69,19 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
   };
 
   const handleBuyNow = () => {
-    triggerBuyNow(product, quantity, {
-      color: selectedColor,
-      strap: selectedStrap,
-      engraving: engravingText
-    });
+    if (typeof buyNow === 'function') {
+      buyNow(product, quantity, {
+        color: selectedColor,
+        strap: selectedStrap,
+        engraving: engravingText
+      });
+    } else if (typeof triggerBuyNow === 'function') {
+      triggerBuyNow(product, quantity, {
+        color: selectedColor,
+        strap: selectedStrap,
+        engraving: engravingText
+      });
+    }
   };
 
   const handleSubmitReview = (e) => {
@@ -96,7 +105,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
   };
 
   return (
-    <div style={{ backgroundColor: '#0b0c10', color: '#f8fafc', padding: '2rem 0 5rem 0' }}>
+    <div style={{ backgroundColor: '#ffffff', color: '#0f172a', padding: '2rem 0 5rem 0' }}>
       <div className="luxury-container">
         {/* Navigation Breadcrumb */}
         <div style={{
@@ -105,19 +114,19 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
           gap: '0.75rem',
           marginBottom: '2rem',
           fontSize: '0.78rem',
-          color: '#94a3b8'
+          color: '#64748b'
         }}>
           <button
             onClick={onBack}
             style={{
               background: 'transparent',
               border: 'none',
-              color: '#d4af37',
+              color: '#8a6709',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',
-              fontWeight: 600
+              fontWeight: 700
             }}
           >
             <ArrowLeft size={16} />
@@ -126,14 +135,14 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
           <span>/</span>
           <span>{product.category}</span>
           <span>/</span>
-          <span style={{ color: '#f8fafc' }}>{product.name}</span>
+          <span style={{ color: '#0f172a', fontWeight: 600 }}>{product.name}</span>
         </div>
 
         {/* Main PDP Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-          gap: '3.5rem',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
+          gap: 'clamp(1.5rem, 4vw, 3.5rem)',
           alignItems: 'start',
           marginBottom: '5rem'
         }}>
@@ -143,11 +152,11 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
               position: 'relative',
               borderRadius: '8px',
               overflow: 'hidden',
-              backgroundColor: '#07080b',
+              backgroundColor: '#f8f7f4',
               aspectRatio: '1',
               marginBottom: '1.25rem',
-              border: '1px solid rgba(212, 175, 55, 0.25)',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+              border: '1px solid rgba(180, 140, 30, 0.25)',
+              boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)'
             }}>
               <img
                 src={product.images[activeImgIdx] || product.images[0]}
@@ -167,17 +176,17 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                   position: 'absolute',
                   bottom: '16px',
                   right: '16px',
-                  background: 'rgba(11, 12, 16, 0.92)',
+                  background: 'rgba(255, 255, 255, 0.95)',
                   border: '1px solid #d4af37',
                   padding: '0.5rem 0.8rem',
                   borderRadius: '4px',
                   fontSize: '0.72rem',
-                  color: '#f3e5ab',
+                  color: '#8a6709',
                   fontFamily: 'monospace',
                   letterSpacing: '0.15em',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.6)'
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
                 }}>
-                  <div style={{ fontSize: '0.6rem', color: '#94a3b8', textTransform: 'uppercase' }}>Laser Engraving Preview:</div>
+                  <div style={{ fontSize: '0.6rem', color: '#64748b', textTransform: 'uppercase' }}>Laser Engraving Preview:</div>
                   "{engravingText}"
                 </div>
               )}
@@ -195,8 +204,8 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                     borderRadius: '6px',
                     overflow: 'hidden',
                     cursor: 'pointer',
-                    border: activeImgIdx === idx ? '2px solid #d4af37' : '1px solid rgba(255,255,255,0.1)',
-                    backgroundColor: '#07080b',
+                    border: activeImgIdx === idx ? '2px solid #d4af37' : '1px solid rgba(0,0,0,0.1)',
+                    backgroundColor: '#f8f7f4',
                     transition: 'all 0.2s'
                   }}
                 >
@@ -210,25 +219,25 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
               gap: '1rem',
-              backgroundColor: '#12141c',
+              backgroundColor: '#f8f7f4',
               padding: '1.25rem',
               borderRadius: '6px',
-              border: '1px solid rgba(255,255,255,0.06)'
+              border: '1px solid rgba(0, 0, 0, 0.08)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
-                <Truck size={18} style={{ color: '#d4af37' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.75rem', color: '#334155' }}>
+                <Truck size={18} style={{ color: '#8a6709' }} />
                 <span>Pan-India BlueDart Air</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
-                <ShieldCheck size={18} style={{ color: '#d4af37' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.75rem', color: '#334155' }}>
+                <ShieldCheck size={18} style={{ color: '#8a6709' }} />
                 <span>5-Year Official Warranty</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
-                <RefreshCw size={18} style={{ color: '#d4af37' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.75rem', color: '#334155' }}>
+                <RefreshCw size={18} style={{ color: '#8a6709' }} />
                 <span>7-Day Easy Exchange</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
-                <Lock size={18} style={{ color: '#d4af37' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.75rem', color: '#334155' }}>
+                <Lock size={18} style={{ color: '#8a6709' }} />
                 <span>GST Compliant & Vault Card</span>
               </div>
             </div>
@@ -238,10 +247,10 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
           <div>
             <div style={{
               fontSize: '0.78rem',
-              color: '#d4af37',
+              color: '#8a6709',
               textTransform: 'uppercase',
               letterSpacing: '0.15em',
-              fontWeight: 600,
+              fontWeight: 700,
               marginBottom: '0.5rem'
             }}>
               {product.category} • SKU: {product.sku}
@@ -249,9 +258,10 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
 
             <h1 style={{
               fontSize: 'clamp(1.8rem, 3.2vw, 2.5rem)',
-              color: '#ffffff',
+              color: '#0f172a',
               lineHeight: 1.2,
-              marginBottom: '0.75rem'
+              marginBottom: '0.75rem',
+              fontWeight: 700
             }}>
               {product.name}
             </h1>
@@ -263,12 +273,12 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                   <Star key={i} size={16} fill="#d4af37" stroke="#d4af37" />
                 ))}
               </div>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f8fafc' }}>{product.rating} / 5.0</span>
-              <span style={{ color: 'rgba(255,255,255,0.2)' }}>•</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>{product.rating} / 5.0</span>
+              <span style={{ color: 'rgba(0,0,0,0.2)' }}>•</span>
               <a
                 href="#reviews-section"
                 onClick={() => setActiveTab('reviews')}
-                style={{ fontSize: '0.8rem', color: '#d4af37', textDecoration: 'none' }}
+                style={{ fontSize: '0.8rem', color: '#8a6709', textDecoration: 'none', fontWeight: 600 }}
               >
                 {product.reviewsCount} Verified Collector Reviews
               </a>
@@ -276,8 +286,8 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
 
             {/* Price Box */}
             <div style={{
-              backgroundColor: '#12151e',
-              border: '1px solid rgba(212, 175, 55, 0.3)',
+              backgroundColor: '#fbfbf9',
+              border: '1px solid rgba(180, 140, 30, 0.3)',
               padding: '1.25rem',
               borderRadius: '6px',
               marginBottom: '1.75rem'
@@ -286,7 +296,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                 <span style={{
                   fontSize: '2rem',
                   fontWeight: 700,
-                  color: '#f8fafc',
+                  color: '#0f172a',
                   fontFamily: 'var(--font-brand)'
                 }}>
                   {formatCurrency(product.price, currency)}
@@ -294,14 +304,14 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                 {product.comparePrice && (
                   <span style={{
                     fontSize: '1.1rem',
-                    color: '#64748b',
+                    color: '#94a3b8',
                     textDecoration: 'line-through'
                   }}>
                     {formatCurrency(product.comparePrice, currency)}
                   </span>
                 )}
               </div>
-              <p style={{ fontSize: '0.78rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <p style={{ fontSize: '0.78rem', color: '#059669', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 500 }}>
                 <Sparkles size={13} />
                 <span>Inclusive of all Swiss import duties, taxes, and bespoke laser engraving</span>
               </p>
@@ -310,10 +320,10 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
             {/* Product Narrative Intro */}
             <p style={{
               fontSize: '0.92rem',
-              color: '#94a3b8',
+              color: '#475569',
               lineHeight: 1.7,
               marginBottom: '1.75rem',
-              fontWeight: 300
+              fontWeight: 400
             }}>
               {product.description}
             </p>
@@ -321,8 +331,8 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
             {/* Dial / Color Finish Swatches */}
             {product.colors && product.colors.length > 0 && (
               <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.8rem', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.6rem' }}>
-                  Case & Dial Finish: <strong style={{ color: '#d4af37' }}>{selectedColor}</strong>
+                <div style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.6rem', fontWeight: 600 }}>
+                  Case & Dial Finish: <strong style={{ color: '#8a6709' }}>{selectedColor}</strong>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   {product.colors.map((c, i) => (
@@ -333,12 +343,13 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                         if (c.imageIndex !== undefined) setActiveImgIdx(c.imageIndex);
                       }}
                       style={{
-                        background: selectedColor === c.name ? 'rgba(212, 175, 55, 0.25)' : '#141720',
-                        border: selectedColor === c.name ? '1px solid #d4af37' : '1px solid rgba(255,255,255,0.1)',
-                        color: selectedColor === c.name ? '#f3e5ab' : '#94a3b8',
+                        background: selectedColor === c.name ? 'rgba(180, 140, 30, 0.12)' : '#ffffff',
+                        border: selectedColor === c.name ? '1px solid #d4af37' : '1px solid rgba(0,0,0,0.12)',
+                        color: selectedColor === c.name ? '#8a6709' : '#475569',
                         padding: '0.5rem 1rem',
                         borderRadius: '4px',
                         fontSize: '0.8rem',
+                        fontWeight: selectedColor === c.name ? 700 : 500,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -346,7 +357,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                         transition: 'all 0.2s'
                       }}
                     >
-                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: c.hex }} />
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: c.hex, border: '1px solid rgba(0,0,0,0.15)' }} />
                       <span>{c.name}</span>
                     </button>
                   ))}
@@ -357,8 +368,8 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
             {/* Strap Selection */}
             {product.straps && product.straps.length > 0 && (
               <div style={{ marginBottom: '1.75rem' }}>
-                <div style={{ fontSize: '0.8rem', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.6rem' }}>
-                  Supplied Horology Strap: <strong style={{ color: '#d4af37' }}>{selectedStrap}</strong>
+                <div style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.6rem', fontWeight: 600 }}>
+                  Supplied Horology Strap: <strong style={{ color: '#8a6709' }}>{selectedStrap}</strong>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   {product.straps.map((s, i) => (
@@ -366,12 +377,13 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                       key={i}
                       onClick={() => setSelectedStrap(s.name)}
                       style={{
-                        background: selectedStrap === s.name ? 'rgba(212, 175, 55, 0.25)' : '#141720',
-                        border: selectedStrap === s.name ? '1px solid #d4af37' : '1px solid rgba(255,255,255,0.1)',
-                        color: selectedStrap === s.name ? '#f3e5ab' : '#94a3b8',
+                        background: selectedStrap === s.name ? 'rgba(180, 140, 30, 0.12)' : '#ffffff',
+                        border: selectedStrap === s.name ? '1px solid #d4af37' : '1px solid rgba(0,0,0,0.12)',
+                        color: selectedStrap === s.name ? '#8a6709' : '#475569',
                         padding: '0.5rem 1rem',
                         borderRadius: '4px',
                         fontSize: '0.8rem',
+                        fontWeight: selectedStrap === s.name ? 700 : 500,
                         cursor: 'pointer',
                         transition: 'all 0.2s'
                       }}
@@ -383,22 +395,65 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
               </div>
             )}
 
+            {/* Flipkart-Style Bank Offers Section */}
+            <div style={{
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '6px',
+              padding: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#166534', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '0.5rem' }}>
+                <span>🏷️</span>
+                <span>AVAILABLE BANK & UPI OFFERS</span>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.74rem', color: '#15803d', lineHeight: 1.6 }}>
+                <li><strong>Bank Offer:</strong> 10% Instant Discount on HDFC, ICICI, SBI, Axis Credit/Debit Cards</li>
+                <li><strong>UPI Special:</strong> Extra ₹150 Instant Cashback with PhonePe, Google Pay, or Paytm</li>
+                <li><strong>Special Price:</strong> Get 10% off with promo coupon <code style={{ background: '#dcfce7', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>LUXE10</code></li>
+                <li><strong>Partner Offer:</strong> Sign up today & receive ₹500 welcome privileges on your next purchase</li>
+              </ul>
+            </div>
+
+            {/* Flipkart-Style Product Highlights */}
+            <div style={{
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              padding: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.6rem', letterSpacing: '0.04em' }}>
+                PRODUCT HIGHLIGHTS
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.74rem', color: '#334155' }}>
+                <div>• <strong>Brand:</strong> {product.brand}</div>
+                <div>• <strong>Model:</strong> {product.sku}</div>
+                <div>• <strong>Dial:</strong> {product.specs?.caseDiameter || '41 mm'} Round</div>
+                <div>• <strong>Strap:</strong> {product.specs?.strap || 'Stainless Steel'}</div>
+                <div>• <strong>Water Resistance:</strong> {product.specs?.waterResistance || '50 m'}</div>
+                <div>• <strong>Movement:</strong> {product.specs?.movement || 'Japanese Quartz'}</div>
+                <div>• <strong>Warranty:</strong> {product.specs?.warranty || '2 Years Official Warranty'}</div>
+                <div>• <strong>Assured:</strong> 100% Original Certified</div>
+              </div>
+            </div>
+
             {/* Caseback Engraving Customizer Card */}
             <div style={{
-              backgroundColor: '#121520',
-              border: '1px dashed rgba(212, 175, 55, 0.5)',
+              backgroundColor: '#fbfbf9',
+              border: '1px dashed rgba(180, 140, 30, 0.5)',
               padding: '1.25rem',
               borderRadius: '6px',
-              marginBottom: '2rem'
+              marginBottom: '1.5rem'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#f3e5ab', fontWeight: 600, fontSize: '0.85rem' }}>
-                  <Sparkles size={15} style={{ color: '#d4af37' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#0f172a', fontWeight: 700, fontSize: '0.85rem' }}>
+                  <Sparkles size={15} style={{ color: '#8a6709' }} />
                   <span>Bespoke Caseback Engraving Service</span>
                 </div>
                 <span className="badge-luxury badge-gold">COMPLIMENTARY</span>
               </div>
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.75rem' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.75rem' }}>
                 Personalize your Luxury Watch timepiece with initials, family crest motto, or memorable date.
               </p>
               <input
@@ -417,8 +472,8 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                backgroundColor: '#141720',
-                border: '1px solid rgba(255,255,255,0.15)',
+                backgroundColor: '#ffffff',
+                border: '1px solid rgba(0,0,0,0.15)',
                 borderRadius: '4px'
               }}>
                 <button
@@ -426,15 +481,16 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#fff',
+                    color: '#0f172a',
                     padding: '0.8rem 1.2rem',
                     cursor: 'pointer',
-                    fontSize: '1.1rem'
+                    fontSize: '1.1rem',
+                    fontWeight: 700
                   }}
                 >
                   -
                 </button>
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, padding: '0 0.5rem' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, padding: '0 0.5rem', color: '#0f172a' }}>
                   {quantity}
                 </span>
                 <button
@@ -442,10 +498,11 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#fff',
+                    color: '#0f172a',
                     padding: '0.8rem 1.2rem',
                     cursor: 'pointer',
-                    fontSize: '1.1rem'
+                    fontSize: '1.1rem',
+                    fontWeight: 700
                   }}
                 >
                   +
@@ -454,12 +511,13 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
 
               {/* Express VIP Buy Now (Gokwik / Instant Checkout) */}
               <button
+                type="button"
                 onClick={handleBuyNow}
                 className="btn-buy-now"
                 style={{ flex: 1, padding: '1rem' }}
               >
                 <Zap size={16} fill="#d4af37" stroke="#d4af37" />
-                <span style={{ fontSize: '0.9rem' }}>EXPRESS VIP BUY NOW</span>
+                <span style={{ fontSize: '0.9rem' }}>BUY NOW</span>
               </button>
             </div>
 
@@ -480,7 +538,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                 style={{ padding: '0.9rem 1.2rem' }}
                 title="Save in Vault"
               >
-                <Star size={16} fill={inWish ? '#d4af37' : 'none'} color={inWish ? '#d4af37' : '#fff'} />
+                <Star size={16} fill={inWish ? '#d4af37' : 'none'} color={inWish ? '#8a6709' : '#475569'} />
               </button>
             </div>
           </div>
@@ -488,9 +546,9 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
 
         {/* Tabbed In-Depth Specifications & Reviews Section */}
         <div id="reviews-section" style={{
-          backgroundColor: '#12141c',
+          backgroundColor: '#fbfbf9',
           borderRadius: '8px',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid rgba(0, 0, 0, 0.08)',
           padding: '2.5rem',
           marginBottom: '5rem'
         }}>
@@ -498,7 +556,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
           <div style={{
             display: 'flex',
             gap: '2rem',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            borderBottom: '1px solid rgba(0,0,0,0.08)',
             paddingBottom: '1rem',
             marginBottom: '2rem',
             overflowX: 'auto'
@@ -515,15 +573,15 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: activeTab === tab.id ? '#d4af37' : '#94a3b8',
+                  color: activeTab === tab.id ? '#8a6709' : '#64748b',
                   fontSize: '0.85rem',
                   fontFamily: 'var(--font-sans)',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
                   cursor: 'pointer',
                   paddingBottom: '0.5rem',
-                  borderBottom: activeTab === tab.id ? '2px solid #d4af37' : '2px solid transparent',
+                  borderBottom: activeTab === tab.id ? '2px solid #8a6709' : '2px solid transparent',
                   transition: 'all 0.2s',
                   whiteSpace: 'nowrap'
                 }}
@@ -536,7 +594,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
           {/* Tab 1: Technical Horology Specs */}
           {activeTab === 'specs' && (
             <div className="animate-fade-in">
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: '#ffffff' }}>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: '#0f172a', fontWeight: 700 }}>
                 Master Specifications Matrix
               </h3>
               <div style={{
@@ -548,22 +606,24 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                   <div
                     key={key}
                     style={{
-                      backgroundColor: '#161924',
+                      backgroundColor: '#ffffff',
                       padding: '1rem 1.25rem',
                       borderRadius: '4px',
-                      border: '1px solid rgba(255,255,255,0.05)'
+                      border: '1px solid rgba(0,0,0,0.08)',
+                      boxShadow: 'var(--shadow-sm)'
                     }}
                   >
                     <div style={{
                       fontSize: '0.72rem',
-                      color: '#d4af37',
+                      color: '#8a6709',
                       textTransform: 'uppercase',
                       letterSpacing: '0.1em',
-                      marginBottom: '0.3rem'
+                      marginBottom: '0.3rem',
+                      fontWeight: 700
                     }}>
                       {key.replace(/([A-Z])/g, ' $1').trim()}
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 500 }}>
+                    <div style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: 600 }}>
                       {value}
                     </div>
                   </div>
@@ -574,8 +634,8 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
 
           {/* Tab 2: Calibre & Craftsmanship */}
           {activeTab === 'story' && (
-            <div className="animate-fade-in" style={{ maxWidth: '850px', lineHeight: 1.8, color: '#cbd5e1' }}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: '#ffffff' }}>
+            <div className="animate-fade-in" style={{ maxWidth: '850px', lineHeight: 1.8, color: '#334155' }}>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: '#0f172a', fontWeight: 700 }}>
                 Hand-Assembled in Geneva, Designed in London Mayfair
               </h3>
               <p style={{ marginBottom: '1rem' }}>
@@ -589,8 +649,8 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
 
           {/* Tab 3: Warranty & Shipping */}
           {activeTab === 'warranty' && (
-            <div className="animate-fade-in" style={{ maxWidth: '850px', lineHeight: 1.8, color: '#cbd5e1' }}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: '#ffffff' }}>
+            <div className="animate-fade-in" style={{ maxWidth: '850px', lineHeight: 1.8, color: '#334155' }}>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: '#0f172a', fontWeight: 700 }}>
                 5-Year International Concierge Guarantee
               </h3>
               <p style={{ marginBottom: '1rem' }}>
@@ -614,10 +674,10 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                 gap: '1rem'
               }}>
                 <div>
-                  <h3 style={{ fontSize: '1.25rem', color: '#ffffff', marginBottom: '0.3rem' }}>
+                  <h3 style={{ fontSize: '1.25rem', color: '#0f172a', marginBottom: '0.3rem', fontWeight: 700 }}>
                     Collector Reviews & Testimonials
                   </h3>
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                  <p style={{ fontSize: '0.8rem', color: '#64748b' }}>
                     {productReviews.length} authenticated collector submissions for {product.name}
                   </p>
                 </div>
@@ -637,21 +697,22 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                 <form
                   onSubmit={handleSubmitReview}
                   style={{
-                    backgroundColor: '#161924',
-                    border: '1px solid rgba(212, 175, 55, 0.4)',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid rgba(180, 140, 30, 0.4)',
                     padding: '1.75rem',
                     borderRadius: '6px',
-                    marginBottom: '2.5rem'
+                    marginBottom: '2.5rem',
+                    boxShadow: 'var(--shadow-md)'
                   }}
                   className="animate-fade-in"
                 >
-                  <h4 style={{ fontSize: '1rem', color: '#f3e5ab', marginBottom: '1rem' }}>
+                  <h4 style={{ fontSize: '1rem', color: '#0f172a', marginBottom: '1rem', fontWeight: 700 }}>
                     Submit Your Horology Experience
                   </h4>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.75rem', color: '#cbd5e1', marginBottom: '0.3rem' }}>Your Name / Title *</label>
+                      <label style={{ display: 'block', fontSize: '0.75rem', color: '#475569', marginBottom: '0.3rem', fontWeight: 600 }}>Your Name / Title *</label>
                       <input
                         type="text"
                         required
@@ -663,7 +724,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.75rem', color: '#cbd5e1', marginBottom: '0.3rem' }}>City, Country</label>
+                      <label style={{ display: 'block', fontSize: '0.75rem', color: '#475569', marginBottom: '0.3rem', fontWeight: 600 }}>City, Country</label>
                       <input
                         type="text"
                         placeholder="e.g. Mayfair, London"
@@ -675,7 +736,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                   </div>
 
                   <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#cbd5e1', marginBottom: '0.3rem' }}>Rating</label>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#475569', marginBottom: '0.3rem', fontWeight: 600 }}>Rating</label>
                     <div style={{ display: 'flex', gap: '0.4rem' }}>
                       {[1, 2, 3, 4, 5].map(star => (
                         <button
@@ -686,7 +747,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            color: star <= newReviewRating ? '#d4af37' : '#475569'
+                            color: star <= newReviewRating ? '#d4af37' : '#cbd5e1'
                           }}
                         >
                           <Star size={20} fill={star <= newReviewRating ? '#d4af37' : 'none'} />
@@ -696,7 +757,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                   </div>
 
                   <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#cbd5e1', marginBottom: '0.3rem' }}>Review Headline</label>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#475569', marginBottom: '0.3rem', fontWeight: 600 }}>Review Headline</label>
                     <input
                       type="text"
                       placeholder="e.g. Pure horological perfection"
@@ -707,7 +768,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                   </div>
 
                   <div style={{ marginBottom: '1.25rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#cbd5e1', marginBottom: '0.3rem' }}>Your Review *</label>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#475569', marginBottom: '0.3rem', fontWeight: 600 }}>Your Review *</label>
                     <textarea
                       required
                       rows={4}
@@ -732,21 +793,22 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                     <div
                       key={rev.id}
                       style={{
-                        backgroundColor: '#161924',
+                        backgroundColor: '#ffffff',
                         padding: '1.5rem',
                         borderRadius: '6px',
-                        border: '1px solid rgba(255,255,255,0.06)'
+                        border: '1px solid rgba(0,0,0,0.08)',
+                        boxShadow: 'var(--shadow-sm)'
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                         <div>
-                          <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.9rem', marginRight: '0.6rem' }}>
+                          <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem', marginRight: '0.6rem' }}>
                             {rev.userName}
                           </span>
                           {rev.verified && (
                             <span style={{
                               fontSize: '0.68rem',
-                              color: '#10b981',
+                              color: '#059669',
                               backgroundColor: 'rgba(16, 185, 129, 0.12)',
                               padding: '2px 6px',
                               borderRadius: '2px',
@@ -767,17 +829,17 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                         ))}
                       </div>
 
-                      <h5 style={{ fontSize: '0.92rem', color: '#f3e5ab', marginBottom: '0.4rem', fontWeight: 600 }}>
+                      <h5 style={{ fontSize: '0.92rem', color: '#8a6709', marginBottom: '0.4rem', fontWeight: 700 }}>
                         {rev.title}
                       </h5>
 
-                      <p style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: 1.6 }}>
+                      <p style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.6 }}>
                         {rev.comment}
                       </p>
                     </div>
                   ))
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                     Be the first distinguished connoisseur to review this masterpiece.
                   </div>
                 )}
@@ -789,7 +851,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
         {/* Related Timepieces */}
         {relatedProducts.length > 0 && (
           <div>
-            <h3 style={{ fontSize: '1.5rem', color: '#ffffff', marginBottom: '1.5rem', textAlign: 'center' }}>
+            <h3 style={{ fontSize: '1.5rem', color: '#0f172a', marginBottom: '1.5rem', textAlign: 'center', fontWeight: 700 }}>
               YOU MAY ALSO ADMIRE
             </h3>
             <div style={{
@@ -806,20 +868,21 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                   }}
                   className="glass-card"
                   style={{
-                    backgroundColor: '#12141c',
+                    backgroundColor: '#ffffff',
                     padding: '1rem',
                     cursor: 'pointer',
-                    border: '1px solid rgba(255,255,255,0.08)'
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    boxShadow: 'var(--shadow-sm)'
                   }}
                 >
                   <img
                     src={rel.images[0]}
                     alt={rel.name}
-                    style={{ width: '100%', height: '220px', objectFit: 'cover', borderRadius: '4px', marginBottom: '0.75rem' }}
+                    style={{ width: '100%', height: '220px', objectFit: 'cover', borderRadius: '4px', marginBottom: '0.75rem', backgroundColor: '#f8f7f4' }}
                   />
-                  <div style={{ fontSize: '0.7rem', color: '#d4af37', textTransform: 'uppercase' }}>{rel.category}</div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#f8fafc', marginBottom: '0.4rem' }}>{rel.name}</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#f3e5ab', fontFamily: 'var(--font-brand)' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#8a6709', textTransform: 'uppercase', fontWeight: 600 }}>{rel.category}</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.4rem' }}>{rel.name}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', fontFamily: 'var(--font-brand)' }}>
                     {formatCurrency(rel.price, currency)}
                   </div>
                 </div>

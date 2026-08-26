@@ -1,24 +1,234 @@
 {
+  "brands": [
+    {
+      "id": "rolex",
+      "name": "Rolex",
+      "slug": "rolex",
+      "tagline": "A Crown for Every Achievement",
+      "origin": "Geneva, Switzerland",
+      "founded": "1905",
+      "hallmark": "Oyster Perpetual, Cosmograph Daytona & Submariner",
+      "color": "#006039",
+      "goldAccent": "#d4af37",
+      "displayOrder": 1,
+      "isFeatured": true,
+      "active": true
+    },
+    {
+      "id": "patek-philippe",
+      "name": "Patek Philippe",
+      "slug": "patek-philippe",
+      "tagline": "You never actually own a Patek Philippe",
+      "origin": "Geneva, Switzerland",
+      "founded": "1839",
+      "hallmark": "Nautilus, Aquanaut & Grand Complications",
+      "color": "#3d2b1f",
+      "goldAccent": "#d4af37",
+      "displayOrder": 2,
+      "isFeatured": true,
+      "active": true
+    },
+    {
+      "id": "audemars-piguet",
+      "name": "Audemars Piguet",
+      "slug": "audemars-piguet",
+      "tagline": "To Break the Rules, You Must First Master Them",
+      "origin": "Le Brassus, Switzerland",
+      "founded": "1875",
+      "hallmark": "Royal Oak & Royal Oak Offshore Tourbillon",
+      "color": "#1a2238",
+      "goldAccent": "#d4af37",
+      "displayOrder": 3,
+      "isFeatured": true,
+      "active": true
+    },
+    {
+      "id": "omega",
+      "name": "Omega",
+      "slug": "omega",
+      "tagline": "Precision at the Moon and Deepest Oceans",
+      "origin": "Biel/Bienne, Switzerland",
+      "founded": "1848",
+      "hallmark": "Speedmaster Moonwatch & Seamaster 300M",
+      "color": "#8b0000",
+      "goldAccent": "#d4af37",
+      "displayOrder": 4,
+      "isFeatured": true,
+      "active": true
+    },
+    {
+      "id": "cartier",
+      "name": "Cartier",
+      "slug": "cartier",
+      "tagline": "The Jeweller of Kings and King of Jewellers",
+      "origin": "Paris, France",
+      "founded": "1847",
+      "hallmark": "Santos de Cartier, Tank Must & Ballon Bleu",
+      "color": "#7b1113",
+      "goldAccent": "#d4af37",
+      "displayOrder": 5,
+      "isFeatured": true,
+      "active": true
+    },
+    {
+      "id": "tag-heuer",
+      "name": "TAG Heuer",
+      "slug": "tag-heuer",
+      "tagline": "Don't Crack Under Pressure",
+      "origin": "La Chaux-de-Fonds, Switzerland",
+      "founded": "1860",
+      "hallmark": "Carrera Chronograph & Monaco Calibre 11",
+      "color": "#0d3b66",
+      "goldAccent": "#d4af37",
+      "displayOrder": 6,
+      "isFeatured": true,
+      "active": true
+    },
+    {
+      "id": "tissot",
+      "name": "Tissot",
+      "slug": "tissot",
+      "tagline": "Innovators by Tradition",
+      "origin": "Le Locle, Switzerland",
+      "founded": "1853",
+      "hallmark": "PRX Powermatic 80 & Seastar 2000",
+      "color": "#264653",
+      "goldAccent": "#d4af37",
+      "displayOrder": 7,
+      "isFeatured": true,
+      "active": true
+    },
+    {
+      "id": "breitling",
+      "name": "Breitling",
+      "slug": "breitling",
+      "tagline": "Instruments for Professionals",
+      "origin": "Saint-Imier, Switzerland",
+      "founded": "1884",
+      "hallmark": "Navitimer B01 Chronograph & Superocean",
+      "color": "#2b2d42",
+      "goldAccent": "#d4af37",
+      "displayOrder": 8,
+      "isFeatured": true,
+      "active": true
+    },
+    {
+      "id": "seiko",
+      "name": "Seiko",
+      "slug": "seiko",
+      "tagline": "Always One Step Ahead of the Rest",
+      "origin": "Tokyo, Japan",
+      "founded": "1881",
+      "hallmark": "Prospex Diver & Presage Cocktail Time",
+      "color": "#1a365d",
+      "goldAccent": "#d4af37",
+      "displayOrder": 9,
+      "isFeatured": true,
+      "active": true
+    },
+    {
+      "id": "casio",
+      "name": "Casio",
+      "slug": "casio",
+      "tagline": "Edifice & G-Shock Steel Engineering",
+      "origin": "Tokyo, Japan",
+      "founded": "1946",
+      "hallmark": "Edifice Chronograph & G-Shock Full Metal 2100",
+      "color": "#1e293b",
+      "goldAccent": "#d4af37",
+      "displayOrder": 10,
+      "isFeatured": true,
+      "active": true
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-all",
+      "name": "All Masterpieces",
+      "slug": "all",
+      "displayOrder": 1,
+      "active": true
+    },
+    {
+      "id": "cat-men",
+      "name": "Men's Watches",
+      "slug": "men",
+      "displayOrder": 2,
+      "active": true
+    },
+    {
+      "id": "cat-women",
+      "name": "Women's Watches",
+      "slug": "women",
+      "displayOrder": 3,
+      "active": true
+    },
+    {
+      "id": "cat-luxury",
+      "name": "Luxury Watches",
+      "slug": "luxury",
+      "displayOrder": 4,
+      "active": true
+    },
+    {
+      "id": "cat-chrono",
+      "name": "Chronographs",
+      "slug": "chronographs",
+      "displayOrder": 5,
+      "active": true
+    },
+    {
+      "id": "cat-skeletons",
+      "name": "Skeleton Automatics",
+      "slug": "skeletons",
+      "displayOrder": 6,
+      "active": true
+    },
+    {
+      "id": "cat-diamond",
+      "name": "Diamond Editions",
+      "slug": "diamond-editions",
+      "displayOrder": 7,
+      "active": true
+    },
+    {
+      "id": "cat-dive",
+      "name": "Dive & Sport",
+      "slug": "dive-sport",
+      "displayOrder": 8,
+      "active": true
+    },
+    {
+      "id": "cat-automatic",
+      "name": "Automatic Calibres",
+      "slug": "automatic",
+      "displayOrder": 9,
+      "active": true
+    }
+  ],
   "products": [
     {
       "id": "rolex-submariner-01",
+      "slug": "rolex-submariner-date-41mm",
       "name": "Rolex Submariner Date 41mm",
       "subtitle": "Cerachrom Green Bezel | Oystersteel 904L & Black Sunburst",
       "brand": "Rolex",
       "category": "Dive & Sport",
+      "gender": "Men",
       "price": 5499,
       "comparePrice": 6499,
       "sku": "ROL-SUB-41-GRN",
-      "stock": 14,
-      "rating": 4.9,
-      "reviewsCount": 128,
+      "modelNumber": "126610LV",
+      "stock": 11,
+      "rating": 5,
+      "reviewsCount": 2,
       "isLimited": true,
       "isBestSeller": true,
-      "isNew": false,
+      "isNewArrival": false,
       "images": [
         "/images/watches/rolex_submariner.jpg"
       ],
-      "description": "The quintessential diving watch. Featuring Rolex's legendary 904L Oystersteel architecture, unidirectional Cerachrom emerald green bezel, date window with Cyclops magnifier, and Chromalight luminescent display. Engineered for underwater exploration and black-tie elegance.",
+      "description": "The quintessential diving watch. Featuring Rolex's legendary 904L Oystersteel architecture, unidirectional Cerachrom emerald green bezel, date window with Cyclops magnifier, and Chromalight luminescent display.",
       "specs": {
         "movement": "Perpetual Automatic Calibre 3235 (Superlative Chronometer)",
         "powerReserve": "70 Hours",
@@ -29,7 +239,8 @@
         "caseback": "Solid Screw-Down Hermetic Caseback",
         "waterResistance": "300 Meters / 1,000 Feet",
         "strap": "Oystersteel 3-Piece Solid Link Bracelet",
-        "clasp": "Folding Oysterlock Safety Clasp with Rolex Glidelock Extension"
+        "clasp": "Folding Oysterlock Safety Clasp with Rolex Glidelock Extension",
+        "origin": "Geneva, Switzerland"
       },
       "colors": [
         {
@@ -48,27 +259,34 @@
           "id": "oysterflex"
         }
       ],
-      "badge": "Official Rolex Icon"
+      "badge": "Official Rolex Icon",
+      "badgeType": "gold",
+      "returnEligible": true,
+      "active": true,
+      "updatedAt": "2026-08-26T18:52:33.433Z"
     },
     {
       "id": "omega-speedmaster-02",
+      "slug": "omega-speedmaster-moonwatch-professional",
       "name": "Omega Speedmaster Moonwatch Professional",
       "subtitle": "Co-Axial Master Chronometer | Matte Black Step Dial & Tachymeter",
       "brand": "Omega",
       "category": "Chronographs",
+      "gender": "Men",
       "price": 5299,
       "comparePrice": 6199,
       "sku": "OMG-SPD-42-MOON",
+      "modelNumber": "310.30.42.50.01.002",
       "stock": 10,
       "rating": 5,
       "reviewsCount": 94,
       "isLimited": false,
       "isBestSeller": true,
-      "isNew": false,
+      "isNewArrival": false,
       "images": [
         "/images/watches/omega_speedmaster.jpg"
       ],
-      "description": "The legendary timepiece that went to the Moon on Apollo 11. Powered by the Master Chronometer-certified Calibre 3861 manual-wind movement, featuring the iconic dot over ninety on the black anodised aluminium bezel ring.",
+      "description": "The legendary timepiece that went to the Moon on Apollo 11. Powered by the Master Chronometer-certified Calibre 3861 manual-wind movement, featuring the iconic dot over ninety on the bezel.",
       "specs": {
         "movement": "Omega Co-Axial Master Chronometer Calibre 3861 (15,000 Gauss)",
         "powerReserve": "50 Hours",
@@ -79,7 +297,8 @@
         "caseback": "Sapphire Crystal Exhibition Caseback with Seahorse Medallion",
         "waterResistance": "50 Meters / 5 ATM",
         "strap": "Brushed 5-Arched-Links Stainless Steel Bracelet",
-        "clasp": "Comfort-Setting Foldover Clasp with Engraved Omega Logo"
+        "clasp": "Comfort-Setting Foldover Clasp with Engraved Omega Logo",
+        "origin": "Biel, Switzerland"
       },
       "colors": [
         {
@@ -98,494 +317,344 @@
           "id": "velcro"
         }
       ],
-      "badge": "Moonwatch Icon"
+      "badge": "Moonwatch Icon",
+      "badgeType": "gold",
+      "returnEligible": true,
+      "active": true
     },
     {
       "id": "patek-nautilus-03",
+      "slug": "patek-philippe-nautilus-5711",
       "name": "Patek Philippe Nautilus 5711/1A",
       "subtitle": "Horizontally Embossed Blue Sunburst Dial | Integrated Steel",
       "brand": "Patek Philippe",
       "category": "Skeletons",
+      "gender": "Men",
       "price": 5999,
       "comparePrice": 7299,
       "sku": "PP-NAU-5711-BLU",
+      "modelNumber": "5711/1A-010",
       "stock": 5,
       "rating": 5,
       "reviewsCount": 162,
       "isLimited": true,
       "isBestSeller": true,
-      "isNew": true,
+      "isNewArrival": true,
       "images": [
         "/images/watches/patek_nautilus.jpg"
       ],
-      "description": "The holy grail of luxury sports watches, originally designed by Gérald Genta in 1976. Rounded octagonal porthole bezel, horizontally embossed blue-black gradated dial, and exquisitely satin-brushed integrated bracelet.",
+      "description": "The pinnacle of luxury sports horology. Gérald Genta's iconic rounded octagonal bezel with porthole case construction and mesmerizing blue sunburst dial.",
       "specs": {
-        "movement": "Self-Winding Mechanical Calibre 26-330 S C (Geneva Seal)",
-        "powerReserve": "45 Hours (21K Gold Central Rotor)",
+        "movement": "Self-Winding Mechanical Calibre 26-330 S C with 21K Gold Rotor",
+        "powerReserve": "45 Hours",
         "caseDiameter": "40 mm",
-        "caseThickness": "8.3 mm (Ultra-Thin Profile)",
-        "caseMaterial": "Hand-Finished Surgical Grade Stainless Steel",
-        "crystal": "Beveled Anti-Reflective Sapphire Crystal",
-        "caseback": "Sapphire-Crystal Exhibition Caseback",
+        "caseThickness": "8.3 mm",
+        "caseMaterial": "Surgical Grade Hand-Finished Stainless Steel",
+        "crystal": "Scratch-Resistant Sapphire Crystal",
+        "caseback": "Sapphire Crystal Exhibition Caseback",
         "waterResistance": "120 Meters / 12 ATM",
-        "strap": "Integrated Steel Nautilus Bracelet with Polished Center Links",
-        "clasp": "Nautilus Fold-Over Clasp with Safety Catch"
+        "strap": "Integrated Hand-Polished Stainless Steel Bracelet",
+        "clasp": "Nautilus Fold-Over Clasp with Safety Catch",
+        "origin": "Geneva, Switzerland"
       },
       "colors": [
         {
-          "name": "Blue Sunburst Dégradé",
+          "name": "Ocean Sunburst Blue",
+          "hex": "#1d4ed8",
+          "imageIndex": 0
+        }
+      ],
+      "straps": [
+        {
+          "name": "Integrated Steel Bracelet",
+          "id": "steel-nautilus"
+        }
+      ],
+      "badge": "Geneva Seal Hallmarked",
+      "badgeType": "gold",
+      "returnEligible": true,
+      "active": true
+    },
+    {
+      "id": "ap-royal-oak-04",
+      "slug": "audemars-piguet-royal-oak-jumbo-extra-thin",
+      "name": "Audemars Piguet Royal Oak Jumbo Extra-Thin",
+      "subtitle": "Bleu Nuit Petite Tapisserie Dial | Hexagonal White Gold Screws",
+      "brand": "Audemars Piguet",
+      "category": "Luxury",
+      "gender": "Men",
+      "price": 5899,
+      "comparePrice": 6999,
+      "sku": "AP-RO-16202ST",
+      "modelNumber": "16202ST.OO.1240ST.01",
+      "stock": 6,
+      "rating": 4.9,
+      "reviewsCount": 110,
+      "isLimited": true,
+      "isBestSeller": true,
+      "isNewArrival": false,
+      "images": [
+        "/images/watches/ap_royaloak.jpg"
+      ],
+      "description": "Audemars Piguet's definitive icon. Featuring the hand-guilloché 'Petite Tapisserie' dial, octagonal bezel secured by 8 polished hexagonal white gold screws, and Calibre 7121.",
+      "specs": {
+        "movement": "Extra-Thin Automatic Calibre 7121 (28,800 vph)",
+        "powerReserve": "55 Hours",
+        "caseDiameter": "39 mm",
+        "caseThickness": "8.1 mm",
+        "caseMaterial": "Hand-Satin Brushed Stainless Steel",
+        "crystal": "Glareproofed Sapphire Crystal and Caseback",
+        "caseback": "Sapphire Exhibition Display",
+        "waterResistance": "50 Meters / 5 ATM",
+        "strap": "Integrated AP Stainless Steel Bracelet",
+        "clasp": "AP Folding Clasp in Stainless Steel",
+        "origin": "Le Brassus, Switzerland"
+      },
+      "colors": [
+        {
+          "name": "Bleu Nuit Nuage 50",
           "hex": "#1e3a8a",
           "imageIndex": 0
         }
       ],
       "straps": [
         {
-          "name": "Integrated Steel Bracelet",
-          "id": "nautilus-steel"
-        }
-      ],
-      "badge": "Haute Horlogerie"
-    },
-    {
-      "id": "ap-royaloak-04",
-      "name": "Audemars Piguet Royal Oak 'Jumbo' 41mm",
-      "subtitle": "Grande Tapisserie Blue Dial | 8 Hexagonal Screws Bezel",
-      "brand": "Audemars Piguet",
-      "category": "Skeletons",
-      "price": 5899,
-      "comparePrice": 6999,
-      "sku": "AP-RO-41-TAP",
-      "stock": 6,
-      "rating": 4.9,
-      "reviewsCount": 88,
-      "isLimited": true,
-      "isBestSeller": true,
-      "isNew": false,
-      "images": [
-        "/images/watches/audemars_royal_oak.jpg"
-      ],
-      "description": "An icon that revolutionized luxury watchmaking. Featuring the unmistakable octagonal bezel secured by 8 polished white gold hexagonal screws, Bleu Nuit Nuage 50 Grande Tapisserie guilloché dial, and integrated bracelet.",
-      "specs": {
-        "movement": "Manufacture Calibre 4302 Self-Winding Automatic",
-        "powerReserve": "70 Hours",
-        "caseDiameter": "41 mm",
-        "caseThickness": "10.5 mm",
-        "caseMaterial": "Stainless Steel with Hand-Beveled Satin Finish",
-        "crystal": "Glareproofed Sapphire Crystal and Caseback",
-        "caseback": "See-Through Sapphire with 22K Pink Gold Oscillating Weight",
-        "waterResistance": "50 Meters / 5 ATM",
-        "strap": "Stainless Steel Bracelet with AP Folding Clasp",
-        "clasp": "AP Double-Blade Concealed Butterfly Clasp"
-      },
-      "colors": [
-        {
-          "name": "Bleu Nuit Tapisserie",
-          "hex": "#1e293b",
-          "imageIndex": 0
-        }
-      ],
-      "straps": [
-        {
           "name": "Royal Oak Steel Bracelet",
-          "id": "ap-steel"
+          "id": "ro-steel"
         }
       ],
-      "badge": "Royal Oak Icon"
+      "badge": "Horology Masterpiece",
+      "badgeType": "gold",
+      "returnEligible": true,
+      "active": true
     },
     {
       "id": "cartier-santos-05",
-      "name": "Cartier Santos de Cartier Large",
-      "subtitle": "Silver Opaline Roman Dial | Blued Steel Hands & Exposed Screws",
+      "slug": "cartier-santos-de-cartier-large",
+      "name": "Cartier Santos de Cartier Large Model",
+      "subtitle": "QuickSwitch & SmartLink Interchangeable Bracelet | Roman Numerals",
       "brand": "Cartier",
-      "category": "Diamond Editions",
-      "price": 4899,
-      "comparePrice": 5799,
-      "sku": "CAR-SAN-LM-STL",
-      "stock": 12,
-      "rating": 4.9,
-      "reviewsCount": 76,
+      "category": "Women's Collection",
+      "gender": "Unisex",
+      "price": 4999,
+      "comparePrice": 5899,
+      "sku": "CAR-SAN-WSSA0018",
+      "modelNumber": "WSSA0018",
+      "stock": 8,
+      "rating": 4.8,
+      "reviewsCount": 85,
       "isLimited": false,
-      "isBestSeller": true,
-      "isNew": false,
+      "isBestSeller": false,
+      "isNewArrival": true,
       "images": [
         "/images/watches/cartier_santos.jpg"
       ],
-      "description": "Created in 1904 for pioneer aviator Alberto Santos-Dumont, the Santos is the world's first modern wristwatch. Distinctive square case with rounded corners, exposed screws on bezel and bracelet, and seven-sided crown set with a faceted blue synthetic spinel.",
+      "description": "The world's first modern wristwatch, originally designed by Louis Cartier in 1904 for aviator Alberto Santos-Dumont. Features blued-steel sword-shaped hands and 7-sided crown set with a faceted synthetic spinel.",
       "specs": {
-        "movement": "Automatic Mechanical Calibre 1847 MC",
-        "powerReserve": "42 Hours (Anti-Magnetic to 1,200 Gauss)",
-        "caseDiameter": "39.8 mm (Large Model)",
+        "movement": "Automatic Calibre 1847 MC Manufacture",
+        "powerReserve": "42 Hours",
+        "caseDiameter": "39.8 mm",
         "caseThickness": "9.38 mm",
-        "caseMaterial": "316L Stainless Steel with Polished Bezel",
-        "crystal": "Curved Sapphire Crystal with Anti-Scratch Finish",
-        "caseback": "Solid Steel Caseback with Engraved Santos de Cartier Monogram",
+        "caseMaterial": "316L Polished & Brushed Steel",
+        "crystal": "Domed Scratchproof Sapphire Crystal",
+        "caseback": "Solid Screwed Caseback with Santos Engraving",
         "waterResistance": "100 Meters / 10 ATM",
-        "strap": "Steel Bracelet with 'SmartLink' Resizing & 'QuickSwitch' Interchangeability",
-        "clasp": "Double Adjustable Folding Buckle"
+        "strap": "Steel Bracelet with 'SmartLink' Resizing System",
+        "clasp": "Double Adjustable Folding Buckle",
+        "origin": "La Chaux-de-Fonds, Switzerland"
       },
       "colors": [
         {
-          "name": "Silver Opaline & Blued Steel",
-          "hex": "#e2e8f0",
+          "name": "Opaline Silver Roman Dial",
+          "hex": "#f1f5f9",
           "imageIndex": 0
         }
       ],
       "straps": [
         {
           "name": "SmartLink Steel Bracelet",
-          "id": "santos-steel"
+          "id": "cartier-steel"
         },
         {
-          "name": "Calfskin Leather Strap",
-          "id": "santos-leather"
+          "name": "QuickSwitch Calfskin Leather",
+          "id": "cartier-leather"
         }
       ],
-      "badge": "Cartier Maison"
+      "badge": "Aviation Pioneer Icon",
+      "badgeType": "gold",
+      "returnEligible": true,
+      "active": true
     },
     {
-      "id": "tag-monaco-06",
-      "name": "TAG Heuer Monaco Calibre 11",
-      "subtitle": "Steve McQueen Edition | Metallic Blue Square Dial & Chronograph",
+      "id": "tag-carrera-06",
+      "slug": "tag-heuer-carrera-chronograph-glassbox",
+      "name": "TAG Heuer Carrera Chronograph Glassbox 39mm",
+      "subtitle": "Reverse Panda Dial | Calibre TH20-00 Automatic Chronometer",
       "brand": "TAG Heuer",
       "category": "Chronographs",
+      "gender": "Men",
       "price": 4799,
       "comparePrice": 5599,
-      "sku": "TAG-MON-39-BLU",
-      "stock": 8,
-      "rating": 4.8,
-      "reviewsCount": 65,
-      "isLimited": true,
+      "sku": "TAG-CAR-CBS2210",
+      "modelNumber": "CBS2210.FC6534",
+      "stock": 9,
+      "rating": 4.9,
+      "reviewsCount": 76,
+      "isLimited": false,
       "isBestSeller": false,
-      "isNew": true,
+      "isNewArrival": true,
       "images": [
-        "/images/watches/tag_heuer_monaco.jpg"
+        "/images/watches/tag_carrera.jpg"
       ],
-      "description": "The timeless racing chronograph made legendary by Steve McQueen in the 1971 motorsport classic 'Le Mans'. Famous left-sided crown, square 39mm case, striking metallic blue dial, and horizontal faceted hour markers.",
+      "description": "Celebrating 60 years of racing glory. The signature 'Glassbox' domed sapphire crystal curves fluidly over the tachymeter scale printed on the outer ring of the dial.",
       "specs": {
-        "movement": "Automatic Chronograph Calibre 11 (28,800 vph)",
-        "powerReserve": "40 Hours",
-        "caseDiameter": "39 mm x 39 mm Square",
-        "caseThickness": "14.3 mm",
+        "movement": "In-House Calibre TH20-00 Automatic Chronograph",
+        "powerReserve": "80 Hours",
+        "caseDiameter": "39 mm",
+        "caseThickness": "13.8 mm",
         "caseMaterial": "Fine-Brushed & Polished Stainless Steel",
-        "crystal": "Beveled Domed Sapphire Crystal",
-        "caseback": "Sapphire Crystal Exhibition Back with Engraved Calibre 11",
+        "crystal": "Domed Glassbox Sapphire Crystal with Double Anti-Reflective Treatment",
+        "caseback": "Screw-Down Sapphire Exhibition Caseback",
         "waterResistance": "100 Meters / 10 ATM",
-        "strap": "Black Perforated Racing Calfskin Leather",
-        "clasp": "Steel Folding Clasp with Double Safety Push-Buttons"
+        "strap": "Perforated Black Calfskin Racing Leather",
+        "clasp": "Steel Folding Clasp with Double Safety Push-Buttons",
+        "origin": "La Chaux-de-Fonds, Switzerland"
       },
       "colors": [
         {
-          "name": "Racing Petroleum Blue",
-          "hex": "#0369a1",
+          "name": "Reverse Panda Black & Silver",
+          "hex": "#0f172a",
           "imageIndex": 0
         }
       ],
       "straps": [
         {
           "name": "Perforated Racing Leather",
-          "id": "monaco-rally"
+          "id": "racing-leather"
         },
         {
-          "name": "Steel Mesh Bracelet",
-          "id": "monaco-steel"
+          "name": "Stainless Steel H-Link",
+          "id": "tag-hlink"
         }
       ],
-      "badge": "Motorsport Legend"
+      "badge": "Motorsport Heritage",
+      "badgeType": "gold",
+      "returnEligible": true,
+      "active": true
     },
     {
-      "id": "breitling-navitimer-07",
-      "name": "Breitling Navitimer B01 Chronograph 43",
-      "subtitle": "Circular Aviation Slide Rule | Manufacture Calibre 01",
-      "brand": "Breitling",
-      "category": "Chronographs",
-      "price": 4999,
-      "comparePrice": 5899,
-      "sku": "BRT-NAV-43-B01",
-      "stock": 7,
-      "rating": 4.9,
-      "reviewsCount": 53,
+      "id": "tissot-prx-07",
+      "slug": "tissot-prx-powermatic-80-ice-blue",
+      "name": "Tissot PRX Powermatic 80 Ice Blue 40mm",
+      "subtitle": "Waffle Texture Ice Blue Dial | Nivachron Anti-Magnetic Hairspring",
+      "brand": "Tissot",
+      "category": "Automatic",
+      "gender": "Men",
+      "price": 3899,
+      "comparePrice": 4699,
+      "sku": "TIS-PRX-T137407",
+      "modelNumber": "T137.407.11.351.00",
+      "stock": 15,
+      "rating": 4.8,
+      "reviewsCount": 142,
       "isLimited": false,
       "isBestSeller": true,
-      "isNew": false,
+      "isNewArrival": false,
+      "images": [
+        "/images/watches/tissot_prx.jpg"
+      ],
+      "description": "The retro icon reborn. Featuring a tonneau-shaped 1978 case design, captivating ice blue waffle dial, integrated satin-finished bracelet, and an astounding 80-hour power reserve.",
+      "specs": {
+        "movement": "Swiss Powermatic 80.111 Calibre with Nivachron Balance Spring",
+        "powerReserve": "80 Hours",
+        "caseDiameter": "40 mm",
+        "caseThickness": "10.9 mm",
+        "caseMaterial": "316L Stainless Steel",
+        "crystal": "Scratch-Resistant Sapphire Crystal with Anti-Reflective Coating",
+        "caseback": "See-Through Mineral Exhibition Caseback",
+        "waterResistance": "100 Meters / 10 ATM",
+        "strap": "Integrated 316L Stainless Steel Single-Link",
+        "clasp": "Butterfly Clasp with Push-Buttons",
+        "origin": "Le Locle, Switzerland"
+      },
+      "colors": [
+        {
+          "name": "Glacier Ice Blue",
+          "hex": "#bae6fd",
+          "imageIndex": 0
+        }
+      ],
+      "straps": [
+        {
+          "name": "PRX Integrated Steel",
+          "id": "prx-steel"
+        },
+        {
+          "name": "Navy Blue Textured Rubber",
+          "id": "prx-rubber"
+        }
+      ],
+      "badge": "80-Hour Power Reserve",
+      "badgeType": "gold",
+      "returnEligible": true,
+      "active": true
+    },
+    {
+      "id": "breitling-navitimer-08",
+      "slug": "breitling-navitimer-b01-chronograph-43",
+      "name": "Breitling Navitimer B01 Chronograph 43",
+      "subtitle": "Circular Aviation Slide Rule | In-House Breitling 01 Chronometer",
+      "brand": "Breitling",
+      "category": "Chronographs",
+      "gender": "Men",
+      "price": 5399,
+      "comparePrice": 6299,
+      "sku": "BRT-NAV-AB0138",
+      "modelNumber": "AB0138241G1P1",
+      "stock": 7,
+      "rating": 5,
+      "reviewsCount": 68,
+      "isLimited": false,
+      "isBestSeller": false,
+      "isNewArrival": true,
       "images": [
         "/images/watches/breitling_navitimer.jpg"
       ],
-      "description": "The world's most iconic pilot's chronograph since 1952. Equipped with the legendary circular slide rule for calculating flight plans, contrasting panda subdials, red chronograph second hand, and manufacture B01 movement.",
+      "description": "Breitling's legend. Favoured by pilots and aeronautical icons since 1952, the Navitimer combines a circular slide rule, baton indexes, and trio of chronograph counters.",
       "specs": {
         "movement": "Breitling Manufacture Calibre 01 (COSC Certified Chronometer)",
         "powerReserve": "70 Hours",
         "caseDiameter": "43 mm",
         "caseThickness": "13.6 mm",
         "caseMaterial": "Stainless Steel with Bidirectional Slide Rule Bezel",
-        "crystal": "Cambered Sapphire Glareproofed on Both Sides",
-        "caseback": "Screwed-in Sapphire Crystal Exhibition Caseback",
+        "crystal": "Cambered Sapphire Glareproofed Both Sides",
+        "caseback": "Exhibition Screwed Sapphire Display",
         "waterResistance": "30 Meters / 3 ATM",
-        "strap": "7-Row Stainless Steel Navitimer Bracelet",
-        "clasp": "Steel Folding Buckle"
+        "strap": "Semi-Matte Black Alligator Leather with Contrast White Stitching",
+        "clasp": "Stainless Steel Folding Pin Buckle",
+        "origin": "Grenchen, Switzerland"
       },
       "colors": [
         {
-          "name": "Panda Reverse Black",
-          "hex": "#111827",
+          "name": "Silver & Black Subdials",
+          "hex": "#e2e8f0",
           "imageIndex": 0
         }
       ],
       "straps": [
-        {
-          "name": "7-Row Navitimer Steel",
-          "id": "nav-steel"
-        },
         {
           "name": "Black Alligator Leather",
-          "id": "nav-leather"
-        }
-      ],
-      "badge": "Aviation Classic"
-    },
-    {
-      "id": "tissot-prx-08",
-      "name": "Tissot PRX Powermatic 80",
-      "subtitle": "Ice Blue Waffle Dial | 80-Hour Reserve Nivachron Balance",
-      "brand": "Tissot",
-      "category": "Automatics",
-      "price": 4499,
-      "comparePrice": 4999,
-      "sku": "TIS-PRX-40-ICE",
-      "stock": 18,
-      "rating": 4.9,
-      "reviewsCount": 142,
-      "isLimited": false,
-      "isBestSeller": true,
-      "isNew": true,
-      "images": [
-        "/images/watches/tissot_prx.jpg"
-      ],
-      "description": "The retro 1978 design sensation with modern horology technology. Integrated tonneau case with an ice blue embossed waffle dial, anti-magnetic Nivachron balance spring, and an astounding 80-hour power reserve.",
-      "specs": {
-        "movement": "Powermatic 80.111 Automatic (Nivachron Balance Spring)",
-        "powerReserve": "80 Hours",
-        "caseDiameter": "40 mm",
-        "caseThickness": "10.9 mm",
-        "caseMaterial": "316L Stainless Steel with Satin Finish",
-        "crystal": "Scratch-Resistant Sapphire Crystal",
-        "caseback": "Transparent Exhibition Mineral Glass Caseback",
-        "waterResistance": "100 Meters / 10 ATM",
-        "strap": "Integrated Single-Link Stainless Steel Bracelet",
-        "clasp": "Butterfly Clasp with Push-Buttons"
-      },
-      "colors": [
-        {
-          "name": "Glacier Ice Blue",
-          "hex": "#7dd3fc",
-          "imageIndex": 0
-        }
-      ],
-      "straps": [
-        {
-          "name": "Integrated Steel Bracelet",
-          "id": "prx-steel"
-        },
-        {
-          "name": "Textured Rubber Blue",
-          "id": "prx-rubber"
-        }
-      ],
-      "badge": "80h Power Reserve"
-    },
-    {
-      "id": "patek-tourbillon-09",
-      "name": "Patek Philippe Grand Complications Skeleton",
-      "subtitle": "Openworked Flying Tourbillon | 18K Rose Gold & Titanium Architecture",
-      "brand": "Patek Philippe",
-      "category": "Skeletons",
-      "price": 6499,
-      "comparePrice": 7999,
-      "sku": "PP-TRB-44-SKL",
-      "stock": 3,
-      "rating": 5,
-      "reviewsCount": 31,
-      "isLimited": true,
-      "isBestSeller": false,
-      "isNew": true,
-      "images": [
-        "/images/watches/patek_tourbillon.jpg"
-      ],
-      "description": "The ultimate pinnacle of mechanical micro-engineering. Openworked architectural bridges revealing hand-chamfered golden gears and a gravity-defying 60-second flying tourbillon cage at 6 o'clock.",
-      "specs": {
-        "movement": "Grand Complication Flying Tourbillon Calibre AK-900T",
-        "powerReserve": "72 Hours (Twin Barrels)",
-        "caseDiameter": "44 mm",
-        "caseThickness": "11.6 mm",
-        "caseMaterial": "18K Rose Gold & Grade 5 Titanium",
-        "crystal": "Double-Domed 7-Layer Anti-Reflective Sapphire",
-        "caseback": "Full Exhibition Skeleton Sapphire Caseback",
-        "waterResistance": "50 Meters / 5 ATM",
-        "strap": "Hand-Stitched Matte Black Alligator Leather",
-        "clasp": "Rose Gold Deployment Clasp with Calatrava Cross Emblem"
-      },
-      "colors": [
-        {
-          "name": "Rose Gold & Titanium Skeleton",
-          "hex": "#d4af37",
-          "imageIndex": 0
-        }
-      ],
-      "straps": [
-        {
-          "name": "Alligator Leather",
           "id": "alligator-black"
         },
         {
-          "name": "Titanium Bracelet",
-          "id": "ti-bracelet"
+          "name": "7-Row Navitimer Steel Bracelet",
+          "id": "navitimer-steel"
         }
       ],
-      "badge": "Flying Tourbillon"
-    }
-  ],
-  "orders": [
-    {
-      "customer": {
-        "fullName": "Rohan Singhania",
-        "email": "rohan.singhania@gmail.com",
-        "phone": "+91 98201 54321",
-        "address": "A-402, Imperial Towers, Altamount Road",
-        "city": "Mumbai",
-        "postalCode": "400026",
-        "country": "India"
-      },
-      "items": [
-        {
-          "id": "patek-nautilus-03",
-          "name": "Patek Philippe Nautilus 5711/1A",
-          "price": 5999,
-          "quantity": 1,
-          "color": "Blue Sunburst Dégradé",
-          "strap": "Integrated Steel Bracelet",
-          "engraving": "",
-          "image": "/images/watches/patek_nautilus.jpg"
-        }
-      ],
-      "subtotal": 5999,
-      "discountAmount": 0,
-      "couponApplied": null,
-      "shippingCost": 0,
-      "shippingSpeed": "BlueDart Insured Air Express (Pan-India 24-48 Hours)",
-      "total": 5999,
-      "paymentMethod": "UPI Instant (singhania.rohan@okhdfcbank)",
-      "notes": "Direct hand delivery with OTP verification",
-      "id": "ORD-AK-76175",
-      "date": "2026-08-24T20:07:56.021Z",
-      "orderStatus": "Confirmed",
-      "paymentStatus": "Paid",
-      "trackingNumber": "AK-EXP-40686619"
-    },
-    {
-      "customer": {
-        "fullName": "Lord Harrison Thorne",
-        "email": "harrison.thorne@mayfair-holdings.co.uk",
-        "phone": "+44 7911 889922",
-        "address": "18 Grosvenor Gardens, Suite 4A",
-        "city": "London",
-        "postalCode": "SW1W 0DH",
-        "country": "United Kingdom"
-      },
-      "items": [
-        {
-          "id": "patek-tourbillon-09",
-          "name": "Patek Philippe Grand Complications Skeleton",
-          "price": 6499,
-          "quantity": 1,
-          "color": "Rose Gold & Titanium Skeleton",
-          "strap": "Alligator Leather",
-          "engraving": "",
-          "image": "/images/watches/patek_tourbillon.jpg"
-        }
-      ],
-      "subtotal": 6499,
-      "discountAmount": 0,
-      "couponApplied": null,
-      "shippingCost": 4500,
-      "shippingSpeed": "Priority Armoured Courier (Next-Day Air)",
-      "total": 10999,
-      "paymentMethod": "UPI Instant (thorne.harrison@okaxis)",
-      "notes": "White glove delivery requested with sign-off",
-      "id": "ORD-AK-30880",
-      "date": "2026-08-24T19:47:03.397Z",
-      "orderStatus": "Confirmed",
-      "paymentStatus": "Paid",
-      "trackingNumber": "AK-EXP-57345198"
-    },
-    {
-      "id": "ORD-LW-98421",
-      "date": "2026-08-24T14:32:00Z",
-      "status": "Delivered",
-      "trackingNumber": "LW-IND-77892014",
-      "client": {
-        "name": "Sir Richard Vance",
-        "email": "r.vance@mayfairholdings.co.uk",
-        "phone": "+91 98200 45678",
-        "address": "14 Altamount Road, Cumballa Hill",
-        "city": "Mumbai",
-        "state": "Maharashtra",
-        "postalCode": "400026",
-        "country": "India"
-      },
-      "items": [
-        {
-          "id": "rolex-submariner-01",
-          "name": "Rolex Submariner Date 41mm",
-          "price": 5499,
-          "quantity": 1,
-          "selectedColor": "Emerald Green & Black",
-          "selectedStrap": "Oystersteel Solid Bracelet",
-          "engravingText": "VANCE • MMXXVI",
-          "image": "/images/watches/rolex_submariner.jpg"
-        }
-      ],
-      "subtotal": 5499,
-      "discountAmount": 550,
-      "couponApplied": "LUXE10",
-      "shippingCost": 0,
-      "shippingSpeed": "Armoured Express Concierge (Next Day)",
-      "total": 4949,
-      "paymentMethod": "UPI Instant (vance@oksbi)",
-      "notes": "Please deliver in velvet presentation case."
-    }
-  ],
-  "reviews": [
-    {
-      "id": "rev-01",
-      "productId": "rolex-submariner-01",
-      "author": "Vikramaditya S. (Mumbai)",
-      "rating": 5,
-      "date": "2 days ago",
-      "title": "Masterpiece in hand - unmatched quality",
-      "comment": "The Rolex Submariner Date with the green bezel arrived in a heavy luxury wooden presentation vault. The weight, ceramic bezel click, and finishing are sensational for ₹5,499. Outstanding concierge delivery!",
-      "verified": true,
-      "avatar": "VS"
-    },
-    {
-      "id": "rev-02",
-      "productId": "omega-speedmaster-02",
-      "author": "Rohan Malhotra (New Delhi)",
-      "rating": 5,
-      "date": "5 days ago",
-      "title": "The iconic Moonwatch feel",
-      "comment": "Flawless chronograph action and crisp dial typography. Wearing this Omega Speedmaster makes you feel connected to horological history. Highly recommended!",
-      "verified": true,
-      "avatar": "RM"
-    },
-    {
-      "id": "rev-03",
-      "productId": "patek-nautilus-03",
-      "author": "Ananya Deshmukh (Bengaluru)",
-      "rating": 5,
-      "date": "1 week ago",
-      "title": "Patek Nautilus blue dial is mesmerizing",
-      "comment": "The blue horizontally embossed dial changes shades under sunlight. Fits like a glove on the wrist. Exceptional timepiece!",
-      "verified": true,
-      "avatar": "AD"
+      "badge": "COSC Certified Masterpiece",
+      "badgeType": "gold",
+      "returnEligible": true,
+      "active": true
     }
   ],
   "coupons": [
@@ -602,100 +671,141 @@
       "description": "15% VIP discount on orders above ₹8,000"
     },
     {
-      "code": "FIRSTTIME",
-      "discountPercent": 8,
+      "code": "WELCOME10",
+      "discountPercent": 10,
       "minSpend": 3000,
-      "description": "8% welcome reduction for new collectors"
+      "description": "10% welcome privilege for new collectors"
     },
     {
       "code": "DIAMOND20",
       "discountPercent": 20,
       "minSpend": 10000,
-      "description": "20% off for Connoisseurs ordering multiple watches"
+      "description": "20% off for connoisseurs ordering multiple watches"
+    }
+  ],
+  "reviews": [
+    {
+      "id": "rev-1787770353429",
+      "productId": "rolex-submariner-01",
+      "author": "Vikramaditya Singhania",
+      "userName": "Vikramaditya Singhania",
+      "rating": 5,
+      "date": "Just now",
+      "title": "Masterpiece of Swiss Craftsmanship",
+      "comment": "The 28,800 VPH calibre keeps immaculate chronometer time. Exceptional concierge care.",
+      "verified": true,
+      "avatar": "VI",
+      "location": "Mumbai, India",
+      "status": "approved",
+      "createdAt": "2026-08-26T18:52:33.429Z"
+    },
+    {
+      "id": "rev-01",
+      "productId": "rolex-submariner-01",
+      "author": "Vikramaditya Singhania (Mumbai)",
+      "rating": 5,
+      "date": "2 days ago",
+      "title": "Superb craftsmanship and swift delivery",
+      "comment": "The Cerachrom emerald green bezel catches the light exquisitely. Authenticated, calibrated, and delivered in pristine hermetic security vault box within 24 hours.",
+      "verified": true,
+      "avatar": "VS",
+      "status": "approved"
+    },
+    {
+      "id": "rev-02",
+      "productId": "omega-speedmaster-02",
+      "author": "Rohan Mehta (New Delhi)",
+      "rating": 5,
+      "date": "5 days ago",
+      "title": "The iconic Moonwatch feel",
+      "comment": "Flawless chronograph action and crisp dial typography. Wearing this Omega Speedmaster connects you to genuine horological heritage.",
+      "verified": true,
+      "avatar": "RM",
+      "status": "approved"
+    },
+    {
+      "id": "rev-03",
+      "productId": "patek-nautilus-03",
+      "author": "Ananya Deshmukh (Bengaluru)",
+      "rating": 5,
+      "date": "1 week ago",
+      "title": "Patek Nautilus blue dial is mesmerizing",
+      "comment": "The horizontally embossed blue sunburst dial shifts subtly under natural light. Fits like a second skin on the wrist.",
+      "verified": true,
+      "avatar": "AD",
+      "status": "approved"
     }
   ],
   "activityLog": [
     {
-      "id": "act-1787605037310-juul",
-      "text": "Collector entered checkout with 1 luxury timepiece(s)",
-      "time": "Just now",
-      "type": "checkout"
-    },
-    {
-      "id": "act-1787605033702-ijes",
-      "text": "A client added \"Omega Speedmaster Moonwatch Professional\" to bespoke shopping bag",
-      "time": "Just now",
-      "type": "cart"
-    },
-    {
-      "id": "act-1787604909351",
-      "text": "Master Admin (admin@luxurywatch.com) authenticated session #909347",
+      "id": "act-1787770353499",
+      "text": "Admin removed \"Test Grand Complication Perpetual Calendar\" from catalog",
       "time": "Just now",
       "type": "admin"
     },
     {
-      "id": "act-1787603793993",
-      "text": "Master Administrator authenticated session #793991",
+      "id": "act-1787770353493",
+      "text": "📨 New concierge inquiry received from Lord Sterling (collector.1787770353245@luxurywatch.com)",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787770353447",
+      "text": "Master Administrator updated Homepage CMS content",
       "time": "Just now",
       "type": "admin"
     },
     {
-      "id": "act-1787602578949",
-      "text": "Master Administrator authenticated session #578948",
+      "id": "act-1787770353433",
+      "text": "⭐️ Review posted by Vikramaditya Singhania (5★)",
+      "time": "Just now",
+      "type": "review"
+    },
+    {
+      "id": "act-1787770353426",
+      "text": "Consignment #ORD-LW-72595 stage changed to: \"Shipped\"",
       "time": "Just now",
       "type": "admin"
     },
     {
-      "id": "act-1787602076016-r4ml",
-      "text": "🎉 New Order #ORD-AK-76175 confirmed for ₹5,999 by Rohan Singhania",
+      "id": "act-1787770353415",
+      "text": "💳 Payment verified! Order #ORD-LW-72595 confirmed for Lord Sterling Connoisseur (₹5,499)",
       "time": "Just now",
       "type": "order"
     },
     {
-      "id": "act-1787602039211-fsga",
-      "text": "Initiated instant VIP checkout for \"Patek Philippe Nautilus 5711/1A\"",
+      "id": "act-1787770353317",
+      "text": "✨ New patron Lord Sterling Connoisseur created an account with verified email & password",
       "time": "Just now",
-      "type": "checkout"
+      "type": "user"
     },
     {
-      "id": "act-1787602028018-15pi",
-      "text": "A client added \"Rolex Submariner Date 41mm\" to bespoke shopping bag",
-      "time": "Just now",
-      "type": "cart"
-    },
-    {
-      "id": "act-1787601803650",
-      "text": "Master Administrator authenticated session #803649",
+      "id": "act-1787770353243",
+      "text": "Vault stock updated for \"Test Grand Complication Perpetual Calendar\" (8 available)",
       "time": "Just now",
       "type": "admin"
     },
     {
-      "id": "act-1787600823391-vda5",
-      "text": "🎉 New Order #ORD-AK-30880 confirmed for ₹10,999 by Lord Harrison Thorne",
-      "time": "Just now",
-      "type": "order"
-    },
-    {
-      "id": "act-1787600796637-g4ay",
-      "text": "Collector entered checkout with 1 luxury timepiece(s)",
-      "time": "Just now",
-      "type": "checkout"
-    },
-    {
-      "id": "act-1787600793212-k3d3",
-      "text": "A client added \"Patek Philippe Grand Complications Skeleton\" to bespoke shopping bag",
-      "time": "Just now",
-      "type": "cart"
-    },
-    {
-      "id": "act-1787600172634",
-      "text": "Master Administrator authenticated session #172633",
+      "id": "act-1787770353235",
+      "text": "Master Administrator catalogued: \"Test Grand Complication Perpetual Calendar\"",
       "time": "Just now",
       "type": "admin"
     },
     {
-      "id": "act-1787600103298",
-      "text": "Master Administrator authenticated session #103294",
+      "id": "act-1787770353212",
+      "text": "Brand \"A. Lange & Söhne\" removed by Master Admin",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787770353199",
+      "text": "Master Administrator added luxury brand: \"A. Lange & Söhne\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787770353186",
+      "text": "Master Admin (admin@luxurywatch.com) authenticated session #353186",
       "time": "Just now",
       "type": "admin"
     },
@@ -707,19 +817,179 @@
     },
     {
       "id": "act-2",
-      "text": "New order ORD-LW-98421 placed for ₹4,949",
+      "text": "Consignment ORD-LW-98421 placed for ₹5,499",
       "time": "12m ago",
       "type": "order"
     },
     {
       "id": "act-3",
-      "text": "5-star review posted by Vikramaditya S. (Mumbai)",
+      "text": "5-star review verified for Omega Speedmaster Moonwatch",
       "time": "45m ago",
       "type": "review"
+    },
+    {
+      "id": "act-4",
+      "text": "VIP Patron applied code LUXE10 in cart",
+      "time": "1h ago",
+      "type": "coupon"
     }
   ],
+  "returns": [
+    {
+      "id": "RET-LW-32476",
+      "orderId": "ORD-LW-72595",
+      "customerName": "Valued Patron",
+      "customerEmail": "collector.1787770353245@luxurywatch.com",
+      "customerPhone": "",
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "returnReason": "Requesting exchange for different dial color",
+      "resolutionType": "Refund",
+      "exchangeModelPreference": null,
+      "pickupAddress": "Client Registered Address",
+      "notes": "",
+      "status": "Requested",
+      "waybillNumber": "LW-RET-IND-60844075",
+      "courierTier": "Securitas Armoured Return Transit (Insured)",
+      "createdAt": "2026-08-26T18:52:33.438Z",
+      "updatedAt": "2026-08-26T18:52:33.438Z"
+    }
+  ],
+  "orders": [
+    {
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "customer": {
+        "fullName": "Lord Sterling Connoisseur",
+        "email": "collector.1787770353245@luxurywatch.com",
+        "phone": "+91 98200 98200",
+        "address": "The Capital, BKC",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400051"
+      },
+      "total": 5499,
+      "courierTier": "BlueDart Insured Air Express (Pan-India 24-48 Hours)",
+      "id": "ORD-LW-72595",
+      "date": "2026-08-26T18:52:33.410Z",
+      "orderStatus": "Shipped",
+      "paymentStatus": "Paid",
+      "paymentMethod": "razorpay",
+      "paymentDetails": {
+        "gatewayOrderId": "order_LW_1787770353408_5625",
+        "paymentId": "pay_e2e_1787770353409",
+        "signature": "mock_verified_signature"
+      },
+      "trackingNumber": "BD-EXP-889922",
+      "updatedAt": "2026-08-26T18:52:33.425Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "usr-1787770353316",
+      "email": "collector.1787770353245@luxurywatch.com",
+      "password": "$2b$10$Ci6XL0R1cxc9pk55GgKJt.59CEt/vL6kfIUjQQTCeljKMlGakXWfK",
+      "name": "Lord Sterling Connoisseur",
+      "phone": "+91 98200 98200",
+      "role": "customer",
+      "verified": true,
+      "addresses": [
+        {
+          "id": "ADDR-1787770353399",
+          "fullName": "Lord Sterling Connoisseur",
+          "phone": "+91 98200 98200",
+          "street": "The Capital, BKC, G Block",
+          "landmark": "Near Sofitel",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "postalCode": "400051",
+          "country": "India",
+          "isDefault": true
+        }
+      ],
+      "totalSpent": 0,
+      "ordersCount": 0,
+      "createdAt": "2026-08-26T18:52:33.316Z",
+      "lastLogin": "2026-08-26T18:52:33.391Z",
+      "updatedAt": "2026-08-26T18:52:33.400Z"
+    }
+  ],
+  "payments": [
+    {
+      "transactionId": "TXN-1787770353411-998",
+      "createdAt": "2026-08-26T18:52:33.411Z",
+      "orderId": "ORD-LW-72595",
+      "gatewayOrderId": "order_LW_1787770353408_5625",
+      "gatewayPaymentId": "pay_e2e_1787770353409",
+      "gatewaySignature": "mock_verified_signature",
+      "amount": 5499,
+      "currency": "INR",
+      "status": "paid",
+      "customerEmail": "collector.1787770353245@luxurywatch.com"
+    }
+  ],
+  "storeSettings": {
+    "key": "global_settings",
+    "storeName": "LUXURY WATCH",
+    "tagline": "TIMELESS WATCHES. EXCEPTIONAL VALUE.",
+    "supportEmail": "concierge@luxurywatch.com",
+    "supportPhone": "+91 22 6940 8800",
+    "address": "Level 12, The Capital, Bandra Kurla Complex (BKC), Mumbai 400051",
+    "currency": "INR",
+    "currencySymbol": "₹",
+    "freeShippingThreshold": 999,
+    "standardShippingFee": 0,
+    "expressShippingFee": 499,
+    "taxPercent": 18,
+    "returnWindowDays": 10,
+    "enableUpi": true,
+    "enableRazorpay": true,
+    "enableCard": true,
+    "enableNetbanking": true,
+    "paymentGatewayMode": "test",
+    "razorpayKeyIdConfigured": true,
+    "razorpaySecretConfigured": true
+  },
+  "homepageContent": {
+    "key": "homepage_cms",
+    "announcementBar": {
+      "text": "FREE SHIPPING ABOVE ₹999 | SECURE PAYMENTS | EASY RETURNS"
+    },
+    "hero": {
+      "heading": "TIMELESS STYLE.\nPERFECTLY PRICED.",
+      "subheading": "Discover authentic branded watches crafted for every occasion.",
+      "ctaPrimaryText": "SHOP ALL WATCHES",
+      "ctaSecondaryText": "EXPLORE SKELETONS"
+    },
+    "updatedAt": "2026-08-26T18:52:33.445Z"
+  },
   "admin": {
     "email": "admin@luxurywatch.com",
-    "role": "Grand Horologist / Master Administrator"
-  }
+    "role": "Grand Horologist / Master Administrator",
+    "lastLogin": "2026-08-26T00:00:00Z"
+  },
+  "contacts": [
+    {
+      "id": "cnt-1787770353491",
+      "name": "Lord Sterling",
+      "email": "collector.1787770353245@luxurywatch.com",
+      "phone": "+91 98200 98200",
+      "subject": "Bespoke Caseback Engraving Inquiry",
+      "message": "Inquiring regarding custom coat-of-arms laser engraving.",
+      "status": "unread",
+      "createdAt": "2026-08-26T18:52:33.491Z"
+    }
+  ]
 }

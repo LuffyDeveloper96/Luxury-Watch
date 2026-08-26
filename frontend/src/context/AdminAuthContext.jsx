@@ -4,131 +4,76 @@ import { authAPI } from '../services/api';
 const AdminAuthContext = createContext();
 
 export const AdminAuthProvider = ({ children }) => {
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
-    return localStorage.getItem('akiki_admin_auth') === 'true' && !!localStorage.getItem('akiki_admin_token');
+  const [adminToken, setAdminToken] = useState(() => {
+    return localStorage.getItem('luxury_admin_token') || localStorage.getItem('akiki_admin_token') || null;
   });
 
   const [adminUser, setAdminUser] = useState(() => {
-    const saved = localStorage.getItem('akiki_admin_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('luxury_admin_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
 
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [isLockedOut, setIsLockedOut] = useState(false);
-  const [lockoutTimer, setLockoutTimer] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Validate existing token with backend on mount
+  // Verify on mount if token exists
   useEffect(() => {
-    const checkToken = async () => {
-      const token = localStorage.getItem('akiki_admin_token');
-      if (token) {
-        try {
-          const res = await authAPI.verify();
-          if (!res.success) {
-            logoutAdmin();
-          }
-        } catch (err) {
-          // keep offline token if valid
+    const verifySession = async () => {
+      if (!adminToken) return;
+      try {
+        const res = await authAPI.verify();
+        if (res.success && res.user) {
+          setAdminUser(res.user);
+        } else {
+          logoutAdmin();
         }
+      } catch (err) {
+        // Session expired
+        logoutAdmin();
       }
     };
-    if (isAdminAuthenticated) {
-      checkToken();
-    }
-  }, []);
+    verifySession();
+  }, [adminToken]);
 
-  useEffect(() => {
-    let interval;
-    if (lockoutTimer > 0) {
-      interval = setInterval(() => {
-        setLockoutTimer(prev => {
-          if (prev <= 1) {
-            setIsLockedOut(false);
-            setFailedAttempts(0);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [lockoutTimer]);
-
-  const loginAdmin = async (email, password, secretPin) => {
-    if (isLockedOut) {
-      return { success: false, message: `Terminal locked. Try again in ${lockoutTimer} seconds.` };
-    }
-
+  const loginAdmin = async (credentials) => {
+    setIsLoading(true);
     try {
-      const res = await authAPI.login({
-        email,
-        password,
-        passcodePin: secretPin
-      });
-
+      const res = await authAPI.login(credentials);
       if (res.success && res.token) {
-        setIsAdminAuthenticated(true);
+        setAdminToken(res.token);
         setAdminUser(res.user);
-        setFailedAttempts(0);
-        localStorage.setItem('akiki_admin_auth', 'true');
-        localStorage.setItem('akiki_admin_token', res.token);
-        localStorage.setItem('akiki_admin_user', JSON.stringify(res.user));
+        localStorage.setItem('luxury_admin_token', res.token);
+        localStorage.setItem('luxury_admin_user', JSON.stringify(res.user));
         return { success: true };
       }
+      return { success: false, message: res.message || 'Authentication failed' };
     } catch (err) {
-      // Fallback local master verification
-      const cleanEmail = email.trim().toLowerCase();
-      const isMasterEmail = cleanEmail === 'admin@luxurywatch.com' || cleanEmail === 'admin@akikilondon.com' || cleanEmail === 'admin@akiki.com';
-      const isMasterPassword = password === 'LuxuryWatch2026!' || password === 'AkikiLuxe2026!' || password === 'admin123';
-      const isSecretPinValid = !secretPin || secretPin.trim() === '8888' || secretPin.trim() === 'AKIKI' || secretPin.trim() === 'LUXURY';
-
-      if (isMasterEmail && isMasterPassword && isSecretPinValid) {
-        const user = {
-          email: cleanEmail,
-          role: 'Grand Horologist / Master Administrator',
-          sessionId: `AK-SESS-${Date.now()}`,
-          loginTime: new Date().toLocaleTimeString()
-        };
-        setIsAdminAuthenticated(true);
-        setAdminUser(user);
-        setFailedAttempts(0);
-        localStorage.setItem('akiki_admin_auth', 'true');
-        localStorage.setItem('akiki_admin_token', 'offline_master_jwt_token_2026');
-        localStorage.setItem('akiki_admin_user', JSON.stringify(user));
-        return { success: true };
-      }
+      return { success: false, message: err.message || 'Master Admin credentials invalid' };
+    } finally {
+      setIsLoading(false);
     }
-
-    const attempts = failedAttempts + 1;
-    setFailedAttempts(attempts);
-    if (attempts >= 5) {
-      setIsLockedOut(true);
-      setLockoutTimer(60);
-      return { success: false, message: 'Too many failed attempts. Terminal locked for 60 seconds.' };
-    }
-    return {
-      success: false,
-      message: `Invalid credentials. Master access only (${5 - attempts} attempts remaining).`
-    };
   };
 
   const logoutAdmin = () => {
-    setIsAdminAuthenticated(false);
+    setAdminToken(null);
     setAdminUser(null);
-    localStorage.removeItem('akiki_admin_auth');
+    localStorage.removeItem('luxury_admin_token');
+    localStorage.removeItem('luxury_admin_user');
     localStorage.removeItem('akiki_admin_token');
-    localStorage.removeItem('akiki_admin_user');
   };
 
   return (
     <AdminAuthContext.Provider
       value={{
-        isAdminAuthenticated,
+        adminToken,
         adminUser,
+        isAdminAuthenticated: !!adminToken,
+        isLoading,
         loginAdmin,
-        logoutAdmin,
-        isLockedOut,
-        lockoutTimer
+        logoutAdmin
       }}
     >
       {children}
@@ -143,3 +88,5 @@ export const useAdminAuth = () => {
   }
   return context;
 };
+
+export default AdminAuthContext;

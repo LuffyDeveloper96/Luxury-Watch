@@ -1,203 +1,153 @@
-import React, { useState } from 'react';
-import { useStore } from '../context/StoreContext';
-import { Watch, Mail, Phone, MapPin, ShieldCheck, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
+import React from 'react';
+import { ShieldCheck, Truck, Clock, Sparkles, Mail, Lock, Heart, Award, ArrowUp } from 'lucide-react';
 
-export const Footer = ({ onSelectCategory, onOpenAdmin, onOpenBrandStory, onOpenTracking }) => {
-  const { storeSettings } = useStore();
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleNewsletterSubmit = (e) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setSubscribed(true);
-    setEmail('');
+export const Footer = ({
+  onSelectCategory,
+  onOpenAdmin,
+  onOpenBrandStory,
+  onOpenTracking,
+  onOpenReturns
+}) => {
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <footer style={{
-      backgroundColor: '#07080a',
-      color: '#cbd5e1',
-      borderTop: '1px solid rgba(212, 175, 55, 0.25)',
-      paddingTop: '4.5rem',
-      paddingBottom: '2.5rem',
-      position: 'relative'
-    }}>
-      <div className="luxury-container">
-        {/* Newsletter VIP Banner */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(26, 29, 36, 0.8) 0%, rgba(11, 12, 16, 0.95) 100%)',
-          border: '1px solid var(--border-gold)',
-          borderRadius: '8px',
-          padding: '2.5rem 2rem',
-          marginBottom: '4.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.6)'
-        }}>
-          <Sparkles size={28} color="#d4af37" style={{ marginBottom: '0.75rem' }} />
-          <span style={{ fontSize: '0.72rem', letterSpacing: '0.25em', color: '#d4af37', textTransform: 'uppercase', fontWeight: 600 }}>
-            PRIVATE HOROLOGY REGISTRY
-          </span>
-          <h3 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: '#f8fafc', fontFamily: 'var(--font-brand)', margin: '6px 0 10px' }}>
-            Join the Luxury Watch Private Circle
-          </h3>
-          <p style={{ fontSize: '0.85rem', color: '#94a3b8', maxWidth: '580px', marginBottom: '1.5rem' }}>
-            Receive private vault previews of upcoming numbered skeleton editions, horology whitepapers, and a complimentary <strong>10% acquisition voucher</strong>.
-          </p>
-
-          {subscribed ? (
-            <div style={{
-              background: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#34d399',
-              padding: '12px 24px',
-              borderRadius: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '0.85rem'
-            }}>
-              <CheckCircle2 size={18} />
-              <span>Welcome to the Circle. Use VIP Code: <strong>LUXE10</strong> for 10% off your acquisition.</span>
-            </div>
-          ) : (
-            <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', gap: '8px', width: '100%', maxWidth: '480px', flexWrap: 'wrap' }}>
-              <input
-                type="email"
-                required
-                placeholder="Enter your private email address..."
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="lux-input"
-                style={{ flex: 1, minWidth: '240px' }}
-              />
-              <button type="submit" className="btn-gold" style={{ padding: '0.75rem 1.5rem' }}>
-                <span>SUBSCRIBE</span>
-                <ArrowRight size={14} />
-              </button>
-            </form>
-          )}
-        </div>
-
-        {/* Footer 4-Column Grid */}
-        <div style={{
+    <footer style={{ background: '#0b0f19', color: '#f8fafc', borderTop: '1px solid rgba(180, 140, 30, 0.25)', position: 'relative' }}>
+      {/* Top Value Propositions */}
+      <div style={{ borderBottom: '1px solid #1f2937', padding: '2.5rem 0' }}>
+        <div className="luxury-container" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '3rem',
-          paddingBottom: '3.5rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+          gap: '2rem'
         }}>
-          {/* Column 1: Brand */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-              <Watch size={20} color="#d4af37" />
-              <span style={{ fontFamily: 'var(--font-brand)', fontSize: '1.25rem', fontWeight: 700, letterSpacing: '0.2em', color: '#f8fafc' }}>
-                LUXURY <span style={{ color: '#d4af37', fontWeight: 300 }}>WATCH</span>
-              </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid #d4af37', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Award size={20} color="#f3e5ab" />
             </div>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.7, marginBottom: '1.25rem' }}>
-              Haute Horlogerie atelier uniting English aesthetic grandeur with Swiss mechanical precision. Certified Swiss movements, domed sapphire glass, and 5-year international warranty.
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#d4af37', fontSize: '0.72rem', fontWeight: 600 }}>
-              <ShieldCheck size={14} />
-              <span>SWISS ESCROW VERIFIED SETTLEMENT</span>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f3e5ab' }}>100% Certified Authentic</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Transparent provenance & warranty</div>
             </div>
           </div>
 
-          {/* Column 2: Collections Navigation */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid #d4af37', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Truck size={20} color="#f3e5ab" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f3e5ab' }}>Complimentary Insured Shipping</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Free on all orders above ₹999</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid #d4af37', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Clock size={20} color="#f3e5ab" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f3e5ab' }}>10-Day Easy Returns</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Complimentary insured courier pickup</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid #d4af37', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Lock size={20} color="#f3e5ab" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f3e5ab' }}>Razorpay 256-Bit SSL</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Encrypted bank-grade checkout</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Footer Links */}
+      <div className="luxury-container" style={{ padding: '3.5rem 1rem 2.5rem 1rem' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: '2.5rem',
+          marginBottom: '3rem'
+        }}>
+          {/* Brand Info */}
+          <div style={{ gridColumn: 'span 1' }}>
+            <div style={{ fontFamily: 'var(--font-brand)', fontSize: '1.35rem', fontWeight: 800, color: '#f3e5ab', letterSpacing: '0.1em' }}>
+              LUXURY WATCH
+            </div>
+            <div style={{ fontSize: '0.62rem', letterSpacing: '0.18em', color: '#d4af37', fontWeight: 700, textTransform: 'uppercase', marginTop: '2px' }}>
+              TIMELESS WATCHES. EXCEPTIONAL VALUE.
+            </div>
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.6, marginTop: '1rem' }}>
+              India's premier branded watch marketplace. Curating certified horological icons from Geneva, Le Brassus, and Glashütte.
+            </p>
+          </div>
+
+          {/* SHOP */}
           <div>
-            <h4 style={{ fontSize: '0.85rem', color: '#f8fafc', fontFamily: 'var(--font-brand)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-              Timepiece Collections
+            <h4 style={{ fontSize: '0.82rem', letterSpacing: '0.12em', color: '#f3e5ab', fontWeight: 700, textTransform: 'uppercase', marginBottom: '1rem' }}>
+              SHOP BY PORTFOLIO
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem' }}>
-              {['Chronograph', 'Skeleton Automatic', 'Diamond Collection', 'Automatic', "Women's Elegance"].map(cat => (
-                <button
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.78rem', color: '#cbd5e1' }}>
+              {["Men's Watches", "Women's Collection", "Chronographs", "Skeleton Automatics", "Rolex", "Titan", "Casio", "Fastrack", "Fossil", "Timex", "Sonata", "Guess", "Limestone", "Noise"].map(cat => (
+                <span
                   key={cat}
                   onClick={() => {
-                    onSelectCategory(cat);
-                    const el = document.getElementById('catalog-section');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    if (onSelectCategory) onSelectCategory(cat);
+                    const catalogEl = document.getElementById('catalog-section');
+                    if (catalogEl) catalogEl.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#94a3b8',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    padding: '2px 0',
-                    transition: 'color 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.target.style.color = '#d4af37'}
-                  onMouseLeave={(e) => e.target.style.color = '#94a3b8'}
+                  style={{ cursor: 'pointer', transition: 'color 0.15s ease' }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#d4af37'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}
                 >
                   {cat}
-                </button>
+                </span>
               ))}
-              <button
-                onClick={onOpenBrandStory}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', textAlign: 'left', cursor: 'pointer', padding: '2px 0' }}
-                onMouseEnter={(e) => e.target.style.color = '#d4af37'}
-                onMouseLeave={(e) => e.target.style.color = '#94a3b8'}
-              >
-                Mayfair Atelier Story
-              </button>
             </div>
           </div>
 
-          {/* Column 3: Concierge & Client Service */}
+          {/* CUSTOMER CONCIERGE */}
           <div>
-            <h4 style={{ fontSize: '0.85rem', color: '#f8fafc', fontFamily: 'var(--font-brand)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-              Concierge & Services
+            <h4 style={{ fontSize: '0.82rem', letterSpacing: '0.12em', color: '#f3e5ab', fontWeight: 700, textTransform: 'uppercase', marginBottom: '1rem' }}>
+              CUSTOMER CONCIERGE
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
-              <button
-                onClick={onOpenTracking}
-                style={{ background: 'none', border: 'none', color: '#d4af37', textAlign: 'left', cursor: 'pointer', fontWeight: 600 }}
-              >
-                Track Order Delivery Timeline
-              </button>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', color: '#94a3b8' }}>
-                <Phone size={14} color="#d4af37" style={{ marginTop: '3px', flexShrink: 0 }} />
-                <span>+91 98200 12345</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', color: '#94a3b8' }}>
-                <Mail size={14} color="#d4af37" style={{ marginTop: '3px', flexShrink: 0 }} />
-                <span>concierge@luxurywatch.in</span>
-              </div>
-              <span style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>
-                Hours: Mon - Sat: 10:00 AM - 8:00 PM IST (Pan-India Direct Support)
-              </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.78rem', color: '#cbd5e1' }}>
+              <span onClick={onOpenTracking} style={{ cursor: 'pointer' }}>Track Consignment</span>
+              <span onClick={onOpenReturns} style={{ cursor: 'pointer' }}>Returns & Exchanges</span>
+              <span onClick={onOpenBrandStory} style={{ cursor: 'pointer' }}>Authenticity & Warranty</span>
+              <span>Shipping & Delivery Policy</span>
+              <span>24/7 Atelier Support</span>
             </div>
           </div>
 
-          {/* Column 4: Flagship Boutiques */}
+          {/* NEWSLETTER */}
           <div>
-            <h4 style={{ fontSize: '0.85rem', color: '#f8fafc', fontFamily: 'var(--font-brand)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-              Indian Flagship Boutiques
+            <h4 style={{ fontSize: '0.82rem', letterSpacing: '0.12em', color: '#f3e5ab', fontWeight: 700, textTransform: 'uppercase', marginBottom: '1rem' }}>
+              PRIVATE COLLECTOR'S PRIVILEGE
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.78rem', color: '#94a3b8' }}>
-              <div>
-                <strong style={{ color: '#f8fafc', display: 'block' }}>Mumbai Flagship Maison</strong>
-                <span>The Capital, Bandra Kurla Complex (BKC), Mumbai 400051</span>
-              </div>
-              <div>
-                <strong style={{ color: '#f8fafc', display: 'block' }}>New Delhi Luxury Lounge</strong>
-                <span>DLF Emporio, Vasant Kunj, New Delhi 110070</span>
-              </div>
-              <div>
-                <strong style={{ color: '#f8fafc', display: 'block' }}>Bengaluru Private Suite</strong>
-                <span>UB City, Vittal Mallya Road, Bengaluru 560001</span>
-              </div>
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 1rem 0' }}>
+              Subscribe to receive private allocations, limited edition releases, and VIP invitations.
+            </p>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <input
+                type="email"
+                placeholder="Enter your email address"
+                className="lux-input"
+                style={{ background: '#111827', border: '1px solid #374151', color: '#ffffff', fontSize: '0.75rem', padding: '8px 12px' }}
+              />
+              <button className="btn-gold" style={{ padding: '8px 14px', fontSize: '0.75rem', flexShrink: 0 }}>
+                JOIN
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Bottom Bar: Copyright & Admin Portal Link */}
+        {/* Bottom Bar: Copyright & Admin Key */}
         <div style={{
-          paddingTop: '2rem',
+          borderTop: '1px solid #1f2937',
+          paddingTop: '1.5rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -207,41 +157,51 @@ export const Footer = ({ onSelectCategory, onOpenAdmin, onOpenBrandStory, onOpen
           color: '#64748b'
         }}>
           <div>
-            © {new Date().getFullYear()} LUXURY WATCH INDIA • GST COMPLIANT • ALL RIGHTS RESERVED.
+            © {new Date().getFullYear()} LUXURY WATCH (India) Private Limited. All Rights Reserved.
           </div>
 
-          {/* Payment Badges Mockup */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#94a3b8' }}>
-            <span>BHIM UPI</span>
-            <span>•</span>
-            <span>GOOGLE PAY</span>
-            <span>•</span>
-            <span>PHONEPE</span>
-            <span>•</span>
-            <span>RUPAY</span>
-            <span>•</span>
-            <span>VISA</span>
-            <span>•</span>
-            <span>NETBANKING</span>
-          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button
+              onClick={onOpenAdmin}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#475569',
+                fontSize: '0.7rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title="Master Administrator Portal"
+            >
+              <Lock size={11} />
+              <span>Master Admin</span>
+            </button>
 
-          {/* Single Admin Shortcut */}
-          <button
-            onClick={onOpenAdmin}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#d4af37',
-              cursor: 'pointer',
-              fontSize: '0.72rem',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase'
-            }}
-          >
-            Sole Administrator Portal
-          </button>
+            <button
+              onClick={scrollToTop}
+              style={{
+                background: '#111827',
+                border: '1px solid #374151',
+                color: '#d4af37',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+              title="Scroll to Top"
+            >
+              <ArrowUp size={14} />
+            </button>
+          </div>
         </div>
       </div>
     </footer>
   );
 };
+
+export default Footer;
