@@ -1,12 +1,13 @@
 import crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { db } from '../config/db.js';
+import { env } from '../config/env.js';
 
 // Configuration keys from environment or saved settings
 const getRazorpayCredentials = () => {
   const settings = db.getMeta('paymentSettings') || {};
-  const keyId = process.env.RAZORPAY_KEY_ID || settings.razorpayKeyId || 'rzp_test_luxurywatch2026';
-  const keySecret = process.env.RAZORPAY_KEY_SECRET || settings.razorpayKeySecret || 'luxury_secret_test_key_9988';
+  const keyId = env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || settings.razorpayKeyId || '';
+  const keySecret = env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET || settings.razorpayKeySecret || '';
   return { keyId, keySecret };
 };
 
@@ -15,6 +16,7 @@ const getRazorpayCredentials = () => {
  */
 export const getRazorpayInstance = () => {
   const { keyId, keySecret } = getRazorpayCredentials();
+  if (!keyId || !keySecret) return null;
   try {
     return new Razorpay({
       key_id: keyId,
@@ -28,7 +30,6 @@ export const getRazorpayInstance = () => {
 
 /**
  * Payment Service Abstraction
- * Allows switching or extending to Stripe / PayU / Cashfree seamlessly
  */
 export const paymentService = {
   /**
@@ -38,9 +39,15 @@ export const paymentService = {
     const { keyId, keySecret } = getRazorpayCredentials();
     const amountInPaise = Math.round(Number(amount) * 100);
 
-    try {
+    if (process.env.NODE_ENV === 'production') {
       const razorpay = getRazorpayInstance();
-      if (razorpay && process.env.NODE_ENV === 'production' && keyId !== 'rzp_test_luxurywatch2026') {
+      if (!razorpay || !keyId || !keySecret) {
+        return {
+          success: false,
+          message: 'Payment gateway is not configured for production.'
+        };
+      }
+      try {
         const order = await razorpay.orders.create({
           amount: amountInPaise,
           currency,
@@ -55,12 +62,16 @@ export const paymentService = {
           currency: order.currency,
           keyId
         };
+      } catch (sdkError) {
+        console.error('[Razorpay SDK] Order creation error:', sdkError.message);
+        return {
+          success: false,
+          message: 'Failed to create payment order with gateway.'
+        };
       }
-    } catch (sdkError) {
-      console.warn('[Razorpay SDK] Order creation note:', sdkError.message);
     }
 
-    // High-fidelity fallback / Sandbox order generation
+    // High-fidelity fallback / Sandbox order generation (DEVELOPMENT ONLY)
     const mockGatewayOrderId = `order_LW_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
     return {
       success: true,
@@ -68,7 +79,7 @@ export const paymentService = {
       gatewayOrderId: mockGatewayOrderId,
       amount: amountInPaise,
       currency,
-      keyId,
+      keyId: keyId || '',
       isSandbox: true
     };
   },
@@ -77,17 +88,24 @@ export const paymentService = {
    * Verify Gateway Payment Signature Server-Side
    */
   verifySignature: ({ gatewayOrderId, paymentId, signature }) => {
-    if (!gatewayOrderId || !paymentId) {
-      return { success: false, message: 'Missing gateway order ID or payment ID.' };
+    if (!gatewayOrderId || !paymentId || !signature) {
+      return { success: false, message: 'Missing gateway order ID, payment ID, or signature.' };
     }
 
-    // Dev/Sandbox bypass signature check
-    if (signature === 'mock_verified_signature' || gatewayOrderId.startsWith('order_LW_')) {
-      return { success: true, message: 'Sandbox payment verified.' };
+    const isMock = signature === 'mock_verified_signature' || (typeof gatewayOrderId === 'string' && gatewayOrderId.startsWith('order_LW_'));
+
+    // Strict Production Protection: Reject mock payments in production
+    if (process.env.NODE_ENV === 'production') {
+      if (isMock) {
+        return { success: false, message: 'Mock payment verification is prohibited in production mode.' };
+      }
+    } else if (isMock) {
+      // In development mode only
+      return { success: true, message: 'Sandbox payment verified (development mode only).' };
     }
 
     const { keySecret } = getRazorpayCredentials();
-    if (!signature || !keySecret) {
+    if (!keySecret) {
       return { success: false, message: 'Payment signature or key secret is missing.' };
     }
 
@@ -98,7 +116,17 @@ export const paymentService = {
         .update(payload)
         .digest('hex');
 
-      const isValid = expectedSignature === signature;
+      const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+      const signatureBuf = Buffer.from(signature, 'utf8');
+
+      if (expectedBuf.length !== signatureBuf.length) {
+        return {
+          success: false,
+          message: 'Invalid cryptographic signature. Payment verification failed.'
+        };
+      }
+
+      const isValid = crypto.timingSafeEqual(expectedBuf, signatureBuf);
       if (!isValid) {
         return {
           success: false,
@@ -113,7 +141,7 @@ export const paymentService = {
     } catch (err) {
       return {
         success: false,
-        message: `Signature verification error: ${err.message}`
+        message: 'Signature verification failed.'
       };
     }
   },

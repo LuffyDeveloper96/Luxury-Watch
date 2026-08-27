@@ -1,4 +1,7 @@
 import http from 'http';
+import './index.js';
+import { getDevOtpSession } from './services/otpService.js';
+import { env } from './config/env.js';
 
 const BASE_URL = 'http://127.0.0.1:5000/api';
 
@@ -62,12 +65,11 @@ async function runFullPlatformTestSuite() {
     const adminLoginRes = await testRequest('/auth/admin/login', {
       method: 'POST',
       body: JSON.stringify({
-        email: 'admin@luxurywatch.com',
-        password: 'LuxuryWatch2026!',
-        passcodePin: '8888'
+        email: env.ADMIN_EMAIL,
+        password: 'LuxuryWatch2026!'
       })
     });
-    assert(adminLoginRes.ok && adminLoginRes.data.token, 'Master Administrator Authentication (admin@luxurywatch.com)');
+    assert(adminLoginRes.ok && adminLoginRes.data.token, `Master Administrator Authentication (${env.ADMIN_EMAIL})`);
     const adminToken = adminLoginRes.data.token;
     const adminHeaders = { Authorization: `Bearer ${adminToken}` };
 
@@ -184,10 +186,11 @@ async function runFullPlatformTestSuite() {
         phone: '+91 98200 98200'
       })
     });
-    assert(signupInit.ok && signupInit.data.simulatedOtp, 'Patron Sign Up Initiation & 6-Digit OTP Dispatch (/api/auth/user/signup/init)');
+    assert(signupInit.ok && signupInit.data.step === 'otp', 'Patron Sign Up Initiation & 6-Digit OTP Dispatch (/api/auth/user/signup/init)');
 
     // Verify Sign Up OTP
-    const signupOtp = signupInit.data.simulatedOtp || '888888';
+    const signupSession = getDevOtpSession(patronEmail);
+    const signupOtp = signupSession ? signupSession.rawOtp : '';
     const signupVerify = await testRequest('/auth/user/signup/verify', {
       method: 'POST',
       body: JSON.stringify({ email: patronEmail, otp: signupOtp })
@@ -204,10 +207,11 @@ async function runFullPlatformTestSuite() {
         password: 'PatronSecurePassword2026!'
       })
     });
-    assert(loginInit.ok && loginInit.data.simulatedOtp, 'Patron Sign In with Password & 2FA OTP Challenge (/api/auth/user/login/init)');
+    assert(loginInit.ok && loginInit.data.step === 'otp', 'Patron Sign In with Password & 2FA OTP Challenge (/api/auth/user/login/init)');
 
     // Verify 2FA OTP
-    const loginOtp = loginInit.data.simulatedOtp || '888888';
+    const loginSession = getDevOtpSession(patronEmail);
+    const loginOtp = loginSession ? loginSession.rawOtp : '';
     const loginVerify = await testRequest('/auth/user/login/verify', {
       method: 'POST',
       body: JSON.stringify({ email: patronEmail, otp: loginOtp })
@@ -413,6 +417,7 @@ async function runFullPlatformTestSuite() {
   console.log('\n════════════════════════════════════════════════════════════════════════════════');
   console.log(`📊 FINAL INDUSTRIAL-GRADE TEST SUMMARY: ${passed} PASSED, ${failed} FAILED`);
   console.log('════════════════════════════════════════════════════════════════════════════════\n');
+  process.exit(failed > 0 ? 1 : 0);
 }
 
 runFullPlatformTestSuite();

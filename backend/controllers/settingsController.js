@@ -1,4 +1,5 @@
 import { db } from '../config/db.js';
+import { env } from '../config/env.js';
 
 // Default Merchant Payment Settings
 const DEFAULT_PAYMENT_SETTINGS = {
@@ -15,8 +16,8 @@ const DEFAULT_PAYMENT_SETTINGS = {
   enableCard: true,
   enableNetbanking: true,
   paymentGatewayMode: 'test',
-  razorpayKeyId: 'rzp_test_luxurywatch2026',
-  razorpayKeySecret: 'luxury_secret_test_key_9988',
+  razorpayKeyId: env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || '',
+  razorpayKeySecret: env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET || '',
   paymentNotes: 'Please complete payment and enter the 12-digit UPI UTR / Bank Reference Number to verify your order.'
 };
 
@@ -125,9 +126,11 @@ export const updateStoreSettings = (req, res) => {
 export const getAdminSecuritySettings = (req, res) => {
   try {
     const authorizedEmail = (
-      db.getMeta('authorizedAdminGmail') ||
+      env.ADMIN_EMAIL ||
+      process.env.ADMIN_EMAIL ||
       process.env.AUTHORIZED_ADMIN_GMAIL ||
-      'admin@luxurywatch.com'
+      db.getMeta('authorizedAdminGmail') ||
+      ''
     ).trim().toLowerCase();
 
     return res.json({

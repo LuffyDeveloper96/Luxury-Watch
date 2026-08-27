@@ -1,20 +1,18 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { env } from './config/env.js';
 import apiRouter from './routes/api.js';
 import { errorHandler } from './middleware/errorHandler.js';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = env.PORT || 5000;
 
 // Security Headers with Helmet
 app.use(helmet({
@@ -24,7 +22,7 @@ app.use(helmet({
 
 // CORS Configuration
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
+  env.FRONTEND_URL,
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
@@ -35,7 +33,7 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser requests or matching origins
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*') || process.env.NODE_ENV !== 'production') {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*') || env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
     return callback(new Error(`Origin '${origin}' not allowed by CORS policy.`));
@@ -72,6 +70,15 @@ app.use((req, res, next) => {
 
 // Centralized Error Handling Middleware
 app.use(errorHandler);
+
+// Process-level safety handlers to prevent server termination
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ [Process Uncaught Exception]:', err.message);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.warn('⚠️ [Process Unhandled Rejection]:', reason);
+});
 
 app.listen(PORT, () => {
   console.log(`

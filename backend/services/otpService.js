@@ -18,7 +18,7 @@ export const generateNumericOtp = () => {
  * Hash OTP for secure storage
  */
 const hashOtp = (otp) => {
-  return crypto.createHash('sha256').update(otp.trim()).digest('hex');
+  return crypto.createHash('sha256').update((otp || '').trim()).digest('hex');
 };
 
 /**
@@ -43,37 +43,61 @@ export const createOtpSession = (email, name = '', purpose = 'authentication', m
   const otpHash = hashOtp(rawOtp);
   const expiresAt = Date.now() + OTP_EXPIRY_MS;
 
-  otpCache.set(cleanEmail, {
-    otpHash,
-    rawOtp, // Retained in non-production for instant simulation & testing
-    expiresAt,
-    attempts: 0,
-    lastSentAt: Date.now(),
-    purpose,
-    name: name || cleanEmail.split('@')[0],
-    metadata
-  });
+  if (process.env.NODE_ENV !== 'production') {
+    otpCache.set(cleanEmail, {
+      otpHash,
+      rawOtp,
+      expiresAt,
+      attempts: 0,
+      lastSentAt: Date.now(),
+      purpose,
+      name: name || cleanEmail.split('@')[0],
+      metadata
+    });
+  } else {
+    otpCache.set(cleanEmail, {
+      otpHash,
+      expiresAt,
+      attempts: 0,
+      lastSentAt: Date.now(),
+      purpose,
+      name: name || cleanEmail.split('@')[0],
+      metadata
+    });
+  }
 
   return {
     success: true,
-    rawOtp,
+    rawOtp: process.env.NODE_ENV !== 'production' ? rawOtp : undefined,
     expiresInSeconds: 300,
     expiresAt
   };
 };
 
 /**
+ * Get internal session data for development/testing ONLY (Never available in production)
+ */
+export const getDevOtpSession = (email) => {
+  if (process.env.NODE_ENV === 'production') return null;
+  const cleanEmail = (email || '').trim().toLowerCase();
+  return otpCache.get(cleanEmail);
+};
+
+/**
  * Verify submitted OTP against stored session
  */
 export const verifyOtpSession = (email, submittedOtp) => {
+  if (!email || !submittedOtp) {
+    return {
+      success: false,
+      message: 'Email and verification code are required.'
+    };
+  }
+
   const cleanEmail = email.trim().toLowerCase();
   const session = otpCache.get(cleanEmail);
 
   if (!session) {
-    // Universal dev bypass for test preview
-    if (submittedOtp === '888888' || submittedOtp === '123456') {
-      return { success: true, message: 'Test verification accepted.' };
-    }
     return {
       success: false,
       message: 'No active OTP verification session found. Please request a new code.'
@@ -102,7 +126,11 @@ export const verifyOtpSession = (email, submittedOtp) => {
   }
 
   const submittedHash = hashOtp(submittedOtp);
-  const isValid = session.otpHash === submittedHash || submittedOtp === '888888' || submittedOtp === '123456';
+  const sessionHashBuf = Buffer.from(session.otpHash, 'hex');
+  const submittedHashBuf = Buffer.from(submittedHash, 'hex');
+
+  const isValid = sessionHashBuf.length === submittedHashBuf.length &&
+    crypto.timingSafeEqual(sessionHashBuf, submittedHashBuf);
 
   if (!isValid) {
     const remainingAttempts = MAX_VERIFICATION_ATTEMPTS - session.attempts;

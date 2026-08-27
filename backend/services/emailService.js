@@ -1,11 +1,12 @@
 import nodemailer from 'nodemailer';
+import { env } from '../config/env.js';
 
 // Create Nodemailer Transporter
 const createTransporter = () => {
-  const host = process.env.EMAIL_HOST;
-  const port = process.env.EMAIL_PORT || 587;
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASSWORD;
+  const host = env.EMAIL_HOST || process.env.EMAIL_HOST;
+  const port = env.EMAIL_PORT || process.env.EMAIL_PORT || 587;
+  const user = env.EMAIL_USER || process.env.EMAIL_USER;
+  const pass = env.EMAIL_PASSWORD || process.env.EMAIL_PASSWORD;
 
   if (host && user && pass) {
     return nodemailer.createTransport({
@@ -84,7 +85,7 @@ export const emailService = {
     if (transporter) {
       try {
         await transporter.sendMail({
-          from: process.env.EMAIL_FROM || '"Luxury Watch Concierge" <concierge@luxurywatch.com>',
+          from: env.EMAIL_FROM || process.env.EMAIL_FROM || '"LUXURY WATCH Concierge" <concierge@luxurywatch.com>',
           to: cleanEmail,
           subject: `[LUXURY WATCH] Your Verification Code: ${otp}`,
           html
@@ -95,7 +96,7 @@ export const emailService = {
       }
     }
 
-    return { success: true, method: 'simulated', otp };
+    return { success: true, method: 'simulated' };
   },
 
   /**
@@ -140,7 +141,7 @@ export const emailService = {
     if (transporter && customer.email) {
       try {
         await transporter.sendMail({
-          from: process.env.EMAIL_FROM || '"Luxury Watch Concierge" <concierge@luxurywatch.com>',
+          from: env.EMAIL_FROM || process.env.EMAIL_FROM || '"LUXURY WATCH Concierge" <concierge@luxurywatch.com>',
           to: customer.email,
           subject: `[LUXURY WATCH] Allocation Confirmed: Order #${order.id}`,
           html

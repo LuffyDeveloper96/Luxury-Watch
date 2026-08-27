@@ -1,4 +1,7 @@
 import http from 'http';
+import './index.js';
+import { getDevOtpSession } from './services/otpService.js';
+import { env } from './config/env.js';
 
 const BASE_URL = 'http://127.0.0.1:5000/api';
 
@@ -55,9 +58,10 @@ async function runTestSuite() {
         phone: '+91 98200 98200'
       })
     });
-    assert(signupInitRes.ok && signupInitRes.data.simulatedOtp, '5. Initiate Patron Sign Up with Email + Password (/api/auth/user/signup/init)');
+    assert(signupInitRes.ok && signupInitRes.data.success && signupInitRes.data.step === 'otp', '5. Initiate Patron Sign Up with Email + Password (/api/auth/user/signup/init)');
 
-    const signupOtp = signupInitRes.data.simulatedOtp || '888888';
+    const signupSession = getDevOtpSession(testUserEmail);
+    const signupOtp = signupSession ? signupSession.rawOtp : '';
     const signupVerifyRes = await testRequest('/auth/user/signup/verify', {
       method: 'POST',
       body: JSON.stringify({ email: testUserEmail, otp: signupOtp })
@@ -73,9 +77,10 @@ async function runTestSuite() {
         password: 'LuxuryPatron2026!'
       })
     });
-    assert(loginInitRes.ok && loginInitRes.data.simulatedOtp, '7. Initiate Sign In with Password -> Send 2FA OTP (/api/auth/user/login/init)');
+    assert(loginInitRes.ok && loginInitRes.data.success && loginInitRes.data.step === 'otp', '7. Initiate Sign In with Password -> Send 2FA OTP (/api/auth/user/login/init)');
 
-    const loginOtp = loginInitRes.data.simulatedOtp || '888888';
+    const loginSession = getDevOtpSession(testUserEmail);
+    const loginOtp = loginSession ? loginSession.rawOtp : '';
     const loginVerifyRes = await testRequest('/auth/user/login/verify', {
       method: 'POST',
       body: JSON.stringify({ email: testUserEmail, otp: loginOtp })
@@ -101,7 +106,7 @@ async function runTestSuite() {
     });
     assert(paymentOrderRes.ok && paymentOrderRes.data.gatewayOrderId, '10. Razorpay Order Creation (/api/payments/razorpay/order)');
 
-    // 11. Razorpay Payment Verification & Consignment Creation
+    // 11. Razorpay Payment Verification & Consignment Creation (Sandbox Mode)
     const verifyPaymentRes = await testRequest('/payments/razorpay/verify', {
       method: 'POST',
       body: JSON.stringify({
@@ -138,9 +143,8 @@ async function runTestSuite() {
     const adminLoginRes = await testRequest('/auth/admin/login', {
       method: 'POST',
       body: JSON.stringify({
-        email: 'admin@luxurywatch.com',
-        password: 'LuxuryWatch2026!',
-        passcodePin: '8888'
+        email: env.ADMIN_EMAIL,
+        password: 'LuxuryWatch2026!'
       })
     });
     assert(adminLoginRes.ok && adminLoginRes.data.token, '14. Single Master Admin Authentication (/api/auth/admin/login)');
@@ -160,6 +164,7 @@ async function runTestSuite() {
   console.log('\n======================================================');
   console.log(`📊 Test Suite Completed: ${passed} Passed, ${failed} Failed`);
   console.log('======================================================\n');
+  process.exit(failed > 0 ? 1 : 0);
 }
 
 runTestSuite();

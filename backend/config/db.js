@@ -1319,53 +1319,93 @@ export const writeDb = (data) => {
   }
 };
 
-// Initialize MongoDB Connection (Optional Live Atlas Sync)
+// Initialize MongoDB Connection
 let isMongoConnected = false;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://luffynumber1member_db_user:eQSQWnGuZuUQCl4m@cluster0.emhstyx.mongodb.net/data?retryWrites=true&w=majority';
+let mongoConnectionError = null;
+const MONGODB_URI = process.env.MONGODB_URI || '';
 
-export const connectMongoDB = async () => {
-  if (isMongoConnected) return true;
+export const connectMongoDB = async (customUri) => {
+  const uri = customUri !== undefined ? customUri : (process.env.MONGODB_URI || '');
+  if (!uri) {
+    console.log('ℹ️ [Database] MONGODB_URI not configured. Operating in local JSON storage mode.');
+    return false;
+  }
+
+  if (isMongoConnected && mongoose.connection.readyState === 1) {
+    return true;
+  }
+
   try {
     console.log('[Database] Connecting to MongoDB Atlas cluster...');
-    await mongoose.connect(MONGODB_URI, {
+    await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 5000
     });
     isMongoConnected = true;
+    mongoConnectionError = null;
     console.log('✅ [Database] MongoDB Atlas Connected Successfully!');
     return true;
   } catch (err) {
-    console.warn('⚠️ [Database] MongoDB Atlas connection note:', err.message);
-    console.log('⚡ [Database] Operating in persistent local storage mode with live synchronization.');
-    return false;
+    isMongoConnected = false;
+    mongoConnectionError = err;
+    console.error('❌ [Database Connection Error] Failed to connect to MongoDB:');
+    console.error(`   ${err.message}`);
+    console.error('❌ [Database] Local storage fallback is disabled because MONGODB_URI is configured.');
+    throw new Error(`[Database Connection Error] MongoDB connection failed: ${err.message}`);
   }
 };
 
-// Auto-init connection in background
-connectMongoDB();
+export const disconnectMongoDB = async () => {
+  try {
+    await mongoose.disconnect();
+  } catch (e) {}
+  isMongoConnected = false;
+};
+
+// Auto-init connection in background if MONGODB_URI is provided
+if (MONGODB_URI) {
+  connectMongoDB().catch(() => {
+    // Initial error logged cleanly inside connectMongoDB
+  });
+}
+
+// Guard to ensure no silent fallback occurs if MONGODB_URI was configured but failed to connect
+const ensureDbAccess = () => {
+  const uri = process.env.MONGODB_URI || '';
+  if (uri && !isMongoConnected) {
+    const reason = mongoConnectionError ? mongoConnectionError.message : 'MongoDB connection not established';
+    throw new Error(`[Database Error] MongoDB connection unavailable (${reason}). Local storage fallback is disabled.`);
+  }
+};
 
 // Unified DB Interface
 export const db = {
   isMongo: () => isMongoConnected,
+  getConnectionError: () => mongoConnectionError,
   getCollection: (name) => {
+    ensureDbAccess();
     const store = readDb();
     return store[name] || [];
   },
   setCollection: (name, items) => {
+    ensureDbAccess();
     const store = readDb();
     store[name] = items;
     return writeDb(store);
   },
   findById: (name, id) => {
+    ensureDbAccess();
     const store = readDb();
     const items = store[name] || [];
     return items.find(item => item.id === id || item._id === id || item.slug === id);
   },
   findOne: (name, predicate) => {
+    ensureDbAccess();
     const store = readDb();
     const items = store[name] || [];
     return items.find(predicate);
   },
   insert: (name, item) => {
+    ensureDbAccess();
     const store = readDb();
     if (!store[name]) store[name] = [];
     store[name].unshift(item);
@@ -1373,6 +1413,7 @@ export const db = {
     return item;
   },
   updateById: (name, id, updates) => {
+    ensureDbAccess();
     const store = readDb();
     const items = store[name] || [];
     const idx = items.findIndex(item => item.id === id || item._id === id || item.slug === id);
@@ -1385,18 +1426,10 @@ export const db = {
     return null;
   },
   update: (name, id, updates) => {
-    const store = readDb();
-    const items = store[name] || [];
-    const idx = items.findIndex(item => item.id === id || item._id === id || item.slug === id);
-    if (idx !== -1) {
-      items[idx] = { ...items[idx], ...updates, updatedAt: new Date().toISOString() };
-      store[name] = items;
-      writeDb(store);
-      return items[idx];
-    }
-    return null;
+    return db.updateById(name, id, updates);
   },
   deleteById: (name, id) => {
+    ensureDbAccess();
     const store = readDb();
     const items = store[name] || [];
     const filtered = items.filter(item => item.id !== id && item._id !== id && item.slug !== id);
@@ -1411,10 +1444,12 @@ export const db = {
     return db.deleteById(name, id);
   },
   getMeta: (key) => {
+    ensureDbAccess();
     const store = readDb();
     return store[key];
   },
   setMeta: (key, val) => {
+    ensureDbAccess();
     const store = readDb();
     store[key] = val;
     return writeDb(store);

@@ -4,9 +4,9 @@ import { ShieldCheck, Lock, Mail, KeyRound, ArrowRight, X, AlertCircle, Sparkles
 
 export const AdminLogin = ({ onClose, onSuccess }) => {
   const { loginAdmin, isLoading } = useAdminAuth();
-  const [email, setEmail] = useState('admin@luxurywatch.com');
-  const [password, setPassword] = useState('LuxuryWatch2026!');
-  const [passcodePin, setPasscodePin] = useState('8888');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passcodePin, setPasscodePin] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleLogin = async (e) => {
@@ -174,7 +174,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
                   maxLength={6}
                   value={passcodePin}
                   onChange={(e) => setPasscodePin(e.target.value)}
-                  placeholder="8888"
+                  placeholder="••••"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', paddingLeft: '34px' }}
                 />

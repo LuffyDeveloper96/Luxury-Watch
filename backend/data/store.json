@@ -219,9 +219,9 @@
       "comparePrice": 6499,
       "sku": "ROL-SUB-41-GRN",
       "modelNumber": "126610LV",
-      "stock": 11,
+      "stock": 4,
       "rating": 5,
-      "reviewsCount": 2,
+      "reviewsCount": 6,
       "isLimited": true,
       "isBestSeller": true,
       "isNewArrival": false,
@@ -263,7 +263,7 @@
       "badgeType": "gold",
       "returnEligible": true,
       "active": true,
-      "updatedAt": "2026-08-26T18:52:33.433Z"
+      "updatedAt": "2026-08-27T19:15:07.774Z"
     },
     {
       "id": "omega-speedmaster-02",
@@ -685,6 +685,66 @@
   ],
   "reviews": [
     {
+      "id": "rev-1787858107768",
+      "productId": "rolex-submariner-01",
+      "author": "Vikramaditya Singhania",
+      "userName": "Vikramaditya Singhania",
+      "rating": 5,
+      "date": "Just now",
+      "title": "Masterpiece of Swiss Craftsmanship",
+      "comment": "The 28,800 VPH calibre keeps immaculate chronometer time. Exceptional concierge care.",
+      "verified": true,
+      "avatar": "VI",
+      "location": "Mumbai, India",
+      "status": "approved",
+      "createdAt": "2026-08-27T19:15:07.768Z"
+    },
+    {
+      "id": "rev-1787857389173",
+      "productId": "rolex-submariner-01",
+      "author": "Vikramaditya Singhania",
+      "userName": "Vikramaditya Singhania",
+      "rating": 5,
+      "date": "Just now",
+      "title": "Masterpiece of Swiss Craftsmanship",
+      "comment": "The 28,800 VPH calibre keeps immaculate chronometer time. Exceptional concierge care.",
+      "verified": true,
+      "avatar": "VI",
+      "location": "Mumbai, India",
+      "status": "approved",
+      "createdAt": "2026-08-27T19:03:09.173Z"
+    },
+    {
+      "id": "rev-1787854437671",
+      "productId": "rolex-submariner-01",
+      "author": "Vikramaditya Singhania",
+      "userName": "Vikramaditya Singhania",
+      "rating": 5,
+      "date": "Just now",
+      "title": "Masterpiece of Swiss Craftsmanship",
+      "comment": "The 28,800 VPH calibre keeps immaculate chronometer time. Exceptional concierge care.",
+      "verified": true,
+      "avatar": "VI",
+      "location": "Mumbai, India",
+      "status": "approved",
+      "createdAt": "2026-08-27T18:13:57.671Z"
+    },
+    {
+      "id": "rev-1787851773868",
+      "productId": "rolex-submariner-01",
+      "author": "Vikramaditya Singhania",
+      "userName": "Vikramaditya Singhania",
+      "rating": 5,
+      "date": "Just now",
+      "title": "Masterpiece of Swiss Craftsmanship",
+      "comment": "The 28,800 VPH calibre keeps immaculate chronometer time. Exceptional concierge care.",
+      "verified": true,
+      "avatar": "VI",
+      "location": "Mumbai, India",
+      "status": "approved",
+      "createdAt": "2026-08-27T17:29:33.868Z"
+    },
+    {
       "id": "rev-1787770353429",
       "productId": "rolex-submariner-01",
       "author": "Vikramaditya Singhania",
@@ -737,6 +797,396 @@
     }
   ],
   "activityLog": [
+    {
+      "id": "act-1787858146014",
+      "text": "Master Admin authenticated session #146012",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787858107830",
+      "text": "Admin removed \"Test Grand Complication Perpetual Calendar\" from catalog",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787858107821",
+      "text": "📨 New concierge inquiry received from Lord Sterling (collector.1787858100028@luxurywatch.com)",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787858107793",
+      "text": "Master Administrator updated Homepage CMS content",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787858107775",
+      "text": "⭐️ Review posted by Vikramaditya Singhania (5★)",
+      "time": "Just now",
+      "type": "review"
+    },
+    {
+      "id": "act-1787858107763",
+      "text": "Consignment #ORD-LW-41969 stage changed to: \"Shipped\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787858107745",
+      "text": "💳 Payment verified! Order #ORD-LW-41969 confirmed for Lord Sterling Connoisseur (₹5,499)",
+      "time": "Just now",
+      "type": "order"
+    },
+    {
+      "id": "act-1787858102599",
+      "text": "✨ New patron Lord Sterling Connoisseur created an account with verified email & password",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787858100025",
+      "text": "Vault stock updated for \"Test Grand Complication Perpetual Calendar\" (8 available)",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787858100016",
+      "text": "Master Administrator catalogued: \"Test Grand Complication Perpetual Calendar\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787858099991",
+      "text": "Brand \"A. Lange & Söhne\" removed by Master Admin",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787858099979",
+      "text": "Master Administrator added luxury brand: \"A. Lange & Söhne\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787858099950",
+      "text": "Master Admin authenticated session #099948",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787858090337",
+      "text": "Master Admin authenticated session #090337",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787858090256",
+      "text": "💳 Payment verified! Order #ORD-LW-83075 confirmed for Lord Sterling (₹5,499)",
+      "time": "Just now",
+      "type": "order"
+    },
+    {
+      "id": "act-1787858087868",
+      "text": "✨ New patron Lord Sterling created an account with verified email & password",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787858065396",
+      "text": "✨ New patron Lord Sterling of Geneva created an account with verified email & password",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787858026818",
+      "text": "✨ New patron Lord Sterling of Geneva created an account with verified email & password",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787858014188",
+      "text": "Master Admin authenticated session #014186",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787857389224",
+      "text": "Admin removed \"Test Grand Complication Perpetual Calendar\" from catalog",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787857389218",
+      "text": "📨 New concierge inquiry received from Lord Sterling (collector.1787857383048@luxurywatch.com)",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787857389194",
+      "text": "Master Administrator updated Homepage CMS content",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787857389178",
+      "text": "⭐️ Review posted by Vikramaditya Singhania (5★)",
+      "time": "Just now",
+      "type": "review"
+    },
+    {
+      "id": "act-1787857389169",
+      "text": "Consignment #ORD-LW-74201 stage changed to: \"Shipped\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787857389144",
+      "text": "💳 Payment verified! Order #ORD-LW-74201 confirmed for Lord Sterling Connoisseur (₹5,499)",
+      "time": "Just now",
+      "type": "order"
+    },
+    {
+      "id": "act-1787857386476",
+      "text": "✨ New patron Lord Sterling Connoisseur created an account with verified email & password",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787857383046",
+      "text": "Vault stock updated for \"Test Grand Complication Perpetual Calendar\" (8 available)",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787857383037",
+      "text": "Master Administrator catalogued: \"Test Grand Complication Perpetual Calendar\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787857383011",
+      "text": "Brand \"A. Lange & Söhne\" removed by Master Admin",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787857382997",
+      "text": "Master Administrator added luxury brand: \"A. Lange & Söhne\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787857382967",
+      "text": "Master Admin authenticated session #382964",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787857367787",
+      "text": "Master Admin authenticated session #367780",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854451322",
+      "text": "Master Admin authenticated session #451320",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854437748",
+      "text": "Admin removed \"Test Grand Complication Perpetual Calendar\" from catalog",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854437739",
+      "text": "📨 New concierge inquiry received from Lord Sterling (collector.1787854437364@luxurywatch.com)",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787854437705",
+      "text": "Master Administrator updated Homepage CMS content",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854437679",
+      "text": "⭐️ Review posted by Vikramaditya Singhania (5★)",
+      "time": "Just now",
+      "type": "review"
+    },
+    {
+      "id": "act-1787854437663",
+      "text": "Consignment #ORD-LW-57664 stage changed to: \"Shipped\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854437642",
+      "text": "💳 Payment verified! Order #ORD-LW-57664 confirmed for Lord Sterling Connoisseur (₹5,499)",
+      "time": "Just now",
+      "type": "order"
+    },
+    {
+      "id": "act-1787854437443",
+      "text": "✨ New patron Lord Sterling Connoisseur created an account with verified email & password",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787854437362",
+      "text": "Vault stock updated for \"Test Grand Complication Perpetual Calendar\" (8 available)",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854437353",
+      "text": "Master Administrator catalogued: \"Test Grand Complication Perpetual Calendar\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854437329",
+      "text": "Brand \"A. Lange & Söhne\" removed by Master Admin",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854437315",
+      "text": "Master Administrator added luxury brand: \"A. Lange & Söhne\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854437284",
+      "text": "Master Admin authenticated session #437281",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854428122",
+      "text": "Master Admin authenticated session #428122",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854428039",
+      "text": "💳 Payment verified! Order #ORD-LW-81604 confirmed for Lord Sterling (₹5,499)",
+      "time": "Just now",
+      "type": "order"
+    },
+    {
+      "id": "act-1787854427912",
+      "text": "✨ New patron Lord Sterling created an account with verified email & password",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787854369343",
+      "text": "Master Admin authenticated session #369341",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854369258",
+      "text": "💳 Payment verified! Order #ORD-LW-96274 confirmed for Lord Sterling (₹5,499)",
+      "time": "Just now",
+      "type": "order"
+    },
+    {
+      "id": "act-1787854264859",
+      "text": "Master Admin authenticated session #264857",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787854219819",
+      "text": "Master Admin (admin@luxurywatch.com) authenticated session #219815",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787853474890",
+      "text": "Master Admin authenticated session #474887",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787851773944",
+      "text": "Admin removed \"Test Grand Complication Perpetual Calendar\" from catalog",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787851773937",
+      "text": "📨 New concierge inquiry received from Lord Sterling (collector.1787851773109@luxurywatch.com)",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787851773890",
+      "text": "Master Administrator updated Homepage CMS content",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787851773873",
+      "text": "⭐️ Review posted by Vikramaditya Singhania (5★)",
+      "time": "Just now",
+      "type": "review"
+    },
+    {
+      "id": "act-1787851773863",
+      "text": "Consignment #ORD-LW-15365 stage changed to: \"Shipped\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787851773847",
+      "text": "💳 Payment verified! Order #ORD-LW-15365 confirmed for Lord Sterling Connoisseur (₹5,499)",
+      "time": "Just now",
+      "type": "order"
+    },
+    {
+      "id": "act-1787851773191",
+      "text": "✨ New patron Lord Sterling Connoisseur created an account with verified email & password",
+      "time": "Just now",
+      "type": "user"
+    },
+    {
+      "id": "act-1787851773106",
+      "text": "Vault stock updated for \"Test Grand Complication Perpetual Calendar\" (8 available)",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787851773098",
+      "text": "Master Administrator catalogued: \"Test Grand Complication Perpetual Calendar\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787851773074",
+      "text": "Brand \"A. Lange & Söhne\" removed by Master Admin",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787851773061",
+      "text": "Master Administrator added luxury brand: \"A. Lange & Söhne\"",
+      "time": "Just now",
+      "type": "admin"
+    },
+    {
+      "id": "act-1787851773015",
+      "text": "Master Admin (admin@luxurywatch.com) authenticated session #773011",
+      "time": "Just now",
+      "type": "admin"
+    },
     {
       "id": "act-1787770353499",
       "text": "Admin removed \"Test Grand Complication Perpetual Calendar\" from catalog",
@@ -836,6 +1286,106 @@
   ],
   "returns": [
     {
+      "id": "RET-LW-64970",
+      "orderId": "ORD-LW-41969",
+      "customerName": "Valued Patron",
+      "customerEmail": "collector.1787858100028@luxurywatch.com",
+      "customerPhone": "",
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "returnReason": "Requesting exchange for different dial color",
+      "resolutionType": "Refund",
+      "exchangeModelPreference": null,
+      "pickupAddress": "Client Registered Address",
+      "notes": "",
+      "status": "Requested",
+      "waybillNumber": "LW-RET-IND-68977558",
+      "courierTier": "Securitas Armoured Return Transit (Insured)",
+      "createdAt": "2026-08-27T19:15:07.781Z",
+      "updatedAt": "2026-08-27T19:15:07.781Z"
+    },
+    {
+      "id": "RET-LW-23505",
+      "orderId": "ORD-LW-74201",
+      "customerName": "Valued Patron",
+      "customerEmail": "collector.1787857383048@luxurywatch.com",
+      "customerPhone": "",
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "returnReason": "Requesting exchange for different dial color",
+      "resolutionType": "Refund",
+      "exchangeModelPreference": null,
+      "pickupAddress": "Client Registered Address",
+      "notes": "",
+      "status": "Requested",
+      "waybillNumber": "LW-RET-IND-53029455",
+      "courierTier": "Securitas Armoured Return Transit (Insured)",
+      "createdAt": "2026-08-27T19:03:09.184Z",
+      "updatedAt": "2026-08-27T19:03:09.184Z"
+    },
+    {
+      "id": "RET-LW-84639",
+      "orderId": "ORD-LW-57664",
+      "customerName": "Valued Patron",
+      "customerEmail": "collector.1787854437364@luxurywatch.com",
+      "customerPhone": "",
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "returnReason": "Requesting exchange for different dial color",
+      "resolutionType": "Refund",
+      "exchangeModelPreference": null,
+      "pickupAddress": "Client Registered Address",
+      "notes": "",
+      "status": "Requested",
+      "waybillNumber": "LW-RET-IND-52178342",
+      "courierTier": "Securitas Armoured Return Transit (Insured)",
+      "createdAt": "2026-08-27T18:13:57.691Z",
+      "updatedAt": "2026-08-27T18:13:57.691Z"
+    },
+    {
+      "id": "RET-LW-88486",
+      "orderId": "ORD-LW-15365",
+      "customerName": "Valued Patron",
+      "customerEmail": "collector.1787851773109@luxurywatch.com",
+      "customerPhone": "",
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "returnReason": "Requesting exchange for different dial color",
+      "resolutionType": "Refund",
+      "exchangeModelPreference": null,
+      "pickupAddress": "Client Registered Address",
+      "notes": "",
+      "status": "Requested",
+      "waybillNumber": "LW-RET-IND-86967587",
+      "courierTier": "Securitas Armoured Return Transit (Insured)",
+      "createdAt": "2026-08-27T17:29:33.879Z",
+      "updatedAt": "2026-08-27T17:29:33.879Z"
+    },
+    {
       "id": "RET-LW-32476",
       "orderId": "ORD-LW-72595",
       "customerName": "Valued Patron",
@@ -873,6 +1423,234 @@
       ],
       "customer": {
         "fullName": "Lord Sterling Connoisseur",
+        "email": "collector.1787858100028@luxurywatch.com",
+        "phone": "+91 98200 98200",
+        "address": "The Capital, BKC",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400051"
+      },
+      "total": 5499,
+      "courierTier": "BlueDart Insured Air Express (Pan-India 24-48 Hours)",
+      "id": "ORD-LW-41969",
+      "date": "2026-08-27T19:15:07.725Z",
+      "orderStatus": "Shipped",
+      "paymentStatus": "Paid",
+      "paymentMethod": "razorpay",
+      "paymentDetails": {
+        "gatewayOrderId": "order_LW_1787858107718_1577",
+        "paymentId": "pay_e2e_1787858107722",
+        "signature": "mock_verified_signature"
+      },
+      "trackingNumber": "BD-EXP-889922",
+      "updatedAt": "2026-08-27T19:15:07.762Z"
+    },
+    {
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "customer": {
+        "fullName": "Lord Sterling",
+        "email": "patron.1787858084737@luxurywatch.com",
+        "phone": "+91 98200 98200",
+        "address": "The Capital, BKC",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400051"
+      },
+      "total": 5499,
+      "id": "ORD-LW-83075",
+      "date": "2026-08-27T19:14:50.230Z",
+      "orderStatus": "Confirmed",
+      "paymentStatus": "Paid",
+      "paymentMethod": "razorpay",
+      "paymentDetails": {
+        "gatewayOrderId": "order_LW_1787858090227_9436",
+        "paymentId": "pay_test_1787858090228",
+        "signature": "mock_verified_signature"
+      },
+      "trackingNumber": "LW-EXP-56131072",
+      "courierTier": "Securitas Armoured Express (Insured)"
+    },
+    {
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "customer": {
+        "fullName": "Lord Sterling Connoisseur",
+        "email": "collector.1787857383048@luxurywatch.com",
+        "phone": "+91 98200 98200",
+        "address": "The Capital, BKC",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400051"
+      },
+      "total": 5499,
+      "courierTier": "BlueDart Insured Air Express (Pan-India 24-48 Hours)",
+      "id": "ORD-LW-74201",
+      "date": "2026-08-27T19:03:09.115Z",
+      "orderStatus": "Shipped",
+      "paymentStatus": "Paid",
+      "paymentMethod": "razorpay",
+      "paymentDetails": {
+        "gatewayOrderId": "order_LW_1787857389113_1147",
+        "paymentId": "pay_e2e_1787857389114",
+        "signature": "mock_verified_signature"
+      },
+      "trackingNumber": "BD-EXP-889922",
+      "updatedAt": "2026-08-27T19:03:09.168Z"
+    },
+    {
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "customer": {
+        "fullName": "Lord Sterling Connoisseur",
+        "email": "collector.1787854437364@luxurywatch.com",
+        "phone": "+91 98200 98200",
+        "address": "The Capital, BKC",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400051"
+      },
+      "total": 5499,
+      "courierTier": "BlueDart Insured Air Express (Pan-India 24-48 Hours)",
+      "id": "ORD-LW-57664",
+      "date": "2026-08-27T18:13:57.608Z",
+      "orderStatus": "Shipped",
+      "paymentStatus": "Paid",
+      "paymentMethod": "razorpay",
+      "paymentDetails": {
+        "gatewayOrderId": "order_LW_1787854437602_5595",
+        "paymentId": "pay_e2e_1787854437605",
+        "signature": "mock_verified_signature"
+      },
+      "trackingNumber": "BD-EXP-889922",
+      "updatedAt": "2026-08-27T18:13:57.663Z"
+    },
+    {
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "customer": {
+        "fullName": "Lord Sterling",
+        "email": "patron.1787854427782@luxurywatch.com",
+        "phone": "+91 98200 98200",
+        "address": "The Capital, BKC",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400051"
+      },
+      "total": 5499,
+      "id": "ORD-LW-81604",
+      "date": "2026-08-27T18:13:48.016Z",
+      "orderStatus": "Confirmed",
+      "paymentStatus": "Paid",
+      "paymentMethod": "razorpay",
+      "paymentDetails": {
+        "gatewayOrderId": "order_LW_1787854428014_6067",
+        "paymentId": "pay_test_1787854428015",
+        "signature": "mock_verified_signature"
+      },
+      "trackingNumber": "LW-EXP-35442641",
+      "courierTier": "Securitas Armoured Express (Insured)"
+    },
+    {
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "customer": {
+        "fullName": "Lord Sterling",
+        "email": "patron.1787854369112@luxurywatch.com",
+        "phone": "+91 98200 98200",
+        "address": "The Capital, BKC",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400051"
+      },
+      "total": 5499,
+      "id": "ORD-LW-96274",
+      "date": "2026-08-27T18:12:49.231Z",
+      "orderStatus": "Confirmed",
+      "paymentStatus": "Paid",
+      "paymentMethod": "razorpay",
+      "paymentDetails": {
+        "gatewayOrderId": "order_LW_1787854369225_3250",
+        "paymentId": "pay_test_1787854369229",
+        "signature": "mock_verified_signature"
+      },
+      "trackingNumber": "LW-EXP-78921886",
+      "courierTier": "Securitas Armoured Express (Insured)"
+    },
+    {
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "customer": {
+        "fullName": "Lord Sterling Connoisseur",
+        "email": "collector.1787851773109@luxurywatch.com",
+        "phone": "+91 98200 98200",
+        "address": "The Capital, BKC",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400051"
+      },
+      "total": 5499,
+      "courierTier": "BlueDart Insured Air Express (Pan-India 24-48 Hours)",
+      "id": "ORD-LW-15365",
+      "date": "2026-08-27T17:29:33.837Z",
+      "orderStatus": "Shipped",
+      "paymentStatus": "Paid",
+      "paymentMethod": "razorpay",
+      "paymentDetails": {
+        "gatewayOrderId": "order_LW_1787851773835_9184",
+        "paymentId": "pay_e2e_1787851773836",
+        "signature": "mock_verified_signature"
+      },
+      "trackingNumber": "BD-EXP-889922",
+      "updatedAt": "2026-08-27T17:29:33.862Z"
+    },
+    {
+      "items": [
+        {
+          "id": "rolex-submariner-01",
+          "name": "Rolex Submariner Date 41mm",
+          "price": 5499,
+          "quantity": 1
+        }
+      ],
+      "customer": {
+        "fullName": "Lord Sterling Connoisseur",
         "email": "collector.1787770353245@luxurywatch.com",
         "phone": "+91 98200 98200",
         "address": "The Capital, BKC",
@@ -897,6 +1675,191 @@
     }
   ],
   "users": [
+    {
+      "id": "usr-1787858102597",
+      "email": "collector.1787858100028@luxurywatch.com",
+      "password": "$2b$10$YnWYrHhl5GAzfWj1SOcoN.HZ/kAy5hAfQA/XzI1YQ25sg08zHl/3K",
+      "name": "Lord Sterling Connoisseur",
+      "phone": "+91 98200 98200",
+      "role": "customer",
+      "verified": true,
+      "addresses": [
+        {
+          "id": "ADDR-1787858107703",
+          "fullName": "Lord Sterling Connoisseur",
+          "phone": "+91 98200 98200",
+          "street": "The Capital, BKC, G Block",
+          "landmark": "Near Sofitel",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "postalCode": "400051",
+          "country": "India",
+          "isDefault": true
+        }
+      ],
+      "totalSpent": 0,
+      "ordersCount": 0,
+      "createdAt": "2026-08-27T19:15:02.597Z",
+      "lastLogin": "2026-08-27T19:15:07.688Z",
+      "updatedAt": "2026-08-27T19:15:07.704Z"
+    },
+    {
+      "id": "usr-1787858087866",
+      "email": "patron.1787858084737@luxurywatch.com",
+      "password": "$2b$10$5X.P8bRqpmwN./nu/RHNoOiF595NcZpzreTuOHgY73xm7TG.lszy2",
+      "name": "Lord Sterling",
+      "phone": "+91 98200 98200",
+      "role": "customer",
+      "verified": true,
+      "addresses": [],
+      "totalSpent": 0,
+      "ordersCount": 0,
+      "createdAt": "2026-08-27T19:14:47.866Z",
+      "lastLogin": "2026-08-27T19:14:50.211Z",
+      "updatedAt": "2026-08-27T19:14:50.212Z"
+    },
+    {
+      "id": "usr-1787858065395",
+      "email": "patron.1787858062818@luxurywatch.com",
+      "password": "$2b$10$Hgg8Og4AusN.iY0Mgt/1fOVi/etQRlmwrksu0H5XSHKPgBsO4v8Fi",
+      "name": "Lord Sterling of Geneva",
+      "phone": "+91 98200 98200",
+      "role": "customer",
+      "verified": true,
+      "addresses": [
+        {
+          "id": "ADDR-1787858067897",
+          "fullName": "Lord Sterling",
+          "phone": "+91 98200 98200",
+          "street": "The Capital, G-Block, Bandra Kurla Complex",
+          "landmark": "",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "postalCode": "400051",
+          "country": "India",
+          "isDefault": true
+        }
+      ],
+      "totalSpent": 0,
+      "ordersCount": 0,
+      "createdAt": "2026-08-27T19:14:25.395Z",
+      "lastLogin": "2026-08-27T19:14:27.888Z",
+      "updatedAt": "2026-08-27T19:14:30.912Z"
+    },
+    {
+      "id": "usr-1787858026815",
+      "email": "patron.1787858023862@luxurywatch.com",
+      "password": "$2b$10$/UaCneq5DU.r3KBp3fb9M.MfbaWXn1zncwvkaeOvkuksx3y6Hl7XO",
+      "name": "Lord Sterling of Geneva",
+      "phone": "+91 98200 98200",
+      "role": "customer",
+      "verified": true,
+      "addresses": [],
+      "totalSpent": 0,
+      "ordersCount": 0,
+      "createdAt": "2026-08-27T19:13:46.815Z",
+      "lastLogin": "2026-08-27T19:13:49.357Z",
+      "updatedAt": "2026-08-27T19:13:52.038Z"
+    },
+    {
+      "id": "usr-1787857386473",
+      "email": "collector.1787857383048@luxurywatch.com",
+      "password": "$2b$10$S/rKseDDfk5gnxvo481l0.lvsShJtR4q5w0TrB6Tuk.LQxXMbHVB.",
+      "name": "Lord Sterling Connoisseur",
+      "phone": "+91 98200 98200",
+      "role": "customer",
+      "verified": true,
+      "addresses": [
+        {
+          "id": "ADDR-1787857389102",
+          "fullName": "Lord Sterling Connoisseur",
+          "phone": "+91 98200 98200",
+          "street": "The Capital, BKC, G Block",
+          "landmark": "Near Sofitel",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "postalCode": "400051",
+          "country": "India",
+          "isDefault": true
+        }
+      ],
+      "totalSpent": 0,
+      "ordersCount": 0,
+      "createdAt": "2026-08-27T19:03:06.473Z",
+      "lastLogin": "2026-08-27T19:03:09.093Z",
+      "updatedAt": "2026-08-27T19:03:09.102Z"
+    },
+    {
+      "id": "usr-1787854437441",
+      "email": "collector.1787854437364@luxurywatch.com",
+      "password": "$2b$10$/v7p0MDe/7PECzM7dpCAAuhWYzqNP.ct0L8Z1qjNJ/Ar//rtEGQcW",
+      "name": "Lord Sterling Connoisseur",
+      "phone": "+91 98200 98200",
+      "role": "customer",
+      "verified": true,
+      "addresses": [
+        {
+          "id": "ADDR-1787854437576",
+          "fullName": "Lord Sterling Connoisseur",
+          "phone": "+91 98200 98200",
+          "street": "The Capital, BKC, G Block",
+          "landmark": "Near Sofitel",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "postalCode": "400051",
+          "country": "India",
+          "isDefault": true
+        }
+      ],
+      "totalSpent": 0,
+      "ordersCount": 0,
+      "createdAt": "2026-08-27T18:13:57.441Z",
+      "lastLogin": "2026-08-27T18:13:57.558Z",
+      "updatedAt": "2026-08-27T18:13:57.579Z"
+    },
+    {
+      "id": "usr-1787854427909",
+      "email": "patron.1787854427782@luxurywatch.com",
+      "password": "$2b$10$KiOAk5dLYMZU6JiGGcH6YOTQ0FpMwmUa7MURJM2Lkf485ISP5sFee",
+      "name": "Lord Sterling",
+      "phone": "+91 98200 98200",
+      "role": "customer",
+      "verified": true,
+      "addresses": [],
+      "totalSpent": 0,
+      "ordersCount": 0,
+      "createdAt": "2026-08-27T18:13:47.909Z",
+      "lastLogin": "2026-08-27T18:13:48.001Z",
+      "updatedAt": "2026-08-27T18:13:48.002Z"
+    },
+    {
+      "id": "usr-1787851773190",
+      "email": "collector.1787851773109@luxurywatch.com",
+      "password": "$2b$10$g74V39QkiBPaTW3WUq1tKeo9OVgoZV9GTZ2HskQjtuwUQrpGRosyi",
+      "name": "Lord Sterling Connoisseur",
+      "phone": "+91 98200 98200",
+      "role": "customer",
+      "verified": true,
+      "addresses": [
+        {
+          "id": "ADDR-1787851773276",
+          "fullName": "Lord Sterling Connoisseur",
+          "phone": "+91 98200 98200",
+          "street": "The Capital, BKC, G Block",
+          "landmark": "Near Sofitel",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "postalCode": "400051",
+          "country": "India",
+          "isDefault": true
+        }
+      ],
+      "totalSpent": 0,
+      "ordersCount": 0,
+      "createdAt": "2026-08-27T17:29:33.190Z",
+      "lastLogin": "2026-08-27T17:29:33.267Z",
+      "updatedAt": "2026-08-27T17:29:33.277Z"
+    },
     {
       "id": "usr-1787770353316",
       "email": "collector.1787770353245@luxurywatch.com",
@@ -927,6 +1890,90 @@
     }
   ],
   "payments": [
+    {
+      "transactionId": "TXN-1787858107728-454",
+      "createdAt": "2026-08-27T19:15:07.728Z",
+      "orderId": "ORD-LW-41969",
+      "gatewayOrderId": "order_LW_1787858107718_1577",
+      "gatewayPaymentId": "pay_e2e_1787858107722",
+      "gatewaySignature": "mock_verified_signature",
+      "amount": 5499,
+      "currency": "INR",
+      "status": "paid",
+      "customerEmail": "collector.1787858100028@luxurywatch.com"
+    },
+    {
+      "transactionId": "TXN-1787858090233-510",
+      "createdAt": "2026-08-27T19:14:50.233Z",
+      "orderId": "ORD-LW-83075",
+      "gatewayOrderId": "order_LW_1787858090227_9436",
+      "gatewayPaymentId": "pay_test_1787858090228",
+      "gatewaySignature": "mock_verified_signature",
+      "amount": 5499,
+      "currency": "INR",
+      "status": "paid",
+      "customerEmail": "patron.1787858084737@luxurywatch.com"
+    },
+    {
+      "transactionId": "TXN-1787857389118-413",
+      "createdAt": "2026-08-27T19:03:09.118Z",
+      "orderId": "ORD-LW-74201",
+      "gatewayOrderId": "order_LW_1787857389113_1147",
+      "gatewayPaymentId": "pay_e2e_1787857389114",
+      "gatewaySignature": "mock_verified_signature",
+      "amount": 5499,
+      "currency": "INR",
+      "status": "paid",
+      "customerEmail": "collector.1787857383048@luxurywatch.com"
+    },
+    {
+      "transactionId": "TXN-1787854437613-838",
+      "createdAt": "2026-08-27T18:13:57.613Z",
+      "orderId": "ORD-LW-57664",
+      "gatewayOrderId": "order_LW_1787854437602_5595",
+      "gatewayPaymentId": "pay_e2e_1787854437605",
+      "gatewaySignature": "mock_verified_signature",
+      "amount": 5499,
+      "currency": "INR",
+      "status": "paid",
+      "customerEmail": "collector.1787854437364@luxurywatch.com"
+    },
+    {
+      "transactionId": "TXN-1787854428018-711",
+      "createdAt": "2026-08-27T18:13:48.018Z",
+      "orderId": "ORD-LW-81604",
+      "gatewayOrderId": "order_LW_1787854428014_6067",
+      "gatewayPaymentId": "pay_test_1787854428015",
+      "gatewaySignature": "mock_verified_signature",
+      "amount": 5499,
+      "currency": "INR",
+      "status": "paid",
+      "customerEmail": "patron.1787854427782@luxurywatch.com"
+    },
+    {
+      "transactionId": "TXN-1787854369233-661",
+      "createdAt": "2026-08-27T18:12:49.233Z",
+      "orderId": "ORD-LW-96274",
+      "gatewayOrderId": "order_LW_1787854369225_3250",
+      "gatewayPaymentId": "pay_test_1787854369229",
+      "gatewaySignature": "mock_verified_signature",
+      "amount": 5499,
+      "currency": "INR",
+      "status": "paid",
+      "customerEmail": "patron.1787854369112@luxurywatch.com"
+    },
+    {
+      "transactionId": "TXN-1787851773839-187",
+      "createdAt": "2026-08-27T17:29:33.839Z",
+      "orderId": "ORD-LW-15365",
+      "gatewayOrderId": "order_LW_1787851773835_9184",
+      "gatewayPaymentId": "pay_e2e_1787851773836",
+      "gatewaySignature": "mock_verified_signature",
+      "amount": 5499,
+      "currency": "INR",
+      "status": "paid",
+      "customerEmail": "collector.1787851773109@luxurywatch.com"
+    },
     {
       "transactionId": "TXN-1787770353411-998",
       "createdAt": "2026-08-26T18:52:33.411Z",
@@ -973,7 +2020,7 @@
       "ctaPrimaryText": "SHOP ALL WATCHES",
       "ctaSecondaryText": "EXPLORE SKELETONS"
     },
-    "updatedAt": "2026-08-26T18:52:33.445Z"
+    "updatedAt": "2026-08-27T19:15:07.791Z"
   },
   "admin": {
     "email": "admin@luxurywatch.com",
@@ -981,6 +2028,46 @@
     "lastLogin": "2026-08-26T00:00:00Z"
   },
   "contacts": [
+    {
+      "id": "cnt-1787858107819",
+      "name": "Lord Sterling",
+      "email": "collector.1787858100028@luxurywatch.com",
+      "phone": "+91 98200 98200",
+      "subject": "Bespoke Caseback Engraving Inquiry",
+      "message": "Inquiring regarding custom coat-of-arms laser engraving.",
+      "status": "unread",
+      "createdAt": "2026-08-27T19:15:07.819Z"
+    },
+    {
+      "id": "cnt-1787857389216",
+      "name": "Lord Sterling",
+      "email": "collector.1787857383048@luxurywatch.com",
+      "phone": "+91 98200 98200",
+      "subject": "Bespoke Caseback Engraving Inquiry",
+      "message": "Inquiring regarding custom coat-of-arms laser engraving.",
+      "status": "unread",
+      "createdAt": "2026-08-27T19:03:09.216Z"
+    },
+    {
+      "id": "cnt-1787854437737",
+      "name": "Lord Sterling",
+      "email": "collector.1787854437364@luxurywatch.com",
+      "phone": "+91 98200 98200",
+      "subject": "Bespoke Caseback Engraving Inquiry",
+      "message": "Inquiring regarding custom coat-of-arms laser engraving.",
+      "status": "unread",
+      "createdAt": "2026-08-27T18:13:57.737Z"
+    },
+    {
+      "id": "cnt-1787851773935",
+      "name": "Lord Sterling",
+      "email": "collector.1787851773109@luxurywatch.com",
+      "phone": "+91 98200 98200",
+      "subject": "Bespoke Caseback Engraving Inquiry",
+      "message": "Inquiring regarding custom coat-of-arms laser engraving.",
+      "status": "unread",
+      "createdAt": "2026-08-27T17:29:33.935Z"
+    },
     {
       "id": "cnt-1787770353491",
       "name": "Lord Sterling",

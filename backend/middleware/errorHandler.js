@@ -1,21 +1,29 @@
+import { env } from '../config/env.js';
+
 /**
  * Centralized sanitized error handler
- * Never exposes stack traces in production mode
+ * Never exposes stack traces, internal paths, or secrets in production mode
  */
 export const errorHandler = (err, req, res, next) => {
-  const statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
-  const isDev = process.env.NODE_ENV === 'development';
+  const statusCode = err.statusCode || (res.statusCode >= 400 ? res.statusCode : 500);
+  const isDev = (env.NODE_ENV || process.env.NODE_ENV) === 'development';
 
-  console.error(`[Error Handler] ${req.method} ${req.originalUrl}:`, err.message);
   if (isDev) {
-    console.error(err.stack);
+    console.error(`[Error Handler] ${req.method} ${req.originalUrl}:`, err.message);
+    if (err.stack) console.error(err.stack);
+  } else {
+    console.error(`[Error Handler] ${req.method} ${req.originalUrl}: ${statusCode} - ${err.message ? err.message.slice(0, 100) : 'Internal Error'}`);
   }
+
+  // Safe message in production for 500 errors to prevent leaking internal database / system details
+  const safeMessage = isDev
+    ? (err.message || 'Internal Server Error')
+    : (statusCode >= 500 ? 'An internal server error occurred.' : (err.message || 'Request failed.'));
 
   res.status(statusCode).json({
     success: false,
-    message: err.message || 'Internal Haute Horlogerie Engine Error',
-    error: isDev ? err.message : undefined,
-    stack: isDev ? err.stack : undefined
+    message: safeMessage,
+    ...(isDev && { error: err.message, stack: err.stack })
   });
 };
 

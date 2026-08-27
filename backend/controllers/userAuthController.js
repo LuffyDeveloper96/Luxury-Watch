@@ -56,7 +56,6 @@ export const initiateUserSignup = async (req, res) => {
     return res.json({
       success: true,
       message: `A 6-digit verification code has been dispatched to ${cleanEmail}.`,
-      simulatedOtp: otpResult.rawOtp, // Provided for instant local testing & preview
       step: 'otp',
       expiresInSeconds: 300
     });
@@ -169,7 +168,7 @@ export const initiateUserLogin = async (req, res) => {
     // Check password if user has a password set
     if (user.password) {
       const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch && password !== 'LuxuryWatch2026!') {
+      if (!isMatch) {
         return res.status(401).json({
           success: false,
           message: 'Invalid password. Please check your credentials.'
@@ -193,7 +192,6 @@ export const initiateUserLogin = async (req, res) => {
     return res.json({
       success: true,
       message: `Password confirmed. A 6-digit 2FA verification code has been dispatched to ${cleanEmail}.`,
-      simulatedOtp: otpResult.rawOtp,
       step: 'otp',
       expiresInSeconds: 300
     });
@@ -288,7 +286,7 @@ export const forgotPasswordInit = async (req, res) => {
     return res.json({
       success: true,
       message: `Password reset verification code dispatched to ${cleanEmail}.`,
-      simulatedOtp: otpResult.rawOtp,
+      step: 'otp',
       expiresInSeconds: 300
     });
   } catch (err) {

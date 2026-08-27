@@ -1,13 +1,16 @@
 import jwt from 'jsonwebtoken';
 import { db } from '../config/db.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'luxury_watch_geneva_master_jwt_secret_2026';
+import { env } from '../config/env.js';
 
 /**
  * Generate signed JWT token
  */
 export const generateToken = (payload, expiresIn = '7d') => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+  const jwtSecret = env.JWT_SECRET || process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error('JWT Secret is not configured.');
+  }
+  return jwt.sign(payload, jwtSecret, { expiresIn });
 };
 
 /**
@@ -24,7 +27,15 @@ export const requireAuth = (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const jwtSecret = env.JWT_SECRET || process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      return res.status(500).json({
+        success: false,
+        message: 'Authentication service configuration error.'
+      });
+    }
+
+    const decoded = jwt.verify(token, jwtSecret);
     req.user = decoded;
     next();
   } catch (err) {
@@ -50,16 +61,25 @@ export const requireAdmin = (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const jwtSecret = env.JWT_SECRET || process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      return res.status(500).json({
+        success: false,
+        message: 'Authentication service configuration error.'
+      });
+    }
+
+    const decoded = jwt.verify(token, jwtSecret);
 
     const authorizedEmail = (
-      db.getMeta('authorizedAdminGmail') ||
-      process.env.AUTHORIZED_ADMIN_GMAIL ||
+      env.ADMIN_EMAIL ||
       process.env.ADMIN_EMAIL ||
-      'admin@luxurywatch.com'
+      process.env.AUTHORIZED_ADMIN_GMAIL ||
+      db.getMeta('authorizedAdminGmail') ||
+      ''
     ).trim().toLowerCase();
 
-    if (!decoded.email || decoded.email.trim().toLowerCase() !== authorizedEmail) {
+    if (!authorizedEmail || !decoded.email || decoded.email.trim().toLowerCase() !== authorizedEmail) {
       return res.status(403).json({
         success: false,
         message: 'Access Denied: Only the single designated Master Administrator account has access.'
