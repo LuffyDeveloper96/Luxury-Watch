@@ -1,37 +1,23 @@
 import crypto from 'crypto';
 import Razorpay from 'razorpay';
-import { Payment, StoreSettings } from '../models/index.js';
+import { Payment } from '../models/index.js';
 import { env } from '../config/env.js';
 
-// Configuration keys from environment or saved settings
-const getRazorpayCredentials = async () => {
-  let keyId = env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || '';
-  let keySecret = env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET || '';
-
-  if (!keyId || !keySecret) {
-    try {
-      const settings = await StoreSettings.findOne({ key: 'global_settings' }).lean();
-      if (settings?.paymentSettings) {
-        if (!keyId && settings.paymentSettings.razorpayKeyId) {
-          keyId = settings.paymentSettings.razorpayKeyId;
-        }
-        if (!keySecret && settings.paymentSettings.razorpayKeySecret) {
-          keySecret = settings.paymentSettings.razorpayKeySecret;
-        }
-      }
-    } catch (e) {
-      // StoreSettings lookup note
-    }
-  }
-
-  return { keyId, keySecret };
+/**
+ * Razorpay Credentials strictly from environment variables
+ */
+const getRazorpayCredentials = () => {
+  const keyId = env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || '';
+  const keySecret = env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET || '';
+  const webhookSecret = env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_WEBHOOK_SECRET || '';
+  return { keyId, keySecret, webhookSecret };
 };
 
 /**
  * Initialize Razorpay SDK instance
  */
-export const getRazorpayInstance = async () => {
-  const { keyId, keySecret } = await getRazorpayCredentials();
+export const getRazorpayInstance = () => {
+  const { keyId, keySecret } = getRazorpayCredentials();
   if (!keyId || !keySecret) return null;
   try {
     return new Razorpay({
@@ -52,11 +38,11 @@ export const paymentService = {
    * Create Gateway Order (Razorpay)
    */
   createOrder: async ({ amount, currency = 'INR', receipt, notes = {} }) => {
-    const { keyId, keySecret } = await getRazorpayCredentials();
+    const { keyId, keySecret } = getRazorpayCredentials();
     const amountInPaise = Math.round(Number(amount) * 100);
 
     if (process.env.NODE_ENV === 'production') {
-      const razorpay = await getRazorpayInstance();
+      const razorpay = getRazorpayInstance();
       if (!razorpay || !keyId || !keySecret) {
         return {
           success: false,
@@ -101,14 +87,14 @@ export const paymentService = {
   },
 
   /**
-   * Verify Gateway Payment Signature Server-Side
+   * Verify Gateway Payment Signature Server-Side (Order Payment Verification)
    */
   verifySignature: async ({ gatewayOrderId, paymentId, signature }) => {
     if (!gatewayOrderId || !paymentId || !signature) {
       return { success: false, message: 'Missing gateway order ID, payment ID, or signature.' };
     }
 
-    const isMock = signature === 'mock_verified_signature' || (typeof gatewayOrderId === 'string' && gatewayOrderId.startsWith('order_LW_'));
+    const isMock = signature === 'mock_verified_signature';
 
     // Strict Production Protection: Reject mock payments in production
     if (process.env.NODE_ENV === 'production') {
@@ -120,7 +106,7 @@ export const paymentService = {
       return { success: true, message: 'Sandbox payment verified (development mode only).' };
     }
 
-    const { keySecret } = await getRazorpayCredentials();
+    const { keySecret } = getRazorpayCredentials();
     if (!keySecret) {
       return { success: false, message: 'Payment signature or key secret is missing.' };
     }
@@ -159,6 +145,53 @@ export const paymentService = {
         success: false,
         message: 'Signature verification failed.'
       };
+    }
+  },
+
+  /**
+   * Verify Webhook Signature Server-Side
+   */
+  verifyWebhookSignature: ({ rawBody, signature }) => {
+    if (!signature) {
+      return { success: false, message: 'Missing X-Razorpay-Signature header.' };
+    }
+
+    const { webhookSecret } = getRazorpayCredentials();
+    if (!webhookSecret) {
+      // In development if webhook secret is not set, reject or require configured secret
+      if (process.env.NODE_ENV === 'production') {
+        return { success: false, message: 'Webhook secret is not configured on the server.' };
+      }
+    }
+
+    try {
+      const secret = webhookSecret || 'default_webhook_secret_dev';
+      const bodyToDigest = Buffer.isBuffer(rawBody)
+        ? rawBody
+        : typeof rawBody === 'string'
+          ? Buffer.from(rawBody, 'utf8')
+          : Buffer.from(JSON.stringify(rawBody || {}), 'utf8');
+
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(bodyToDigest)
+        .digest('hex');
+
+      const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+      const signatureBuf = Buffer.from(signature, 'utf8');
+
+      if (expectedBuf.length !== signatureBuf.length) {
+        return { success: false, message: 'Invalid webhook signature length.' };
+      }
+
+      const isValid = crypto.timingSafeEqual(expectedBuf, signatureBuf);
+      if (!isValid) {
+        return { success: false, message: 'Invalid webhook signature.' };
+      }
+
+      return { success: true, message: 'Webhook signature verified.' };
+    } catch (err) {
+      return { success: false, message: `Webhook signature verification failed: ${err.message}` };
     }
   },
 

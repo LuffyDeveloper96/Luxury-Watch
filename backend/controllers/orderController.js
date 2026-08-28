@@ -1,19 +1,43 @@
 import { Order, Product, Coupon, ActivityLog } from '../models/index.js';
+import { isValidOrderTransition } from '../models/Order.js';
 import { emailService } from '../services/emailService.js';
 
 export const getOrders = async (req, res) => {
   try {
-    const orders = await Order.find({}).sort({ createdAt: -1 }).lean();
+    const pageNum = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [total, orders] = await Promise.all([
+      Order.countDocuments({}),
+      Order.find({}).sort({ createdAt: -1 }).skip(skip).limit(limitNum).lean()
+    ]);
+
     return res.json({
       success: true,
       count: orders.length,
-      orders
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum) || 1,
+      orders,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum) || 1
+      }
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
+/**
+ * Get Order Details with Privacy Controls
+ * GET /api/orders/:id
+ * - Admin or Order Owner: Full order details
+ * - Unauthenticated / Public Tracking: Sanitized tracking payload only
+ */
 export const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -23,8 +47,7 @@ export const getOrderById = async (req, res) => {
       $or: [
         { id: cleanId },
         { orderNumber: cleanId },
-        { trackingNumber: cleanId },
-        { 'customer.email': id.trim().toLowerCase() }
+        { trackingNumber: cleanId }
       ]
     }).lean();
 
@@ -32,7 +55,40 @@ export const getOrderById = async (req, res) => {
       return res.status(404).json({ success: false, message: `No consignment found matching "${id}".` });
     }
 
-    return res.json({ success: true, order });
+    // Check Authorization
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'master_admin');
+    const isOwner = req.user && req.user.email && order.customer?.email &&
+      req.user.email.toLowerCase() === order.customer.email.toLowerCase();
+
+    if (isAdmin || isOwner) {
+      return res.json({ success: true, order });
+    }
+
+    // Unauthenticated / Third-Party Lookup: Return sanitized tracking information only
+    const sanitizedTrackingOrder = {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      trackingNumber: order.trackingNumber,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      courierTier: order.courierTier,
+      estimatedDeliveryDate: order.estimatedDeliveryDate,
+      createdAt: order.createdAt,
+      itemCount: order.items?.length || 0,
+      customer: {
+        city: order.customer?.city || '',
+        state: order.customer?.state || '',
+        maskedName: order.customer?.fullName
+          ? `${order.customer.fullName.charAt(0)}***`
+          : 'Valued Patron'
+      }
+    };
+
+    return res.json({
+      success: true,
+      order: sanitizedTrackingOrder,
+      isSanitized: true
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -57,11 +113,15 @@ export const getUserOrders = async (req, res) => {
   }
 };
 
+/**
+ * Direct Order Creation with Server Recalculation & Atomic Stock Protection
+ * POST /api/orders
+ */
 export const createOrder = async (req, res) => {
   try {
     const orderData = req.body;
 
-    if (!orderData.items || !orderData.items.length || !orderData.customer) {
+    if (!orderData.items || !Array.isArray(orderData.items) || !orderData.items.length || !orderData.customer) {
       return res.status(400).json({
         success: false,
         message: 'Order items and customer information are required.'
@@ -85,7 +145,22 @@ export const createOrder = async (req, res) => {
         });
       }
 
-      const itemQty = Math.max(1, Number(item.quantity) || 1);
+      const rawQty = Number(item.quantity !== undefined ? item.quantity : 1);
+      if (!Number.isInteger(rawQty) || rawQty <= 0 || rawQty > 50) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid quantity for "${item.name || prodId}". Quantity must be a positive integer between 1 and 50.`
+        });
+      }
+      const itemQty = rawQty;
+
+      if (product.stock < itemQty) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient stock for "${product.name}". Only ${product.stock} available.`
+        });
+      }
+
       calculatedSubtotal += product.price * itemQty;
       validatedItems.push({
         id: product.id,
@@ -103,57 +178,119 @@ export const createOrder = async (req, res) => {
 
     // Validate Coupon
     let discountAmount = 0;
-    if (orderData.appliedCoupon?.code) {
-      const couponCode = orderData.appliedCoupon.code.trim().toUpperCase();
-      const coupon = await Coupon.findOne({ code: couponCode, active: true });
-      if (coupon) {
-        if (!coupon.minSpend || calculatedSubtotal >= coupon.minSpend) {
-          discountAmount = (calculatedSubtotal * (coupon.discountPercent || 0)) / 100;
-          if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-            discountAmount = coupon.maxDiscount;
+    let appliedCouponData = null;
+    let couponDoc = null;
+
+    if (orderData.appliedCoupon?.code || orderData.couponCode) {
+      const couponCode = (orderData.appliedCoupon?.code || orderData.couponCode).trim().toUpperCase();
+      couponDoc = await Coupon.findOne({ code: couponCode, active: true });
+      if (couponDoc) {
+        const meetsMinSpend = !couponDoc.minSpend || calculatedSubtotal >= couponDoc.minSpend;
+        const hasRemainingUses = !couponDoc.usageLimit || !couponDoc.timesUsed || couponDoc.timesUsed < couponDoc.usageLimit;
+
+        if (meetsMinSpend && hasRemainingUses) {
+          discountAmount = (calculatedSubtotal * (couponDoc.discountPercent || 0)) / 100;
+          if (couponDoc.maxDiscount && discountAmount > couponDoc.maxDiscount) {
+            discountAmount = couponDoc.maxDiscount;
           }
-          await Coupon.updateOne({ _id: coupon._id }, { $inc: { timesUsed: 1 } });
+          appliedCouponData = {
+            code: couponDoc.code,
+            discountPercent: couponDoc.discountPercent
+          };
         }
       }
     }
 
-    const shippingFee = orderData.shippingFee !== undefined ? Number(orderData.shippingFee) : 0;
+    // Server-calculated shipping fee
+    const clientSpeed = orderData.customer?.deliverySpeed || orderData.courierTier || '';
+    const shippingFee = (clientSpeed && clientSpeed.includes('Securitas')) ? 499 : 0;
     const finalTotal = Math.max(0, calculatedSubtotal - discountAmount + shippingFee);
+
+    // Atomic conditional stock reservation
+    const reservedItems = [];
+    let stockFailed = false;
+    let failedItemName = '';
+
+    for (const item of validatedItems) {
+      const updatedProduct = await Product.findOneAndUpdate(
+        {
+          $or: [{ id: item.id }, { sku: item.sku || item.id }],
+          stock: { $gte: item.quantity },
+          active: true
+        },
+        {
+          $inc: { stock: -item.quantity },
+          $set: { updatedAt: new Date() }
+        },
+        { returnDocument: 'after' }
+      );
+
+      if (!updatedProduct) {
+        stockFailed = true;
+        failedItemName = item.name || item.id;
+        break;
+      }
+      reservedItems.push({ id: item.id, sku: item.sku, quantity: item.quantity });
+    }
+
+    if (stockFailed) {
+      for (const resItem of reservedItems) {
+        await Product.findOneAndUpdate(
+          { $or: [{ id: resItem.id }, { sku: resItem.sku || resItem.id }] },
+          { $inc: { stock: resItem.quantity }, $set: { updatedAt: new Date() } }
+        );
+      }
+      return res.status(400).json({
+        success: false,
+        message: `Inventory stock unavailable for "${failedItemName}". The consignment cannot be fulfilled.`
+      });
+    }
+
+    // Increment coupon usage only after successful stock reservation
+    if (couponDoc && discountAmount > 0) {
+      await Coupon.updateOne({ _id: couponDoc._id }, { $inc: { timesUsed: 1 } });
+    }
 
     const orderId = orderData.id || `ORD-LW-${Math.floor(10000 + Math.random() * 90000)}`;
     const trackingNumber = orderData.trackingNumber || `LW-EXP-${Math.floor(10000000 + Math.random() * 90000000)}`;
 
-    const newOrder = {
-      ...orderData,
+    const rawCustomer = orderData.customer || {};
+    const sanitizedCustomer = {
+      fullName: rawCustomer.fullName || 'Distinguished Patron',
+      email: (rawCustomer.email || '').trim().toLowerCase(),
+      phone: rawCustomer.phone || '+91 98200 98200',
+      address: rawCustomer.address || 'The Capital, BKC',
+      city: rawCustomer.city || 'Mumbai',
+      state: rawCustomer.state || 'Maharashtra',
+      postalCode: rawCustomer.postalCode || '400051',
+      country: rawCustomer.country || 'India',
+      deliverySpeed: rawCustomer.deliverySpeed || (shippingFee > 0 ? 'Securitas Armoured Express (Insured)' : 'BlueDart Insured Air Express'),
+      specialInstructions: rawCustomer.specialInstructions || ''
+    };
+
+    const savedOrder = await Order.create({
       id: orderId,
       orderNumber: orderId,
+      customer: sanitizedCustomer,
       items: validatedItems,
       subtotal: calculatedSubtotal,
       discountAmount,
+      appliedCoupon: appliedCouponData || null,
+      shippingFee,
       total: finalTotal,
-      orderStatus: orderData.orderStatus || 'Confirmed',
+      currency: orderData.currency || 'INR',
+      orderStatus: 'Confirmed',
       paymentStatus: orderData.paymentStatus || 'Paid',
+      paymentMethod: orderData.paymentMethod || 'razorpay',
+      paymentDetails: orderData.paymentDetails || {},
       trackingNumber,
-      courierTier: orderData.courierTier || 'Securitas Armoured Express (Insured)',
+      courierTier: shippingFee > 0 ? 'Securitas Armoured Express (Insured)' : 'BlueDart Insured Air Express',
       createdAt: new Date()
-    };
+    });
 
-    // Save order
-    const savedOrder = await Order.create(newOrder);
-
-    // Atomically decrement stock
-    for (const item of validatedItems) {
-      await Product.findOneAndUpdate(
-        { id: item.id },
-        { $inc: { stock: -item.quantity }, $set: { updatedAt: new Date() } }
-      );
-    }
-
-    // Send confirmation email
     emailService.sendOrderConfirmationEmail(savedOrder);
 
-    // Log Activity
-    const custName = newOrder.customer?.fullName || 'Distinguished Patron';
+    const custName = savedOrder.customer?.fullName || 'Distinguished Patron';
     await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `🎉 Consignment #${savedOrder.id} placed by ${custName} (₹${finalTotal.toLocaleString('en-IN')})`,
@@ -184,6 +321,13 @@ export const updateOrderStatus = async (req, res) => {
     const existing = await Order.findOne({ $or: [{ id }, { orderNumber: id }] });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    if (!isValidOrderTransition(existing.orderStatus, orderStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid order status transition from "${existing.orderStatus}" to "${orderStatus}".`
+      });
     }
 
     const updates = { orderStatus, updatedAt: new Date() };
@@ -246,7 +390,7 @@ export const cancelOrder = async (req, res) => {
     for (const item of existing.items || []) {
       if (item.id) {
         await Product.findOneAndUpdate(
-          { id: item.id },
+          { $or: [{ id: item.id }, { sku: item.sku || item.id }] },
           { $inc: { stock: item.quantity || 1 }, $set: { updatedAt: new Date() } }
         );
       }

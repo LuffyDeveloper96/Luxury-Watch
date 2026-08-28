@@ -1,4 +1,5 @@
 import { Product, Brand, ActivityLog } from '../models/index.js';
+import { escapeRegex } from '../utils/regex.js';
 
 export const getProducts = async (req, res) => {
   try {
@@ -26,7 +27,7 @@ export const getProducts = async (req, res) => {
 
     // Filter by Brand
     if (brand && brand !== 'All') {
-      const bQuery = brand.trim();
+      const bQuery = escapeRegex(brand.trim());
       query.$or = [
         { brand: new RegExp(`^${bQuery}$`, 'i') },
         { brandSlug: new RegExp(`^${bQuery}$`, 'i') }
@@ -50,13 +51,13 @@ export const getProducts = async (req, res) => {
           { 'specs.movement': /automatic/i }
         ];
       } else {
-        query.category = new RegExp(cQuery, 'i');
+        query.category = new RegExp(escapeRegex(cQuery), 'i');
       }
     }
 
     // Filter by Gender
     if (gender && gender !== 'All') {
-      const gQuery = gender.trim();
+      const gQuery = escapeRegex(gender.trim());
       query.gender = { $in: [new RegExp(`^${gQuery}$`, 'i'), 'Unisex'] };
     }
 
@@ -64,21 +65,21 @@ export const getProducts = async (req, res) => {
     if ((minPrice !== undefined && minPrice !== '') || (maxPrice !== undefined && maxPrice !== '')) {
       query.price = {};
       if (minPrice !== undefined && minPrice !== '') {
-        query.price.$gte = Number(minPrice);
+        query.price.$gte = Math.max(0, Number(minPrice));
       }
       if (maxPrice !== undefined && maxPrice !== '') {
-        query.price.$lte = Number(maxPrice);
+        query.price.$lte = Math.max(0, Number(maxPrice));
       }
     }
 
     // Filter by Movement
     if (movement && movement !== 'All') {
-      query['specs.movement'] = new RegExp(movement.trim(), 'i');
+      query['specs.movement'] = new RegExp(escapeRegex(movement.trim()), 'i');
     }
 
     // Filter by Dial Color
     if (dialColor && dialColor !== 'All') {
-      const dQuery = new RegExp(dialColor.trim(), 'i');
+      const dQuery = new RegExp(escapeRegex(dialColor.trim()), 'i');
       query.$or = [
         { 'specs.dialColor': dQuery },
         { subtitle: dQuery }
@@ -87,7 +88,7 @@ export const getProducts = async (req, res) => {
 
     // Filter by Strap Material
     if (strapMaterial && strapMaterial !== 'All') {
-      const sQuery = new RegExp(strapMaterial.trim(), 'i');
+      const sQuery = new RegExp(escapeRegex(strapMaterial.trim()), 'i');
       query.$or = [
         { 'specs.strapMaterial': sQuery },
         { 'specs.strap': sQuery }
@@ -96,7 +97,7 @@ export const getProducts = async (req, res) => {
 
     // Filter by Rating
     if (rating) {
-      query.rating = { $gte: Number(rating) };
+      query.rating = { $gte: Math.max(0, Math.min(5, Number(rating))) };
     }
 
     // Feature Flags
@@ -110,9 +111,10 @@ export const getProducts = async (req, res) => {
       query.isNewArrival = true;
     }
 
-    // Full-Text Search across fields
+    // Full-Text Search across fields with ReDoS protection
     if (search && search.trim()) {
-      const q = new RegExp(search.trim(), 'i');
+      const safeSearch = escapeRegex(search.trim());
+      const q = new RegExp(safeSearch, 'i');
       const searchOr = [
         { name: q },
         { brand: q },
@@ -144,8 +146,8 @@ export const getProducts = async (req, res) => {
       sort = { discountPercent: -1 };
     }
 
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 50;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
     const skip = (pageNum - 1) * limitNum;
 
     const [total, products] = await Promise.all([
@@ -170,12 +172,13 @@ export const getProductByIdOrSlug = async (req, res) => {
   try {
     const { id } = req.params;
     const clean = id.trim();
+    const safeClean = escapeRegex(clean);
 
     const product = await Product.findOne({
       $or: [
         { id: clean },
         { slug: clean },
-        { sku: new RegExp(`^${clean}$`, 'i') }
+        { sku: new RegExp(`^${safeClean}$`, 'i') }
       ]
     }).lean();
 
@@ -196,7 +199,8 @@ export const getSearchSuggestions = async (req, res) => {
     }
 
     const term = q.trim();
-    const regex = new RegExp(term, 'i');
+    const safeTerm = escapeRegex(term);
+    const regex = new RegExp(safeTerm, 'i');
 
     const [matchedBrands, matchedProducts] = await Promise.all([
       Brand.find({ name: regex, active: true }).limit(3).lean(),

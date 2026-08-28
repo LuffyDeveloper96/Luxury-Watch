@@ -1,7 +1,9 @@
 import http from 'http';
+import crypto from 'crypto';
 import './index.js';
 import { getDevOtpSession } from './services/otpService.js';
 import { env } from './config/env.js';
+import { connectMongoDB } from './config/db.js';
 
 const BASE_URL = 'http://127.0.0.1:5000/api';
 
@@ -16,6 +18,10 @@ async function testRequest(endpoint, options = {}) {
 }
 
 async function runTestSuite() {
+  try {
+    await connectMongoDB();
+  } catch (e) {}
+  await new Promise(r => setTimeout(r, 1000));
   console.log('\n🚀 Starting LUXURY WATCH Production API Verification Test Suite...\n');
   let passed = 0;
   let failed = 0;
@@ -95,7 +101,7 @@ async function runTestSuite() {
     assert(couponRes.ok && couponRes.data.discountAmount > 0, '9. Coupon Engine Validation (/api/coupons/validate)');
 
     // 10. Razorpay Payment Order Init
-    const firstProd = prods.data.products[0];
+    const firstProd = prods.data.products.find(p => p.stock > 0) || prods.data.products[0];
     const initialStock = firstProd.stock;
     const paymentOrderRes = await testRequest('/payments/razorpay/order', {
       method: 'POST',
@@ -106,13 +112,17 @@ async function runTestSuite() {
     });
     assert(paymentOrderRes.ok && paymentOrderRes.data.gatewayOrderId, '10. Razorpay Order Creation (/api/payments/razorpay/order)');
 
-    // 11. Razorpay Payment Verification & Consignment Creation (Sandbox Mode)
+    // 11. Razorpay Payment Verification & Consignment Creation
+    const testPayId = `pay_test_${Date.now()}`;
+    const testSecret = env.RAZORPAY_KEY_SECRET || 'fwY1luM7zPSjySlGLatA4tf8';
+    const realSig = crypto.createHmac('sha256', testSecret).update(`${paymentOrderRes.data.gatewayOrderId}|${testPayId}`).digest('hex');
+
     const verifyPaymentRes = await testRequest('/payments/razorpay/verify', {
       method: 'POST',
       body: JSON.stringify({
         gatewayOrderId: paymentOrderRes.data.gatewayOrderId,
-        paymentId: `pay_test_${Date.now()}`,
-        signature: 'mock_verified_signature',
+        paymentId: testPayId,
+        signature: realSig,
         orderData: {
           items: [{ id: firstProd.id, name: firstProd.name, price: firstProd.price, quantity: 1 }],
           customer: {

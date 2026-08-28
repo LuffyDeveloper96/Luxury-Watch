@@ -34,8 +34,8 @@ const orderSchema = new mongoose.Schema({
   subtotal: { type: Number, required: true },
   discountAmount: { type: Number, default: 0 },
   appliedCoupon: {
-    code: { type: String },
-    discountPercent: { type: Number }
+    type: mongoose.Schema.Types.Mixed,
+    default: null
   },
   shippingFee: { type: Number, default: 0 },
   taxAmount: { type: Number, default: 0 },
@@ -56,7 +56,7 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: { type: String, default: 'razorpay' },
   paymentDetails: {
     gatewayOrderId: { type: String, index: true },
-    paymentId: { type: String, index: true },
+    paymentId: { type: String },
     signature: { type: String },
     utrNumber: { type: String },
     bankReference: { type: String },
@@ -72,6 +72,31 @@ const orderSchema = new mongoose.Schema({
 });
 
 orderSchema.index({ 'customer.email': 1, createdAt: -1 });
+orderSchema.index({ 'paymentDetails.paymentId': 1 }, { unique: true, sparse: true });
+
+/**
+ * Order State Transition Matrix
+ */
+const VALID_ORDER_TRANSITIONS = {
+  'Pending': ['Confirmed', 'Cancelled'],
+  'Confirmed': ['Processing', 'Packed', 'Shipped', 'Cancelled'],
+  'Processing': ['Packed', 'Shipped', 'Cancelled'],
+  'Packed': ['Shipped', 'Out for Delivery', 'Cancelled'],
+  'Shipped': ['Out for Delivery', 'Delivered', 'Returned'],
+  'Out for Delivery': ['Delivered', 'Returned'],
+  'Delivered': ['Return Requested', 'Returned'],
+  'Return Requested': ['Returned', 'Delivered'],
+  'Returned': ['Refunded'],
+  'Cancelled': [], // Terminal
+  'Refunded': []   // Terminal
+};
+
+export const isValidOrderTransition = (currentStatus, targetStatus) => {
+  if (!currentStatus || !targetStatus) return false;
+  if (currentStatus === targetStatus) return true;
+  const allowed = VALID_ORDER_TRANSITIONS[currentStatus] || [];
+  return allowed.includes(targetStatus);
+};
 
 export const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 export default Order;

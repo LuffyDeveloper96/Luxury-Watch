@@ -71,16 +71,33 @@ export const createReturn = async (req, res) => {
 };
 
 /**
- * Get All Return & Exchange Requests (Admin)
+ * Get All Return & Exchange Requests (Admin - Paginated)
  * GET /api/returns
  */
 export const getReturns = async (req, res) => {
   try {
-    const returns = await Return.find({}).sort({ createdAt: -1 }).lean();
+    const pageNum = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [total, returns] = await Promise.all([
+      Return.countDocuments({}),
+      Return.find({}).sort({ createdAt: -1 }).skip(skip).limit(limitNum).lean()
+    ]);
+
     return res.json({
       success: true,
       count: returns.length,
-      returns
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum) || 1,
+      returns,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum) || 1
+      }
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -88,7 +105,7 @@ export const getReturns = async (req, res) => {
 };
 
 /**
- * Look up Return Status (Customer / Public)
+ * Look up Return Status (Customer / Public with PII Privacy Guards)
  * GET /api/returns/lookup/:orderOrReturnId
  */
 export const lookupReturn = async (req, res) => {
@@ -120,9 +137,43 @@ export const lookupReturn = async (req, res) => {
       });
     }
 
+    // Check caller authorization
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'Grand Horologist / Master Administrator');
+    const userEmail = req.user?.email?.toLowerCase();
+
+    const sanitizedReturns = found.map(r => {
+      const isOwner = userEmail && r.customerEmail && r.customerEmail.toLowerCase() === userEmail;
+
+      if (isAdmin || isOwner) {
+        return r; // Full authorized return details
+      }
+
+      // Public / Unauthenticated sanitized return summary
+      return {
+        id: r.id,
+        orderId: r.orderId,
+        waybillNumber: r.waybillNumber,
+        status: r.status,
+        resolutionType: r.resolutionType,
+        returnReason: r.returnReason,
+        courierTier: r.courierTier,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        items: (r.items || []).map(it => ({
+          name: it.name || 'Horology Timepiece',
+          quantity: it.quantity || 1
+        })),
+        customer: {
+          maskedName: r.customerName ? `${r.customerName.charAt(0)}***` : 'Valued Patron',
+          maskedPhone: r.customerPhone ? `******${r.customerPhone.slice(-4)}` : '******'
+        },
+        isSanitized: true
+      };
+    });
+
     return res.json({
       success: true,
-      returns: found
+      returns: sanitizedReturns
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

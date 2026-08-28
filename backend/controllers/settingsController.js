@@ -48,14 +48,15 @@ export const getPaymentSettings = async (req, res) => {
   try {
     const doc = await StoreSettings.findOne({ key: 'global_settings' }).lean();
     const raw = doc?.paymentSettings || DEFAULT_PAYMENT_SETTINGS;
-    const hasSecret = Boolean(raw.razorpayKeySecret || env.RAZORPAY_KEY_SECRET);
 
     const sanitized = {
       ...raw,
-      razorpayKeyId: raw.razorpayKeyId || env.RAZORPAY_KEY_ID || '',
-      isSecretConfigured: hasSecret
+      razorpayKeyId: env.RAZORPAY_KEY_ID || '',
+      isSecretConfigured: Boolean(env.RAZORPAY_KEY_SECRET),
+      isWebhookConfigured: Boolean(env.RAZORPAY_WEBHOOK_SECRET)
     };
     delete sanitized.razorpayKeySecret;
+    delete sanitized.razorpayWebhookSecret;
     return res.json({ success: true, settings: sanitized });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

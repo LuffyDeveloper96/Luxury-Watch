@@ -12,12 +12,12 @@ export const initiateUserSignup = async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
 
-    if (!email || !email.includes('@')) {
-      return res.status(400).json({ success: false, message: 'A valid email address is required.' });
+    if (typeof email !== 'string' || !email.trim() || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'A valid email address string is required.' });
     }
 
-    if (!password || password.length < 6) {
-      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters in length.' });
+    if (typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be a string with at least 6 characters.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -34,10 +34,10 @@ export const initiateUserSignup = async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Create OTP session with hashed credentials in metadata
-    const otpResult = createOtpSession(cleanEmail, name, 'signup', {
+    const otpResult = createOtpSession(cleanEmail, typeof name === 'string' ? name : '', 'signup', {
       passwordHash,
-      phone: phone || '',
-      name: name || cleanEmail.split('@')[0]
+      phone: typeof phone === 'string' ? phone : '',
+      name: typeof name === 'string' && name.trim() ? name.trim() : cleanEmail.split('@')[0]
     });
 
     if (!otpResult.success) {
@@ -71,12 +71,13 @@ export const verifyUserSignup = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    if (!email || !otp) {
-      return res.status(400).json({ success: false, message: 'Email and verification code are required.' });
+    if (typeof email !== 'string' || typeof otp !== 'string' || !email.trim() || !otp.trim()) {
+      return res.status(400).json({ success: false, message: 'Email and verification code must be valid strings.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const verification = verifyOtpSession(cleanEmail, otp);
+    const cleanOtp = otp.trim();
+    const verification = verifyOtpSession(cleanEmail, cleanOtp);
 
     if (!verification.success) {
       return res.status(400).json({ success: false, message: verification.message });
@@ -150,10 +151,15 @@ export const initiateUserLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      !email.trim() ||
+      !password.trim()
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Email address and password are required.'
+        message: 'Email address and password must be valid strings.'
       });
     }
 
@@ -210,12 +216,13 @@ export const verifyUserLogin = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    if (!email || !otp) {
-      return res.status(400).json({ success: false, message: 'Email and verification code are required.' });
+    if (typeof email !== 'string' || typeof otp !== 'string' || !email.trim() || !otp.trim()) {
+      return res.status(400).json({ success: false, message: 'Email and verification code must be valid strings.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const verification = verifyOtpSession(cleanEmail, otp);
+    const cleanOtp = otp.trim();
+    const verification = verifyOtpSession(cleanEmail, cleanOtp);
 
     if (!verification.success) {
       return res.status(400).json({ success: false, message: verification.message });
@@ -264,8 +271,8 @@ export const verifyUserLogin = async (req, res) => {
 export const forgotPasswordInit = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email || !email.includes('@')) {
-      return res.status(400).json({ success: false, message: 'A valid email address is required.' });
+    if (typeof email !== 'string' || !email.trim() || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'A valid email address string is required.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -306,10 +313,17 @@ export const resetPasswordWithOtp = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
 
-    if (!email || !otp || !newPassword) {
+    if (
+      typeof email !== 'string' ||
+      typeof otp !== 'string' ||
+      typeof newPassword !== 'string' ||
+      !email.trim() ||
+      !otp.trim() ||
+      !newPassword.trim()
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Email, verification code, and new password are required.'
+        message: 'Email, verification code, and new password must be valid strings.'
       });
     }
 
@@ -321,7 +335,8 @@ export const resetPasswordWithOtp = async (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const verification = verifyOtpSession(cleanEmail, otp);
+    const cleanOtp = otp.trim();
+    const verification = verifyOtpSession(cleanEmail, cleanOtp);
 
     if (!verification.success) {
       return res.status(400).json({ success: false, message: verification.message });
@@ -528,13 +543,34 @@ export const setDefaultAddress = async (req, res) => {
 };
 
 /**
- * Admin: List all registered customers
+ * Admin: List all registered customers (Paginated)
  * GET /api/admin/customers
  */
 export const getAdminCustomers = async (req, res) => {
   try {
-    const users = await User.find({}).select('-password').lean();
-    return res.json({ success: true, count: users.length, customers: users });
+    const pageNum = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [total, users] = await Promise.all([
+      User.countDocuments({}),
+      User.find({}).select('-password').skip(skip).limit(limitNum).lean()
+    ]);
+
+    return res.json({
+      success: true,
+      count: users.length,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum) || 1,
+      customers: users,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum) || 1
+      }
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

@@ -2,6 +2,7 @@ import assert from 'assert';
 import './index.js';
 import { getDevOtpSession } from './services/otpService.js';
 import { env } from './config/env.js';
+import { connectMongoDB } from './config/db.js';
 
 const BASE_URL = `http://127.0.0.1:${env.PORT || 5000}/api`;
 
@@ -17,7 +18,10 @@ async function testRequest(endpoint, options = {}) {
 }
 
 async function runComprehensiveUserAuthTests() {
-  await new Promise(r => setTimeout(r, 600));
+  try {
+    await connectMongoDB();
+  } catch (e) {}
+  await new Promise(r => setTimeout(r, 1000));
 
   console.log('\n======================================================================');
   console.log('💎 LUXURY WATCH — USER SIGNUP, 2FA LOGIN & OTP END-TO-END TEST SUITE');

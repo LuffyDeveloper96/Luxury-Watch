@@ -252,7 +252,7 @@ async function runFullPlatformTestSuite() {
     // SECTION H: PAYMENT GATEWAY & SIGNATURE VERIFICATION (Sections 23, 24, 25, 26)
     // =========================================================================
     console.log('\n--- 8. RAZORPAY INTEGRATION & CRYPTOGRAPHIC VERIFICATION ---');
-    const testWatch = prodsRes.data.products[0];
+    const testWatch = prodsRes.data.products.find(p => p.stock > 0) || prodsRes.data.products[0];
     const initialWatchStock = testWatch.stock;
 
     // Create Razorpay Order

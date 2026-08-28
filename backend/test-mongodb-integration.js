@@ -145,7 +145,7 @@ async function runMongodbIntegrationSuite() {
     const searchSuggestionsRes = await testRequest('/products/search/suggestions?q=rolex');
     assertTest(searchSuggestionsRes.ok && Array.isArray(searchSuggestionsRes.data.suggestions), 'Search Suggestions Endpoint');
 
-    const firstProduct = productsRes.data.products[0];
+    const firstProduct = productsRes.data.products.find(p => p.stock > 0) || productsRes.data.products[0];
     const productLookupRes = await testRequest(`/products/${firstProduct.slug || firstProduct.id}`);
     assertTest(productLookupRes.ok && productLookupRes.data.product?.name, `Lookup Product by ID/Slug: "${firstProduct.name}"`);
 
@@ -221,6 +221,7 @@ async function runMongodbIntegrationSuite() {
 
     const createOrderRes = await testRequest('/orders', {
       method: 'POST',
+      headers: adminHeaders,
       body: JSON.stringify({
         customer: {
           fullName: 'Lord Horologist',
@@ -240,7 +241,7 @@ async function runMongodbIntegrationSuite() {
         orderStatus: 'Confirmed'
       })
     });
-    assertTest(createOrderRes.ok && createOrderRes.data.order?.id, 'Create Order with Server-Calculated Price Snapshot');
+    assertTest(createOrderRes.ok && createOrderRes.data.order?.id, 'Admin Create Order with Server-Calculated Price Snapshot');
     const createdOrderId = createOrderRes.data.order?.id;
 
     // Direct check on stock decrement in MongoDB

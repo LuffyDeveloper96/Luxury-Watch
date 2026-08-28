@@ -27,58 +27,71 @@ try {
 
 let isMongoConnected = false;
 let mongoConnectionError = null;
+let connectionPromise = null;
 
 /**
  * Connect to MongoDB Atlas / cluster
  */
 export const connectMongoDB = async (customUri) => {
-  const uri = customUri !== undefined ? customUri : (env.MONGODB_URI || process.env.MONGODB_URI || '');
-  if (!uri) {
-    console.warn('⚠️ [Database] MONGODB_URI is not configured. Real database persistence requires a valid MONGODB_URI.');
-    isMongoConnected = false;
-    mongoConnectionError = new Error('MONGODB_URI is not configured.');
-    return false;
-  }
-
   if (isMongoConnected && mongoose.connection.readyState === 1) {
     return true;
   }
 
-  try {
-    const maskedUri = uri.replace(/:([^:@]+)@/, ':***@');
-    console.log(`[Database] Connecting to MongoDB: ${maskedUri}...`);
+  if (connectionPromise) {
+    return connectionPromise;
+  }
 
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 3000
-    });
-
-    isMongoConnected = true;
-    mongoConnectionError = null;
-    console.log(`✅ [Database] MongoDB Connected Successfully! DB: "${mongoose.connection.name}"`);
-    return true;
-  } catch (err) {
-    // In development mode, if remote Atlas fails (e.g. IP whitelist), attempt local MongoDB instance
-    if (process.env.NODE_ENV !== 'production' && (uri.includes('mongodb+srv://') || uri.includes('mongodb.net'))) {
-      const localUri = process.env.LOCAL_MONGODB_URI || 'mongodb://127.0.0.1:27017/luxurywatch';
-      try {
-        console.warn(`⚠️ [Database] Remote Atlas connection note: ${err.message}. Attempting local development MongoDB (${localUri})...`);
-        try { await mongoose.disconnect(); } catch (discErr) {}
-        await mongoose.connect(localUri, { serverSelectionTimeoutMS: 3000 });
-        isMongoConnected = true;
-        mongoConnectionError = null;
-        console.log(`✅ [Database] Local MongoDB Connected Successfully! DB: "${mongoose.connection.name}"`);
-        return true;
-      } catch (localErr) {
-        // Fall through to strict error throwing
-      }
+  connectionPromise = (async () => {
+    const uri = customUri !== undefined ? customUri : (env.MONGODB_URI || process.env.MONGODB_URI || '');
+    if (!uri) {
+      console.warn('⚠️ [Database] MONGODB_URI is not configured. Real database persistence requires a valid MONGODB_URI.');
+      isMongoConnected = false;
+      mongoConnectionError = new Error('MONGODB_URI is not configured.');
+      return false;
     }
 
-    isMongoConnected = false;
-    mongoConnectionError = err;
-    console.error('❌ [Database Connection Error] Failed to connect to MongoDB:');
-    console.error(`   ${err.message}`);
-    console.error('❌ [Database] Local storage fallback is strictly disabled.');
-    throw new Error(`[Database Connection Error] MongoDB connection failed: ${err.message}`);
+    try {
+      const maskedUri = uri.replace(/:([^:@]+)@/, ':***@');
+      console.log(`[Database] Connecting to MongoDB: ${maskedUri}...`);
+
+      await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 3000
+      });
+
+      isMongoConnected = true;
+      mongoConnectionError = null;
+      console.log(`✅ [Database] MongoDB Connected Successfully! DB: "${mongoose.connection.name}"`);
+      return true;
+    } catch (err) {
+      // In development mode, if remote Atlas fails (e.g. IP whitelist), attempt local MongoDB instance
+      if (process.env.NODE_ENV !== 'production' && (uri.includes('mongodb+srv://') || uri.includes('mongodb.net'))) {
+        const localUri = process.env.LOCAL_MONGODB_URI || 'mongodb://127.0.0.1:27017/luxurywatch';
+        try {
+          console.warn(`⚠️ [Database] Remote Atlas connection note: ${err.message}. Attempting local development MongoDB (${localUri})...`);
+          try { await mongoose.disconnect(); } catch (discErr) {}
+          await mongoose.connect(localUri, { serverSelectionTimeoutMS: 3000 });
+          isMongoConnected = true;
+          mongoConnectionError = null;
+          console.log(`✅ [Database] Local MongoDB Connected Successfully! DB: "${mongoose.connection.name}"`);
+          return true;
+        } catch (localErr) {
+          // Fall through to strict error throwing
+        }
+      }
+
+      isMongoConnected = false;
+      mongoConnectionError = err;
+      console.error('❌ [Database Connection Error] Failed to connect to MongoDB:');
+      console.error(`   ${err.message}`);
+      console.error('❌ [Database] Local storage fallback is strictly disabled.');
+      throw new Error(`[Database Connection Error] MongoDB connection failed: ${err.message}`);
+    }
+  })();
+
+  try {
+    return await connectionPromise;
+  } finally {
+    connectionPromise = null;
   }
 };
 
@@ -99,6 +112,37 @@ export const isDbConnected = () => {
 
 export const getDbConnectionError = () => {
   return mongoConnectionError;
+};
+
+/**
+ * Check if the current MongoDB connection supports multi-document transactions.
+ * Inspects driver topology to accurately distinguish ReplicaSets / Atlas / Sharded from Standalone servers.
+ */
+export const supportsTransactions = () => {
+  if (!mongoose.connection || mongoose.connection.readyState !== 1) return false;
+  try {
+    const client = mongoose.connection.getClient ? mongoose.connection.getClient() : mongoose.connection.client;
+    const topology = client?.topology;
+    const topologyType = topology?.description?.type;
+
+    if (topologyType === 'ReplicaSetWithPrimary' || topologyType === 'Sharded' || topologyType === 'LoadBalanced') {
+      return true;
+    }
+
+    if (topologyType === 'Single') {
+      const servers = topology?.description?.servers;
+      if (servers) {
+        for (const [, server] of servers.entries()) {
+          if (server?.setName) return true;
+        }
+      }
+      return false;
+    }
+
+    return false;
+  } catch (e) {
+    return false;
+  }
 };
 
 // Monitor Mongoose connection events

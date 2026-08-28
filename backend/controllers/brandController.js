@@ -1,4 +1,5 @@
 import { Brand, ActivityLog } from '../models/index.js';
+import { escapeRegex } from '../utils/regex.js';
 
 export const getBrands = async (req, res) => {
   try {
@@ -17,12 +18,13 @@ export const getBrandBySlug = async (req, res) => {
   try {
     const { slugOrId } = req.params;
     const clean = slugOrId.toLowerCase().trim();
+    const safeClean = escapeRegex(clean);
 
     const brand = await Brand.findOne({
       $or: [
         { slug: clean },
         { id: clean },
-        { name: new RegExp(`^${clean}$`, 'i') }
+        { name: new RegExp(`^${safeClean}$`, 'i') }
       ]
     }).lean();
 

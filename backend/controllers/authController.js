@@ -7,14 +7,19 @@ export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      !email.trim() ||
+      !password.trim()
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Admin email and password are required.'
+        message: 'Admin email and password must be valid strings.'
       });
     }
 
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanEmail = email.trim().toLowerCase();
     const authorizedEmail = (
       env.ADMIN_EMAIL ||
       process.env.ADMIN_EMAIL ||
@@ -50,12 +55,14 @@ export const adminLogin = async (req, res) => {
       const token = generateToken(userPayload);
 
       // Log admin login to activity log (without passwords or secrets)
-      await ActivityLog.create({
-        id: `act-${Date.now()}`,
-        text: `Master Admin authenticated session #${userPayload.sessionId.slice(-6)}`,
-        time: 'Just now',
-        type: 'admin'
-      });
+      try {
+        await ActivityLog.create({
+          id: `act-${Date.now()}`,
+          text: `Master Admin authenticated session #${userPayload.sessionId.slice(-6)}`,
+          time: 'Just now',
+          type: 'admin'
+        });
+      } catch (logErr) {}
 
       return res.json({
         success: true,

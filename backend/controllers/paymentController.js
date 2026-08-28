@@ -1,14 +1,15 @@
 import { Order, Product, Coupon, Payment, ActivityLog } from '../models/index.js';
 import { paymentService } from '../services/paymentService.js';
+import { paymentFinalizationService } from '../services/paymentFinalizationService.js';
 import { emailService } from '../services/emailService.js';
 
 /**
- * Initialize Razorpay Order
+ * 1. Initialize Razorpay Order (Server-Side Calculation & Pending Payment Record)
  * POST /api/payments/razorpay/order
  */
 export const createRazorpayOrder = async (req, res) => {
   try {
-    const { items, couponCode, deliverySpeed } = req.body;
+    const { items, couponCode, deliverySpeed, customer } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Cart items are required.' });
@@ -27,18 +28,26 @@ export const createRazorpayOrder = async (req, res) => {
       if (!product || product.active === false) {
         return res.status(400).json({
           success: false,
-          message: `Product "${item.name || prodId}" is currently unavailable.`
+          message: `Timepiece "${item.name || prodId}" is currently unavailable.`
         });
       }
 
-      if (product.stock < (item.quantity || 1)) {
+      const rawQty = Number(item.quantity !== undefined ? item.quantity : 1);
+      if (!Number.isInteger(rawQty) || rawQty <= 0 || rawQty > 50) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient stock for "${product.name}". Only ${product.stock} available.`
+          message: `Invalid quantity for "${item.name || prodId}". Quantity must be a positive integer between 1 and 50.`
+        });
+      }
+      const itemQty = rawQty;
+
+      if (product.stock < itemQty) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient stock for "${product.name}". Only ${product.stock} pieces available.`
         });
       }
 
-      const itemQty = Math.max(1, Number(item.quantity) || 1);
       calculatedSubtotal += product.price * itemQty;
       validatedItems.push({
         id: product.id,
@@ -54,7 +63,7 @@ export const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    // Validate Coupon if applied
+    // Validate Coupon WITHOUT incrementing usage count yet
     let discountAmount = 0;
     let appliedCouponData = null;
 
@@ -63,7 +72,10 @@ export const createRazorpayOrder = async (req, res) => {
       const coupon = await Coupon.findOne({ code: cleanCode, active: true }).lean();
 
       if (coupon) {
-        if (!coupon.minSpend || calculatedSubtotal >= coupon.minSpend) {
+        const meetsMinSpend = !coupon.minSpend || calculatedSubtotal >= coupon.minSpend;
+        const hasRemainingUses = !coupon.usageLimit || !coupon.timesUsed || coupon.timesUsed < coupon.usageLimit;
+
+        if (meetsMinSpend && hasRemainingUses) {
           discountAmount = (calculatedSubtotal * (coupon.discountPercent || 0)) / 100;
           if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
             discountAmount = coupon.maxDiscount;
@@ -76,6 +88,7 @@ export const createRazorpayOrder = async (req, res) => {
       }
     }
 
+    // Calculate shipping fee server-side
     const shippingFee = (deliverySpeed && deliverySpeed.includes('Securitas')) ? 499 : 0;
     const finalTotal = Math.max(0, calculatedSubtotal - discountAmount + shippingFee);
 
@@ -86,6 +99,30 @@ export const createRazorpayOrder = async (req, res) => {
       currency: 'INR',
       receipt: receiptId,
       notes: { itemCount: validatedItems.length }
+    });
+
+    if (!orderResult.success) {
+      return res.status(400).json({ success: false, message: orderResult.message || 'Failed to initialize payment gateway order.' });
+    }
+
+    // Persist Trusted Pending Payment Record in MongoDB
+    const transactionId = `TXN-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    await Payment.create({
+      transactionId,
+      gatewayOrderId: orderResult.gatewayOrderId,
+      amount: finalTotal,
+      currency: 'INR',
+      status: 'created',
+      subtotal: calculatedSubtotal,
+      discountAmount,
+      shippingFee,
+      total: finalTotal,
+      appliedCoupon: appliedCouponData,
+      items: validatedItems,
+      customer: customer || {},
+      customerEmail: customer?.email,
+      customerPhone: customer?.phone,
+      userId: req.user?.id
     });
 
     return res.json({
@@ -111,7 +148,7 @@ export const createRazorpayOrder = async (req, res) => {
 };
 
 /**
- * Verify Razorpay Signature & Confirm Order
+ * 2. Verify Razorpay Signature & Confirm Order (Delegated to Unified Finalization Engine)
  * POST /api/payments/razorpay/verify
  */
 export const verifyRazorpayPayment = async (req, res) => {
@@ -120,17 +157,20 @@ export const verifyRazorpayPayment = async (req, res) => {
       gatewayOrderId,
       paymentId,
       signature,
+      amount,
+      currency,
+      customer,
       orderData
     } = req.body;
 
     if (!gatewayOrderId || !paymentId) {
       return res.status(400).json({
         success: false,
-        message: 'Payment verification parameters missing.'
+        message: 'Missing gateway order ID or payment ID.'
       });
     }
 
-    // Verify HMAC-SHA256 signature
+    // 1. CRYPTOGRAPHIC SIGNATURE VERIFICATION
     const verification = await paymentService.verifySignature({
       gatewayOrderId,
       paymentId,
@@ -138,92 +178,37 @@ export const verifyRazorpayPayment = async (req, res) => {
     });
 
     if (!verification.success) {
-      // Record failed transaction log
-      await paymentService.recordTransaction({
-        orderId: orderData?.id || gatewayOrderId,
-        gatewayOrderId,
-        gatewayPaymentId: paymentId,
-        amount: orderData?.total || 0,
-        status: 'failed',
-        failureReason: verification.message
-      });
+      await Payment.updateOne(
+        { gatewayOrderId },
+        {
+          $set: {
+            gatewayPaymentId: paymentId,
+            status: 'failed',
+            failureReason: verification.message,
+            updatedAt: new Date()
+          }
+        }
+      );
 
       return res.status(400).json({
         success: false,
-        message: verification.message || 'Payment signature verification failed.'
+        message: verification.message || 'Cryptographic payment signature verification failed.'
       });
     }
 
-    const orderId = orderData?.id || `ORD-LW-${Math.floor(10000 + Math.random() * 90000)}`;
-    const trackingNumber = orderData?.trackingNumber || `LW-EXP-${Math.floor(10000000 + Math.random() * 90000000)}`;
-
-    const calculatedSubtotal = orderData?.subtotal !== undefined
-      ? Number(orderData.subtotal)
-      : (orderData?.items || []).reduce((s, it) => s + ((it.price || 0) * (it.quantity || 1)), 0) || Number(orderData?.total) || 0;
-    const finalTotal = orderData?.total !== undefined ? Number(orderData.total) : calculatedSubtotal;
-
-    const newOrder = {
-      ...orderData,
-      id: orderId,
-      orderNumber: orderId,
-      subtotal: calculatedSubtotal,
-      total: finalTotal,
-      orderStatus: 'Confirmed',
-      paymentStatus: 'Paid',
-      paymentMethod: 'razorpay',
-      paymentDetails: {
-        gatewayOrderId,
-        paymentId,
-        signature
-      },
-      trackingNumber,
-      courierTier: orderData?.courierTier || 'Securitas Armoured Express (Insured)',
-      createdAt: new Date()
-    };
-
-    // Save order in MongoDB
-    const savedOrder = await Order.create(newOrder);
-
-    // Record successful payment transaction
-    await paymentService.recordTransaction({
-      orderId: savedOrder.id,
+    // 2. UNIFIED PAYMENT FINALIZATION (Transactional, Concurrency-Safe & Idempotent)
+    const result = await paymentFinalizationService.finalizePayment({
       gatewayOrderId,
-      gatewayPaymentId: paymentId,
-      gatewaySignature: signature,
-      amount: savedOrder.total,
-      currency: 'INR',
-      status: 'paid',
-      customerEmail: savedOrder.customer?.email
+      paymentId,
+      signature,
+      amount,
+      currency,
+      customer,
+      orderData,
+      source: 'verify'
     });
 
-    // Atomically decrement stock of ordered items
-    for (const item of savedOrder.items || []) {
-      const prodId = item.id || (item.product && item.product.id);
-      if (prodId) {
-        await Product.findOneAndUpdate(
-          { $or: [{ id: prodId }, { sku: prodId }, { slug: prodId }] },
-          { $inc: { stock: -(item.quantity || 1) }, $set: { updatedAt: new Date() } }
-        );
-      }
-    }
-
-    // Dispatch email confirmation in background
-    emailService.sendOrderConfirmationEmail(savedOrder);
-
-    // Log Activity
-    const custName = savedOrder.customer?.fullName || 'Distinguished Patron';
-    await ActivityLog.create({
-      id: `act-${Date.now()}`,
-      text: `💳 Payment verified! Order #${savedOrder.id} confirmed for ${custName} (₹${(savedOrder.total || 0).toLocaleString('en-IN')})`,
-      time: 'Just now',
-      type: 'order'
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: 'Payment verified and consignment confirmed.',
-      order: savedOrder
-    });
+    return res.status(result.status || (result.success ? 200 : 400)).json(result);
   } catch (err) {
     console.error('[Payment Verification Error]:', err.message);
     return res.status(500).json({ success: false, message: err.message });
@@ -231,7 +216,81 @@ export const verifyRazorpayPayment = async (req, res) => {
 };
 
 /**
- * Handle Payment Failure & Log Details
+ * 3. Handle Razorpay Webhook Events (Delegated to Unified Finalization Engine)
+ * POST /api/payments/razorpay/webhook
+ */
+export const handleRazorpayWebhook = async (req, res) => {
+  try {
+    const signature = req.headers['x-razorpay-signature'] || req.headers['x-razorpay-signature'.toLowerCase()];
+
+    // Verify webhook signature cryptographically
+    const verification = paymentService.verifyWebhookSignature({
+      rawBody: req.rawBody || Buffer.from(JSON.stringify(req.body || {})),
+      signature
+    });
+
+    if (!verification.success) {
+      return res.status(400).json({
+        success: false,
+        message: verification.message || 'Invalid webhook signature.'
+      });
+    }
+
+    const event = req.body?.event;
+    const payload = req.body?.payload;
+
+    if (event === 'payment.captured' || event === 'order.paid') {
+      const paymentEntity = payload?.payment?.entity;
+      const gatewayOrderId = paymentEntity?.order_id;
+      const paymentId = paymentEntity?.id;
+      const amount = paymentEntity?.amount; // in paise
+      const currency = paymentEntity?.currency;
+
+      if (gatewayOrderId && paymentId) {
+        const finalizationResult = await paymentFinalizationService.finalizePayment({
+          gatewayOrderId,
+          paymentId,
+          signature: signature || 'webhook_verified',
+          amount,
+          currency,
+          source: 'webhook'
+        });
+
+        if (!finalizationResult.success && finalizationResult.status === 400) {
+          return res.status(400).json({ status: 'error', message: finalizationResult.message });
+        }
+      }
+    } else if (event === 'payment.failed') {
+      const paymentEntity = payload?.payment?.entity;
+      const gatewayOrderId = paymentEntity?.order_id;
+      const paymentId = paymentEntity?.id;
+      const reason = paymentEntity?.error_description || 'Payment failed';
+
+      if (gatewayOrderId) {
+        // Only mark failed if not already paid
+        await Payment.updateOne(
+          { gatewayOrderId, status: { $ne: 'paid' } },
+          {
+            $set: {
+              gatewayPaymentId: paymentId,
+              status: 'failed',
+              failureReason: reason,
+              updatedAt: new Date()
+            }
+          }
+        );
+      }
+    }
+
+    return res.json({ status: 'ok', received: true });
+  } catch (err) {
+    console.error('[Webhook Processing Error]:', err.message);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * 4. Handle Payment Failure & Log Details
  * POST /api/payments/failure
  */
 export const recordPaymentFailure = async (req, res) => {
@@ -258,8 +317,28 @@ export const recordPaymentFailure = async (req, res) => {
   }
 };
 
+/**
+ * 5. Abandoned / Expired Payment Cleanup
+ * POST /api/payments/cleanup-abandoned
+ */
+export const cleanupAbandonedPayments = async (req, res) => {
+  try {
+    const maxAgeHours = Number(req.query.maxAgeHours) || 24;
+    const result = await paymentFinalizationService.cleanupAbandonedPayments({ maxAgeHours });
+    return res.json({
+      success: true,
+      message: `Cleaned up ${result.modifiedCount} abandoned payment(s).`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 export default {
   createRazorpayOrder,
   verifyRazorpayPayment,
-  recordPaymentFailure
+  handleRazorpayWebhook,
+  recordPaymentFailure,
+  cleanupAbandonedPayments
 };

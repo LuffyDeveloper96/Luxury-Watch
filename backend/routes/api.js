@@ -1,5 +1,5 @@
 import express from 'express';
-import { requireAdmin, requireAuth } from '../middleware/auth.js';
+import { requireAdmin, requireAuth, optionalAuth } from '../middleware/auth.js';
 import { apiLimiter, otpLimiter, paymentLimiter } from '../middleware/rateLimiter.js';
 
 // Controllers
@@ -25,7 +25,7 @@ import {
   getOrders, getOrderById, getUserOrders, createOrder, updateOrderStatus, cancelOrder
 } from '../controllers/orderController.js';
 import {
-  createRazorpayOrder, verifyRazorpayPayment, recordPaymentFailure
+  createRazorpayOrder, verifyRazorpayPayment, handleRazorpayWebhook, recordPaymentFailure, cleanupAbandonedPayments
 } from '../controllers/paymentController.js';
 import {
   getCoupons, validateCoupon, createCoupon, updateCoupon, deleteCoupon
@@ -125,15 +125,18 @@ router.delete('/categories/:id', requireAdmin, deleteCategory);
 // 7. Orders API
 router.get('/orders', requireAdmin, getOrders);
 router.get('/orders/user', requireAuth, getUserOrders);
-router.get('/orders/:id', getOrderById); // Public lookup for consignment tracking
-router.post('/orders', createOrder);
+router.get('/orders/:id', optionalAuth, getOrderById); // Order details with privacy controls
+router.post('/orders', requireAdmin, createOrder); // Admin offline order entry only
 router.patch('/orders/:id/status', requireAdmin, updateOrderStatus);
 router.post('/orders/:id/cancel', cancelOrder);
 
-// 8. Payments API (Razorpay + Verification)
+// 8. Payments API (Razorpay + Verification + Webhook)
 router.post('/payments/razorpay/order', paymentLimiter, createRazorpayOrder);
 router.post('/payments/razorpay/verify', verifyRazorpayPayment);
+router.post('/payments/razorpay/webhook', handleRazorpayWebhook);
+router.post('/payments/webhook', handleRazorpayWebhook);
 router.post('/payments/failure', recordPaymentFailure);
+router.post('/payments/cleanup-abandoned', requireAdmin, cleanupAbandonedPayments);
 
 // 9. VIP Coupons Engine API
 router.get('/coupons', requireAdmin, getCoupons);
@@ -150,8 +153,8 @@ router.delete('/reviews/:id', requireAdmin, deleteReview);
 
 // 11. Returns & Exchange Concierge API
 router.post('/returns', createReturn);
-router.get('/returns/lookup', lookupReturn);
-router.get('/returns/lookup/:orderOrReturnId', lookupReturn);
+router.get('/returns/lookup', optionalAuth, lookupReturn); // Returns lookup with privacy controls
+router.get('/returns/lookup/:orderOrReturnId', optionalAuth, lookupReturn);
 router.get('/returns', requireAdmin, getReturns);
 router.patch('/returns/:id/status', requireAdmin, updateReturnStatus);
 

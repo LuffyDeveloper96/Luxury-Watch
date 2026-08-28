@@ -3,10 +3,13 @@ import './index.js'; // Starts app on PORT 5000
 import paymentService from './services/paymentService.js';
 import otpService from './services/otpService.js';
 import { env } from './config/env.js';
+import { connectMongoDB } from './config/db.js';
 
 async function runSecurityVerification() {
-  // Give server 500ms to bind to port
-  await new Promise(r => setTimeout(r, 500));
+  try {
+    await connectMongoDB();
+  } catch (e) {}
+  await new Promise(r => setTimeout(r, 1000));
 
   console.log('\n======================================================');
   console.log('🔒 LUXURY WATCH — STEP 1 SECURITY VERIFICATION SUITE');

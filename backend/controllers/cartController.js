@@ -79,7 +79,14 @@ export const addToCart = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Timepiece is unavailable.' });
     }
 
-    const itemQty = Math.max(1, Number(quantity) || 1);
+    const rawQty = Number(quantity !== undefined ? quantity : 1);
+    if (!Number.isInteger(rawQty) || rawQty <= 0 || rawQty > 50) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quantity must be a positive integer between 1 and 50.'
+      });
+    }
+    const itemQty = rawQty;
     let cart = await Cart.findOne({ userId });
 
     if (!cart) {

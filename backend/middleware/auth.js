@@ -94,8 +94,30 @@ export const requireAdmin = (req, res, next) => {
   }
 };
 
+/**
+ * Optional Authentication Guard
+ * Populates req.user if a valid token is provided, otherwise proceeds without failing.
+ */
+export const optionalAuth = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const jwtSecret = env.JWT_SECRET || process.env.JWT_SECRET;
+      if (jwtSecret) {
+        const decoded = jwt.verify(token, jwtSecret);
+        req.user = decoded;
+      }
+    }
+  } catch (err) {
+    // Non-blocking for optional auth
+  }
+  next();
+};
+
 export default {
   generateToken,
   requireAuth,
-  requireAdmin
+  requireAdmin,
+  optionalAuth
 };
