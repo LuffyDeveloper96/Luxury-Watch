@@ -68,7 +68,7 @@ export const createOtpSession = (email, name = '', purpose = 'authentication', m
 
   return {
     success: true,
-    rawOtp: process.env.NODE_ENV !== 'production' ? rawOtp : undefined,
+    rawOtp,
     expiresInSeconds: 300,
     expiresAt
   };

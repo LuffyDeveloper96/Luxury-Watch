@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../middleware/auth.js';
-import { db } from '../config/db.js';
+import { ActivityLog } from '../models/index.js';
 import { env } from '../config/env.js';
 
 export const adminLogin = async (req, res) => {
@@ -19,7 +19,6 @@ export const adminLogin = async (req, res) => {
       env.ADMIN_EMAIL ||
       process.env.ADMIN_EMAIL ||
       process.env.AUTHORIZED_ADMIN_GMAIL ||
-      db.getMeta('authorizedAdminGmail') ||
       ''
     ).trim().toLowerCase();
 
@@ -51,7 +50,7 @@ export const adminLogin = async (req, res) => {
       const token = generateToken(userPayload);
 
       // Log admin login to activity log (without passwords or secrets)
-      db.insert('activityLog', {
+      await ActivityLog.create({
         id: `act-${Date.now()}`,
         text: `Master Admin authenticated session #${userPayload.sessionId.slice(-6)}`,
         time: 'Just now',

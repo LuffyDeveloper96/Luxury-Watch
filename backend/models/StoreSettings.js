@@ -1,5 +1,24 @@
 import mongoose from 'mongoose';
 
+const paymentSettingsSchema = new mongoose.Schema({
+  merchantName: { type: String, default: 'Luxury Watch Haute Horlogerie' },
+  upiId: { type: String, default: 'luxurywatch@okhdfcbank' },
+  bankName: { type: String, default: 'HDFC Bank Ltd.' },
+  accountHolder: { type: String, default: 'LUXURY WATCH INDIA PRIVATE LIMITED' },
+  accountNumber: { type: String, default: '50200088991122' },
+  ifscCode: { type: String, default: 'HDFC0000060' },
+  branch: { type: String, default: 'Bandra Kurla Complex (BKC), Mumbai' },
+  qrCodeUrl: { type: String, default: '' },
+  enableUpi: { type: Boolean, default: true },
+  enableRazorpay: { type: Boolean, default: true },
+  enableCard: { type: Boolean, default: true },
+  enableNetbanking: { type: Boolean, default: true },
+  paymentGatewayMode: { type: String, enum: ['test', 'live'], default: 'test' },
+  razorpayKeyId: { type: String, default: '' },
+  razorpayKeySecret: { type: String, default: '' },
+  paymentNotes: { type: String, default: 'Please complete payment and enter the 12-digit UPI UTR / Bank Reference Number to verify your order.' }
+}, { _id: false });
+
 const storeSettingsSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true, default: 'global_settings' },
   storeName: { type: String, default: 'LUXURY WATCH' },
@@ -23,7 +42,8 @@ const storeSettingsSchema = new mongoose.Schema({
   razorpaySecretConfigured: { type: Boolean, default: true },
   emailSmtpConfigured: { type: Boolean, default: false },
   metaTitle: { type: String, default: 'Luxury Watch — Timeless Watches. Exceptional Value.' },
-  metaDescription: { type: String, default: 'Discover authentic branded luxury watches. Rolex, Omega, Patek Philippe, Audemars Piguet, Cartier, Breitling, TAG Heuer & Tissot.' },
+  metaDescription: { type: String, default: 'Discover authentic branded luxury watches.' },
+  paymentSettings: { type: paymentSettingsSchema, default: () => ({}) },
   updatedAt: { type: Date, default: Date.now }
 });
 

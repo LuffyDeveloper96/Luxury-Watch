@@ -1,8 +1,8 @@
-import { db } from '../config/db.js';
+import { Coupon, ActivityLog } from '../models/index.js';
 
-export const getCoupons = (req, res) => {
+export const getCoupons = async (req, res) => {
   try {
-    const coupons = db.getCollection('coupons');
+    const coupons = await Coupon.find({}).sort({ createdAt: -1 }).lean();
     return res.json({
       success: true,
       count: coupons.length,
@@ -13,16 +13,15 @@ export const getCoupons = (req, res) => {
   }
 };
 
-export const validateCoupon = (req, res) => {
+export const validateCoupon = async (req, res) => {
   try {
     const { code, subtotal, items = [] } = req.body;
     if (!code) {
       return res.status(400).json({ success: false, message: 'Promotion code is required.' });
     }
 
-    const coupons = db.getCollection('coupons');
     const cleanCode = code.trim().toUpperCase();
-    const coupon = coupons.find(c => c.code.toUpperCase() === cleanCode);
+    const coupon = await Coupon.findOne({ code: cleanCode }).lean();
 
     if (!coupon) {
       return res.status(404).json({ success: false, message: 'Invalid promotion code.' });
@@ -64,7 +63,7 @@ export const validateCoupon = (req, res) => {
   }
 };
 
-export const createCoupon = (req, res) => {
+export const createCoupon = async (req, res) => {
   try {
     const { code, discountPercent, discountAmount, minSpend, maxDiscount, description, brand, category } = req.body;
 
@@ -82,12 +81,12 @@ export const createCoupon = (req, res) => {
       brand: brand || undefined,
       category: category || undefined,
       active: true,
-      createdAt: new Date().toISOString()
+      createdAt: new Date()
     };
 
-    const saved = db.insert('coupons', newCoupon);
+    const saved = await Coupon.create(newCoupon);
 
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `Master Admin created promotion code: "${newCoupon.code}"`,
       time: 'Just now',
@@ -104,39 +103,40 @@ export const createCoupon = (req, res) => {
   }
 };
 
-export const updateCoupon = (req, res) => {
+export const updateCoupon = async (req, res) => {
   try {
     const { code } = req.params;
     const updates = req.body;
     const cleanCode = code.toUpperCase();
 
-    const coupons = db.getCollection('coupons');
-    const idx = coupons.findIndex(c => c.code.toUpperCase() === cleanCode);
-    if (idx === -1) {
+    const existing = await Coupon.findOne({ code: cleanCode });
+    if (!existing) {
       return res.status(404).json({ success: false, message: 'Coupon not found.' });
     }
 
-    coupons[idx] = { ...coupons[idx], ...updates, updatedAt: new Date().toISOString() };
-    db.setCollection('coupons', coupons);
+    const updated = await Coupon.findOneAndUpdate(
+      { _id: existing._id },
+      { $set: { ...updates, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
 
-    return res.json({ success: true, message: 'Coupon updated successfully.', coupon: coupons[idx] });
+    return res.json({ success: true, message: 'Coupon updated successfully.', coupon: updated });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-export const deleteCoupon = (req, res) => {
+export const deleteCoupon = async (req, res) => {
   try {
     const { code } = req.params;
     const cleanCode = code.toUpperCase();
-    const coupons = db.getCollection('coupons');
-    const filtered = coupons.filter(c => c.code.toUpperCase() !== cleanCode);
 
-    if (filtered.length === coupons.length) {
+    const existing = await Coupon.findOne({ code: cleanCode });
+    if (!existing) {
       return res.status(404).json({ success: false, message: 'Coupon not found.' });
     }
 
-    db.setCollection('coupons', filtered);
+    await Coupon.deleteOne({ _id: existing._id });
     return res.json({ success: true, message: 'Coupon removed successfully.' });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

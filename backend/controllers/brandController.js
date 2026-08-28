@@ -1,25 +1,30 @@
-import { db } from '../config/db.js';
+import { Brand, ActivityLog } from '../models/index.js';
 
-export const getBrands = (req, res) => {
+export const getBrands = async (req, res) => {
   try {
-    const brands = db.getCollection('brands');
-    const sorted = [...brands].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    const brands = await Brand.find({ active: true }).sort({ displayOrder: 1, name: 1 }).lean();
     return res.json({
       success: true,
-      count: sorted.length,
-      brands: sorted
+      count: brands.length,
+      brands
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-export const getBrandBySlug = (req, res) => {
+export const getBrandBySlug = async (req, res) => {
   try {
     const { slugOrId } = req.params;
     const clean = slugOrId.toLowerCase().trim();
-    const brands = db.getCollection('brands');
-    const brand = brands.find(b => b.slug === clean || b.id === clean || b.name.toLowerCase() === clean);
+
+    const brand = await Brand.findOne({
+      $or: [
+        { slug: clean },
+        { id: clean },
+        { name: new RegExp(`^${clean}$`, 'i') }
+      ]
+    }).lean();
 
     if (!brand) {
       return res.status(404).json({ success: false, message: 'Brand not found.' });
@@ -31,7 +36,7 @@ export const getBrandBySlug = (req, res) => {
   }
 };
 
-export const createBrand = (req, res) => {
+export const createBrand = async (req, res) => {
   try {
     const { name, tagline, origin, founded, hallmark, logoUrl, bannerUrl, color, isFeatured, displayOrder } = req.body;
     if (!name) {
@@ -56,12 +61,12 @@ export const createBrand = (req, res) => {
       isFeatured: isFeatured !== undefined ? isFeatured : true,
       displayOrder: displayOrder !== undefined ? Number(displayOrder) : Date.now(),
       active: true,
-      createdAt: new Date().toISOString()
+      createdAt: new Date()
     };
 
-    const saved = db.insert('brands', newBrand);
+    const saved = await Brand.create(newBrand);
 
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `Master Administrator added luxury brand: "${name}"`,
       time: 'Just now',
@@ -74,19 +79,23 @@ export const createBrand = (req, res) => {
   }
 };
 
-export const updateBrand = (req, res) => {
+export const updateBrand = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
 
-    const existing = db.findById('brands', id);
+    const existing = await Brand.findOne({ $or: [{ id }, { slug: id }] });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Brand not found.' });
     }
 
-    const updated = db.update('brands', id, updates);
+    const updated = await Brand.findOneAndUpdate(
+      { _id: existing._id },
+      { $set: { ...updates, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
 
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `Brand details updated for "${updated.name}"`,
       time: 'Just now',
@@ -99,17 +108,17 @@ export const updateBrand = (req, res) => {
   }
 };
 
-export const deleteBrand = (req, res) => {
+export const deleteBrand = async (req, res) => {
   try {
     const { id } = req.params;
-    const existing = db.findById('brands', id);
+    const existing = await Brand.findOne({ $or: [{ id }, { slug: id }] });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Brand not found.' });
     }
 
-    db.delete('brands', id);
+    await Brand.deleteOne({ _id: existing._id });
 
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `Brand "${existing.name}" removed by Master Admin`,
       time: 'Just now',

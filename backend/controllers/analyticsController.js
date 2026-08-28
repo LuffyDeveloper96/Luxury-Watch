@@ -1,24 +1,37 @@
-import { db } from '../config/db.js';
+import { Product, Order, User, Return, Brand, ActivityLog } from '../models/index.js';
 
-export const getSummary = (req, res) => {
+export const getSummary = async (req, res) => {
   try {
-    const products = db.getCollection('products');
-    const orders = db.getCollection('orders');
-    const users = db.getCollection('users');
-    const returns = db.getCollection('returns');
-    const brands = db.getCollection('brands');
+    const [products, orders, users, returns, brands] = await Promise.all([
+      Product.find({ active: true }).lean(),
+      Order.find({}).sort({ createdAt: -1 }).lean(),
+      User.find({}).lean(),
+      Return.find({}).lean(),
+      Brand.find({ active: true }).lean()
+    ]);
 
     // Revenue calculations
-    const paidOrders = orders.filter(o => o.paymentStatus === 'Paid' || o.orderStatus === 'Delivered' || o.orderStatus === 'Confirmed' || o.orderStatus === 'Shipped');
+    const paidOrders = orders.filter(o =>
+      o.paymentStatus === 'Paid' ||
+      o.orderStatus === 'Delivered' ||
+      o.orderStatus === 'Confirmed' ||
+      o.orderStatus === 'Shipped'
+    );
     const totalRevenue = paidOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
     const todayStr = new Date().toISOString().split('T')[0];
-    const todayOrders = paidOrders.filter(o => o.date && o.date.startsWith(todayStr));
+    const todayOrders = paidOrders.filter(o => {
+      const dStr = o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : (o.date || '');
+      return dStr.startsWith(todayStr);
+    });
     const todayRevenue = todayOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const monthlyOrders = paidOrders.filter(o => o.date && o.date.startsWith(currentMonth));
+    const monthlyOrders = paidOrders.filter(o => {
+      const dStr = o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : (o.date || '');
+      return dStr.startsWith(currentMonth);
+    });
     const monthlyRevenue = monthlyOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
     // Orders by status
@@ -64,7 +77,10 @@ export const getSummary = (req, res) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dayKey = d.toISOString().split('T')[0];
-      const dayOrders = paidOrders.filter(o => o.date && o.date.startsWith(dayKey));
+      const dayOrders = paidOrders.filter(o => {
+        const dStr = o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : (o.date || '');
+        return dStr.startsWith(dayKey);
+      });
       const dayRev = dayOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
       timeline.push({
         date: dayKey,
@@ -103,32 +119,33 @@ export const getSummary = (req, res) => {
   }
 };
 
-export const getActivityLog = (req, res) => {
+export const getActivityLog = async (req, res) => {
   try {
-    const logs = db.getCollection('activityLog') || [];
+    const logs = await ActivityLog.find({}).sort({ createdAt: -1 }).limit(25).lean();
     return res.json({
       success: true,
       count: logs.length,
-      activities: logs.slice(0, 25)
+      activities: logs
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-export const logActivity = (req, res) => {
+export const logActivity = async (req, res) => {
   try {
     const { text, type = 'general', badge } = req.body;
     if (!text) {
       return res.status(400).json({ success: false, message: 'Activity text is required.' });
     }
 
-    const entry = db.insert('activityLog', {
+    const entry = await ActivityLog.create({
       id: `act-${Date.now()}`,
       text,
       time: 'Just now',
       type,
-      badge
+      badge,
+      createdAt: new Date()
     });
 
     return res.status(201).json({ success: true, activity: entry });

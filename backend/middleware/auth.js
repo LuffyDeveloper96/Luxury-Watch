@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken';
-import { db } from '../config/db.js';
 import { env } from '../config/env.js';
 
 /**
@@ -75,7 +74,6 @@ export const requireAdmin = (req, res, next) => {
       env.ADMIN_EMAIL ||
       process.env.ADMIN_EMAIL ||
       process.env.AUTHORIZED_ADMIN_GMAIL ||
-      db.getMeta('authorizedAdminGmail') ||
       ''
     ).trim().toLowerCase();
 

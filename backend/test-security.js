@@ -139,7 +139,7 @@ async function runSecurityVerification() {
       const origEnv = process.env.NODE_ENV;
       try {
         process.env.NODE_ENV = 'production';
-        const mockVerify = paymentService.verifySignature({
+        const mockVerify = await paymentService.verifySignature({
           gatewayOrderId: 'order_LW_12345',
           paymentId: 'pay_mock_123',
           signature: 'mock_verified_signature'

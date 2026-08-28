@@ -1,10 +1,10 @@
-import { db } from '../config/db.js';
+import { Return, Order, ActivityLog } from '../models/index.js';
 
 /**
  * Submit New Return / Exchange Request
  * POST /api/returns
  */
-export const createReturn = (req, res) => {
+export const createReturn = async (req, res) => {
   try {
     const {
       orderId,
@@ -28,7 +28,9 @@ export const createReturn = (req, res) => {
     }
 
     if (!items || !items.length) {
-      const order = db.findById('orders', orderId);
+      const order = await Order.findOne({
+        $or: [{ id: orderId }, { orderNumber: orderId }]
+      }).lean();
       items = order?.items || [{ name: 'Horology Timepiece Consignment', quantity: 1 }];
     }
 
@@ -50,18 +52,18 @@ export const createReturn = (req, res) => {
       status: 'Requested',
       waybillNumber: returnWaybill,
       courierTier: 'Securitas Armoured Return Transit (Insured)',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
-    db.insert('returns', newReturn);
+    const saved = await Return.create(newReturn);
 
     return res.status(201).json({
       success: true,
       message: 'Return / Exchange request registered successfully.',
-      request: newReturn,
-      return: newReturn,
-      returnRequest: newReturn
+      request: saved,
+      return: saved,
+      returnRequest: saved
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -72,9 +74,9 @@ export const createReturn = (req, res) => {
  * Get All Return & Exchange Requests (Admin)
  * GET /api/returns
  */
-export const getReturns = (req, res) => {
+export const getReturns = async (req, res) => {
   try {
-    const returns = db.getCollection('returns') || [];
+    const returns = await Return.find({}).sort({ createdAt: -1 }).lean();
     return res.json({
       success: true,
       count: returns.length,
@@ -89,23 +91,32 @@ export const getReturns = (req, res) => {
  * Look up Return Status (Customer / Public)
  * GET /api/returns/lookup/:orderOrReturnId
  */
-export const lookupReturn = (req, res) => {
+export const lookupReturn = async (req, res) => {
   try {
-    const { orderOrReturnId } = req.params;
-    const clean = orderOrReturnId.trim().toUpperCase();
+    const rawLookup = req.params.orderOrReturnId || req.query.orderOrReturnId || req.query.id || req.query.orderId || req.query.q || '';
+    if (!rawLookup || !rawLookup.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide an order number, return ID, or customer email.'
+      });
+    }
 
-    const returns = db.getCollection('returns') || [];
-    const found = returns.filter(
-      r => r.id.toUpperCase() === clean ||
-           r.orderId.toUpperCase() === clean ||
-           r.waybillNumber?.toUpperCase() === clean ||
-           r.customerEmail?.toLowerCase() === orderOrReturnId.trim().toLowerCase()
-    );
+    const clean = rawLookup.trim().toUpperCase();
+    const cleanEmail = rawLookup.trim().toLowerCase();
+
+    const found = await Return.find({
+      $or: [
+        { id: clean },
+        { orderId: clean },
+        { waybillNumber: clean },
+        { customerEmail: cleanEmail }
+      ]
+    }).sort({ createdAt: -1 }).lean();
 
     if (!found.length) {
       return res.status(404).json({
         success: false,
-        message: `No return record found matching "${orderOrReturnId}".`
+        message: `No return record found matching "${rawLookup}".`
       });
     }
 
@@ -122,7 +133,7 @@ export const lookupReturn = (req, res) => {
  * Update Return Request Status (Admin)
  * PATCH /api/returns/:id/status
  */
-export const updateReturnStatus = (req, res) => {
+export const updateReturnStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, resolutionNotes } = req.body;
@@ -135,18 +146,24 @@ export const updateReturnStatus = (req, res) => {
       });
     }
 
-    const updated = db.updateById('returns', id, {
-      status,
-      resolutionNotes: resolutionNotes || undefined,
-      updatedAt: new Date().toISOString()
-    });
+    const updated = await Return.findOneAndUpdate(
+      { id },
+      {
+        $set: {
+          status,
+          resolutionNotes: resolutionNotes || undefined,
+          updatedAt: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    );
 
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Return record not found.' });
     }
 
     // Activity log
-    db.insert('activities', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `Return #${id} updated to status: "${status}"`,
       time: 'Just now',
@@ -163,4 +180,11 @@ export const updateReturnStatus = (req, res) => {
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
+};
+
+export default {
+  createReturn,
+  getReturns,
+  lookupReturn,
+  updateReturnStatus
 };

@@ -1,9 +1,9 @@
-import { db } from '../config/db.js';
+import { Order, Product, Coupon, ActivityLog } from '../models/index.js';
 import { emailService } from '../services/emailService.js';
 
-export const getOrders = (req, res) => {
+export const getOrders = async (req, res) => {
   try {
-    const orders = db.getCollection('orders');
+    const orders = await Order.find({}).sort({ createdAt: -1 }).lean();
     return res.json({
       success: true,
       count: orders.length,
@@ -14,17 +14,19 @@ export const getOrders = (req, res) => {
   }
 };
 
-export const getOrderById = (req, res) => {
+export const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
     const cleanId = id.trim().toUpperCase();
 
-    const orders = db.getCollection('orders');
-    const order = orders.find(
-      o => o.id.toUpperCase() === cleanId ||
-           o.trackingNumber?.toUpperCase() === cleanId ||
-           o.customer?.email?.toLowerCase() === id.trim().toLowerCase()
-    );
+    const order = await Order.findOne({
+      $or: [
+        { id: cleanId },
+        { orderNumber: cleanId },
+        { trackingNumber: cleanId },
+        { 'customer.email': id.trim().toLowerCase() }
+      ]
+    }).lean();
 
     if (!order) {
       return res.status(404).json({ success: false, message: `No consignment found matching "${id}".` });
@@ -36,15 +38,14 @@ export const getOrderById = (req, res) => {
   }
 };
 
-export const getUserOrders = (req, res) => {
+export const getUserOrders = async (req, res) => {
   try {
     const userEmail = req.user?.email?.toLowerCase();
     if (!userEmail) {
       return res.status(401).json({ success: false, message: 'User authentication required.' });
     }
 
-    const orders = db.getCollection('orders');
-    const userOrders = orders.filter(o => o.customer?.email?.toLowerCase() === userEmail);
+    const userOrders = await Order.find({ 'customer.email': userEmail }).sort({ createdAt: -1 }).lean();
 
     return res.json({
       success: true,
@@ -56,7 +57,7 @@ export const getUserOrders = (req, res) => {
   }
 };
 
-export const createOrder = (req, res) => {
+export const createOrder = async (req, res) => {
   try {
     const orderData = req.body;
 
@@ -73,7 +74,9 @@ export const createOrder = (req, res) => {
 
     for (const item of orderData.items) {
       const prodId = item.id || item.productId || (item.product && item.product.id);
-      const product = db.findById('products', prodId);
+      const product = await Product.findOne({
+        $or: [{ id: prodId }, { sku: prodId }, { slug: prodId }]
+      }).lean();
 
       if (!product || product.active === false) {
         return res.status(400).json({
@@ -101,14 +104,15 @@ export const createOrder = (req, res) => {
     // Validate Coupon
     let discountAmount = 0;
     if (orderData.appliedCoupon?.code) {
-      const coupons = db.getCollection('coupons');
-      const coupon = coupons.find(c => c.code.toUpperCase() === orderData.appliedCoupon.code.trim().toUpperCase() && c.active);
+      const couponCode = orderData.appliedCoupon.code.trim().toUpperCase();
+      const coupon = await Coupon.findOne({ code: couponCode, active: true });
       if (coupon) {
         if (!coupon.minSpend || calculatedSubtotal >= coupon.minSpend) {
           discountAmount = (calculatedSubtotal * (coupon.discountPercent || 0)) / 100;
           if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
             discountAmount = coupon.maxDiscount;
           }
+          await Coupon.updateOne({ _id: coupon._id }, { $inc: { timesUsed: 1 } });
         }
       }
     }
@@ -122,35 +126,35 @@ export const createOrder = (req, res) => {
     const newOrder = {
       ...orderData,
       id: orderId,
+      orderNumber: orderId,
       items: validatedItems,
       subtotal: calculatedSubtotal,
       discountAmount,
       total: finalTotal,
-      date: new Date().toISOString(),
       orderStatus: orderData.orderStatus || 'Confirmed',
       paymentStatus: orderData.paymentStatus || 'Paid',
       trackingNumber,
-      courierTier: orderData.courierTier || 'Securitas Armoured Express (Insured)'
+      courierTier: orderData.courierTier || 'Securitas Armoured Express (Insured)',
+      createdAt: new Date()
     };
 
     // Save order
-    const savedOrder = db.insert('orders', newOrder);
+    const savedOrder = await Order.create(newOrder);
 
     // Atomically decrement stock
-    validatedItems.forEach(item => {
-      const prod = db.findById('products', item.id);
-      if (prod) {
-        const newStock = Math.max(0, prod.stock - item.quantity);
-        db.update('products', item.id, { stock: newStock });
-      }
-    });
+    for (const item of validatedItems) {
+      await Product.findOneAndUpdate(
+        { id: item.id },
+        { $inc: { stock: -item.quantity }, $set: { updatedAt: new Date() } }
+      );
+    }
 
     // Send confirmation email
     emailService.sendOrderConfirmationEmail(savedOrder);
 
     // Log Activity
     const custName = newOrder.customer?.fullName || 'Distinguished Patron';
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `🎉 Consignment #${savedOrder.id} placed by ${custName} (₹${finalTotal.toLocaleString('en-IN')})`,
       time: 'Just now',
@@ -167,7 +171,7 @@ export const createOrder = (req, res) => {
   }
 };
 
-export const updateOrderStatus = (req, res) => {
+export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const orderStatus = req.body.orderStatus || req.body.status;
@@ -177,18 +181,22 @@ export const updateOrderStatus = (req, res) => {
       return res.status(400).json({ success: false, message: 'Order status is required.' });
     }
 
-    const existing = db.findById('orders', id);
+    const existing = await Order.findOne({ $or: [{ id }, { orderNumber: id }] });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
 
-    const updates = { orderStatus };
+    const updates = { orderStatus, updatedAt: new Date() };
     if (trackingNumber) updates.trackingNumber = trackingNumber;
     if (courierTier) updates.courierTier = courierTier;
 
-    const updated = db.update('orders', id, updates);
+    const updated = await Order.findOneAndUpdate(
+      { _id: existing._id },
+      { $set: updates },
+      { returnDocument: 'after' }
+    );
 
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `Consignment #${id} stage changed to: "${orderStatus}"`,
       time: 'Just now',
@@ -205,12 +213,12 @@ export const updateOrderStatus = (req, res) => {
   }
 };
 
-export const cancelOrder = (req, res) => {
+export const cancelOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
 
-    const existing = db.findById('orders', id);
+    const existing = await Order.findOne({ $or: [{ id }, { orderNumber: id }] });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
@@ -222,20 +230,29 @@ export const cancelOrder = (req, res) => {
       });
     }
 
-    const updated = db.update('orders', id, {
-      orderStatus: 'Cancelled',
-      cancelReason: reason || 'Customer requested cancellation.'
-    });
+    const updated = await Order.findOneAndUpdate(
+      { _id: existing._id },
+      {
+        $set: {
+          orderStatus: 'Cancelled',
+          cancelReason: reason || 'Customer requested cancellation.',
+          updatedAt: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    );
 
-    // Restore stock
-    (existing.items || []).forEach(item => {
-      const prod = db.findById('products', item.id);
-      if (prod) {
-        db.update('products', item.id, { stock: prod.stock + (item.quantity || 1) });
+    // Atomically restore stock
+    for (const item of existing.items || []) {
+      if (item.id) {
+        await Product.findOneAndUpdate(
+          { id: item.id },
+          { $inc: { stock: item.quantity || 1 }, $set: { updatedAt: new Date() } }
+        );
       }
-    });
+    }
 
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `Consignment #${id} cancelled (${reason || 'Customer request'})`,
       time: 'Just now',

@@ -5,11 +5,17 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { env } from './config/env.js';
+import { connectMongoDB } from './config/db.js';
 import apiRouter from './routes/api.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize MongoDB Connection
+connectMongoDB().catch(err => {
+  console.error('[Startup DB Error]:', err.message);
+});
 
 const app = express();
 const PORT = env.PORT || 5000;

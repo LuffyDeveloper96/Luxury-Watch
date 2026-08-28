@@ -55,10 +55,18 @@ const productSchema = new mongoose.Schema({
   }],
   returnEligible: { type: Boolean, default: true },
   tags: [{ type: String }],
-  active: { type: Boolean, default: true },
+  active: { type: Boolean, default: true, index: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
 
+productSchema.index({ brand: 1, active: 1 });
+productSchema.index({ category: 1, active: 1 });
+productSchema.index({ price: 1, active: 1 });
+productSchema.index({ isFeatured: 1, active: 1 });
+productSchema.index({ isBestSeller: 1, active: 1 });
+productSchema.index({ isNewArrival: 1, active: 1 });
+
 export const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 export default Product;
+

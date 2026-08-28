@@ -1,4 +1,4 @@
-import { db } from '../config/db.js';
+import { HomepageContent, ActivityLog } from '../models/index.js';
 
 const DEFAULT_HOMEPAGE = {
   key: 'homepage_cms',
@@ -28,27 +28,31 @@ const DEFAULT_HOMEPAGE = {
   ]
 };
 
-export const getHomepageContent = (req, res) => {
+export const getHomepageContent = async (req, res) => {
   try {
-    const content = db.getMeta('homepageContent') || DEFAULT_HOMEPAGE;
+    const doc = await HomepageContent.findOne({ key: 'homepage_cms' }).lean();
+    const content = doc || DEFAULT_HOMEPAGE;
     return res.json({ success: true, content });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-export const updateHomepageContent = (req, res) => {
+export const updateHomepageContent = async (req, res) => {
   try {
-    const current = db.getMeta('homepageContent') || DEFAULT_HOMEPAGE;
-    const updated = {
-      ...current,
-      ...req.body,
-      updatedAt: new Date().toISOString()
-    };
+    const updated = await HomepageContent.findOneAndUpdate(
+      { key: 'homepage_cms' },
+      {
+        $set: {
+          ...req.body,
+          key: 'homepage_cms',
+          updatedAt: new Date()
+        }
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
 
-    db.setMeta('homepageContent', updated);
-
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `Master Administrator updated Homepage CMS content`,
       time: 'Just now',

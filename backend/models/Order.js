@@ -28,6 +28,7 @@ const orderCustomerSchema = new mongoose.Schema({
 
 const orderSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true, index: true },
+  orderNumber: { type: String, sparse: true, index: true },
   customer: { type: orderCustomerSchema, required: true },
   items: [orderItemSchema],
   subtotal: { type: Number, required: true },
@@ -70,5 +71,8 @@ const orderSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+orderSchema.index({ 'customer.email': 1, createdAt: -1 });
+
 export const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 export default Order;
+

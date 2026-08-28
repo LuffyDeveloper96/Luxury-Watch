@@ -14,6 +14,7 @@ const addressSchema = new mongoose.Schema({
 }, { _id: false });
 
 const userSchema = new mongoose.Schema({
+  id: { type: String, unique: true, sparse: true, index: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
   password: { type: String, default: '' },
   name: { type: String, default: '' },
@@ -23,9 +24,11 @@ const userSchema = new mongoose.Schema({
   addresses: [addressSchema],
   totalSpent: { type: Number, default: 0 },
   ordersCount: { type: Number, default: 0 },
+  lastLogin: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
 
 export const User = mongoose.models.User || mongoose.model('User', userSchema);
 export default User;
+

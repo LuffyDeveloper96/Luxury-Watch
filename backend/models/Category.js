@@ -6,8 +6,8 @@ const categorySchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true, lowercase: true, index: true },
   description: { type: String, default: '' },
   imageUrl: { type: String, default: '' },
-  displayOrder: { type: Number, default: 0 },
-  active: { type: Boolean, default: true },
+  displayOrder: { type: Number, default: 0, index: true },
+  active: { type: Boolean, default: true, index: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

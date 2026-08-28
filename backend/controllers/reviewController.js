@@ -1,16 +1,18 @@
-import { db } from '../config/db.js';
+import { Review, Product, ActivityLog } from '../models/index.js';
 
-export const getReviews = (req, res) => {
+export const getReviews = async (req, res) => {
   try {
-    let reviews = db.getCollection('reviews');
     const { productId, status } = req.query;
+    const query = {};
 
     if (productId) {
-      reviews = reviews.filter(r => r.productId === productId);
+      query.productId = productId;
     }
     if (status) {
-      reviews = reviews.filter(r => r.status === status);
+      query.status = status;
     }
+
+    const reviews = await Review.find(query).sort({ createdAt: -1 }).lean();
 
     return res.json({
       success: true,
@@ -22,7 +24,7 @@ export const getReviews = (req, res) => {
   }
 };
 
-export const createReview = (req, res) => {
+export const createReview = async (req, res) => {
   try {
     const { productId, author, userName, rating, title, comment, location } = req.body;
     const reviewerName = author || userName;
@@ -47,22 +49,28 @@ export const createReview = (req, res) => {
       avatar: reviewerName.slice(0, 2).toUpperCase(),
       location: location || 'Geneva / India',
       status: 'approved',
-      createdAt: new Date().toISOString()
+      createdAt: new Date()
     };
 
-    const saved = db.insert('reviews', newReview);
+    const saved = await Review.create(newReview);
 
-    // Recalculate Product average rating
-    const allProductReviews = db.getCollection('reviews').filter(r => r.productId === productId && r.status !== 'hidden');
+    // Recalculate Product average rating atomically
+    const allProductReviews = await Review.find({ productId, status: { $ne: 'hidden' } }).lean();
     if (allProductReviews.length > 0) {
       const avgRating = allProductReviews.reduce((sum, r) => sum + r.rating, 0) / allProductReviews.length;
-      db.update('products', productId, {
-        rating: Math.round(avgRating * 10) / 10,
-        reviewsCount: allProductReviews.length
-      });
+      await Product.findOneAndUpdate(
+        { $or: [{ id: productId }, { slug: productId }] },
+        {
+          $set: {
+            rating: Math.round(avgRating * 10) / 10,
+            reviewsCount: allProductReviews.length,
+            updatedAt: new Date()
+          }
+        }
+      );
     }
 
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `⭐️ Review posted by ${reviewerName} (${newReview.rating}★)`,
       time: 'Just now',
@@ -79,32 +87,37 @@ export const createReview = (req, res) => {
   }
 };
 
-export const updateReviewStatus = (req, res) => {
+export const updateReviewStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    const existing = db.findById('reviews', id);
+    const existing = await Review.findOne({ id });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Review not found.' });
     }
 
-    const updated = db.update('reviews', id, { status });
+    const updated = await Review.findOneAndUpdate(
+      { _id: existing._id },
+      { $set: { status, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+
     return res.json({ success: true, message: 'Review status updated.', review: updated });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-export const deleteReview = (req, res) => {
+export const deleteReview = async (req, res) => {
   try {
     const { id } = req.params;
-    const existing = db.findById('reviews', id);
+    const existing = await Review.findOne({ id });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Review not found.' });
     }
 
-    db.delete('reviews', id);
+    await Review.deleteOne({ _id: existing._id });
     return res.json({ success: true, message: 'Review deleted successfully.' });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

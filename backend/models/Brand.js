@@ -13,9 +13,9 @@ const brandSchema = new mongoose.Schema({
   bannerUrl: { type: String, default: '' },
   color: { type: String, default: '#0f172a' },
   goldAccent: { type: String, default: '#d4af37' },
-  displayOrder: { type: Number, default: 0 },
+  displayOrder: { type: Number, default: 0, index: true },
   isFeatured: { type: Boolean, default: true },
-  active: { type: Boolean, default: true },
+  active: { type: Boolean, default: true, index: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

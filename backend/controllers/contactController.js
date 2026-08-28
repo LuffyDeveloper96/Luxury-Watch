@@ -1,6 +1,6 @@
-import { db } from '../config/db.js';
+import { Contact, ActivityLog } from '../models/index.js';
 
-export const submitContact = (req, res) => {
+export const submitContact = async (req, res) => {
   try {
     const { name, email, phone, subject, message } = req.body;
 
@@ -16,12 +16,12 @@ export const submitContact = (req, res) => {
       subject: subject || 'General Concierge Inquiry',
       message,
       status: 'unread',
-      createdAt: new Date().toISOString()
+      createdAt: new Date()
     };
 
-    db.insert('contacts', contactEntry);
+    const created = await Contact.create(contactEntry);
 
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `📨 New concierge inquiry received from ${name} (${email})`,
       time: 'Just now',
@@ -31,16 +31,16 @@ export const submitContact = (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'Thank you. Your inquiry has been forwarded to the Luxury Watch Haute Horlogerie Concierge.',
-      entry: contactEntry
+      entry: created
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-export const getContacts = (req, res) => {
+export const getContacts = async (req, res) => {
   try {
-    const contacts = db.getCollection('contacts') || [];
+    const contacts = await Contact.find({}).sort({ createdAt: -1 }).lean();
     return res.json({
       success: true,
       count: contacts.length,

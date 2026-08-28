@@ -1,4 +1,4 @@
-import { db } from '../config/db.js';
+import { Order, Product, Coupon, Payment, ActivityLog } from '../models/index.js';
 import { paymentService } from '../services/paymentService.js';
 import { emailService } from '../services/emailService.js';
 
@@ -20,7 +20,9 @@ export const createRazorpayOrder = async (req, res) => {
 
     for (const item of items) {
       const prodId = item.id || item.productId || (item.product && item.product.id);
-      const product = db.findById('products', prodId);
+      const product = await Product.findOne({
+        $or: [{ id: prodId }, { sku: prodId }, { slug: prodId }]
+      }).lean();
 
       if (!product || product.active === false) {
         return res.status(400).json({
@@ -57,8 +59,8 @@ export const createRazorpayOrder = async (req, res) => {
     let appliedCouponData = null;
 
     if (couponCode) {
-      const coupons = db.getCollection('coupons');
-      const coupon = coupons.find(c => c.code.toUpperCase() === couponCode.trim().toUpperCase() && c.active);
+      const cleanCode = couponCode.trim().toUpperCase();
+      const coupon = await Coupon.findOne({ code: cleanCode, active: true }).lean();
 
       if (coupon) {
         if (!coupon.minSpend || calculatedSubtotal >= coupon.minSpend) {
@@ -129,7 +131,7 @@ export const verifyRazorpayPayment = async (req, res) => {
     }
 
     // Verify HMAC-SHA256 signature
-    const verification = paymentService.verifySignature({
+    const verification = await paymentService.verifySignature({
       gatewayOrderId,
       paymentId,
       signature
@@ -137,7 +139,7 @@ export const verifyRazorpayPayment = async (req, res) => {
 
     if (!verification.success) {
       // Record failed transaction log
-      paymentService.recordTransaction({
+      await paymentService.recordTransaction({
         orderId: orderData?.id || gatewayOrderId,
         gatewayOrderId,
         gatewayPaymentId: paymentId,
@@ -152,14 +154,20 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // Signature verified! Create confirmed order in DB
     const orderId = orderData?.id || `ORD-LW-${Math.floor(10000 + Math.random() * 90000)}`;
     const trackingNumber = orderData?.trackingNumber || `LW-EXP-${Math.floor(10000000 + Math.random() * 90000000)}`;
+
+    const calculatedSubtotal = orderData?.subtotal !== undefined
+      ? Number(orderData.subtotal)
+      : (orderData?.items || []).reduce((s, it) => s + ((it.price || 0) * (it.quantity || 1)), 0) || Number(orderData?.total) || 0;
+    const finalTotal = orderData?.total !== undefined ? Number(orderData.total) : calculatedSubtotal;
 
     const newOrder = {
       ...orderData,
       id: orderId,
-      date: new Date().toISOString(),
+      orderNumber: orderId,
+      subtotal: calculatedSubtotal,
+      total: finalTotal,
       orderStatus: 'Confirmed',
       paymentStatus: 'Paid',
       paymentMethod: 'razorpay',
@@ -169,14 +177,15 @@ export const verifyRazorpayPayment = async (req, res) => {
         signature
       },
       trackingNumber,
-      courierTier: orderData?.courierTier || 'Securitas Armoured Express (Insured)'
+      courierTier: orderData?.courierTier || 'Securitas Armoured Express (Insured)',
+      createdAt: new Date()
     };
 
-    // Save order
-    const savedOrder = db.insert('orders', newOrder);
+    // Save order in MongoDB
+    const savedOrder = await Order.create(newOrder);
 
     // Record successful payment transaction
-    paymentService.recordTransaction({
+    await paymentService.recordTransaction({
       orderId: savedOrder.id,
       gatewayOrderId,
       gatewayPaymentId: paymentId,
@@ -188,23 +197,22 @@ export const verifyRazorpayPayment = async (req, res) => {
     });
 
     // Atomically decrement stock of ordered items
-    (savedOrder.items || []).forEach(item => {
+    for (const item of savedOrder.items || []) {
       const prodId = item.id || (item.product && item.product.id);
       if (prodId) {
-        const prod = db.findById('products', prodId);
-        if (prod) {
-          const newStock = Math.max(0, prod.stock - (item.quantity || 1));
-          db.update('products', prodId, { stock: newStock });
-        }
+        await Product.findOneAndUpdate(
+          { $or: [{ id: prodId }, { sku: prodId }, { slug: prodId }] },
+          { $inc: { stock: -(item.quantity || 1) }, $set: { updatedAt: new Date() } }
+        );
       }
-    });
+    }
 
     // Dispatch email confirmation in background
     emailService.sendOrderConfirmationEmail(savedOrder);
 
     // Log Activity
     const custName = savedOrder.customer?.fullName || 'Distinguished Patron';
-    db.insert('activityLog', {
+    await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `💳 Payment verified! Order #${savedOrder.id} confirmed for ${custName} (₹${(savedOrder.total || 0).toLocaleString('en-IN')})`,
       time: 'Just now',
@@ -226,11 +234,11 @@ export const verifyRazorpayPayment = async (req, res) => {
  * Handle Payment Failure & Log Details
  * POST /api/payments/failure
  */
-export const recordPaymentFailure = (req, res) => {
+export const recordPaymentFailure = async (req, res) => {
   try {
     const { gatewayOrderId, paymentId, errorReason, amount, customerEmail } = req.body;
 
-    paymentService.recordTransaction({
+    await paymentService.recordTransaction({
       orderId: gatewayOrderId || `FAIL-${Date.now()}`,
       gatewayOrderId,
       gatewayPaymentId: paymentId,

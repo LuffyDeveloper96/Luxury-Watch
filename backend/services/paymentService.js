@@ -1,21 +1,37 @@
 import crypto from 'crypto';
 import Razorpay from 'razorpay';
-import { db } from '../config/db.js';
+import { Payment, StoreSettings } from '../models/index.js';
 import { env } from '../config/env.js';
 
 // Configuration keys from environment or saved settings
-const getRazorpayCredentials = () => {
-  const settings = db.getMeta('paymentSettings') || {};
-  const keyId = env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || settings.razorpayKeyId || '';
-  const keySecret = env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET || settings.razorpayKeySecret || '';
+const getRazorpayCredentials = async () => {
+  let keyId = env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || '';
+  let keySecret = env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET || '';
+
+  if (!keyId || !keySecret) {
+    try {
+      const settings = await StoreSettings.findOne({ key: 'global_settings' }).lean();
+      if (settings?.paymentSettings) {
+        if (!keyId && settings.paymentSettings.razorpayKeyId) {
+          keyId = settings.paymentSettings.razorpayKeyId;
+        }
+        if (!keySecret && settings.paymentSettings.razorpayKeySecret) {
+          keySecret = settings.paymentSettings.razorpayKeySecret;
+        }
+      }
+    } catch (e) {
+      // StoreSettings lookup note
+    }
+  }
+
   return { keyId, keySecret };
 };
 
 /**
  * Initialize Razorpay SDK instance
  */
-export const getRazorpayInstance = () => {
-  const { keyId, keySecret } = getRazorpayCredentials();
+export const getRazorpayInstance = async () => {
+  const { keyId, keySecret } = await getRazorpayCredentials();
   if (!keyId || !keySecret) return null;
   try {
     return new Razorpay({
@@ -36,11 +52,11 @@ export const paymentService = {
    * Create Gateway Order (Razorpay)
    */
   createOrder: async ({ amount, currency = 'INR', receipt, notes = {} }) => {
-    const { keyId, keySecret } = getRazorpayCredentials();
+    const { keyId, keySecret } = await getRazorpayCredentials();
     const amountInPaise = Math.round(Number(amount) * 100);
 
     if (process.env.NODE_ENV === 'production') {
-      const razorpay = getRazorpayInstance();
+      const razorpay = await getRazorpayInstance();
       if (!razorpay || !keyId || !keySecret) {
         return {
           success: false,
@@ -87,7 +103,7 @@ export const paymentService = {
   /**
    * Verify Gateway Payment Signature Server-Side
    */
-  verifySignature: ({ gatewayOrderId, paymentId, signature }) => {
+  verifySignature: async ({ gatewayOrderId, paymentId, signature }) => {
     if (!gatewayOrderId || !paymentId || !signature) {
       return { success: false, message: 'Missing gateway order ID, payment ID, or signature.' };
     }
@@ -104,7 +120,7 @@ export const paymentService = {
       return { success: true, message: 'Sandbox payment verified (development mode only).' };
     }
 
-    const { keySecret } = getRazorpayCredentials();
+    const { keySecret } = await getRazorpayCredentials();
     if (!keySecret) {
       return { success: false, message: 'Payment signature or key secret is missing.' };
     }
@@ -147,17 +163,17 @@ export const paymentService = {
   },
 
   /**
-   * Record transaction log in Database
+   * Record transaction log in MongoDB
    */
-  recordTransaction: (paymentData) => {
+  recordTransaction: async (paymentData) => {
     try {
       const transaction = {
         transactionId: `TXN-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
         ...paymentData
       };
-      db.insert('payments', transaction);
-      return transaction;
+      const created = await Payment.create(transaction);
+      return created;
     } catch (err) {
       console.error('[Payment Log Error]:', err.message);
       return null;

@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { db } from '../config/db.js';
+import { User, ActivityLog } from '../models/index.js';
 import { generateToken } from '../middleware/auth.js';
 import { createOtpSession, verifyOtpSession } from '../services/otpService.js';
 import { emailService } from '../services/emailService.js';
@@ -21,8 +21,7 @@ export const initiateUserSignup = async (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const users = db.getCollection('users');
-    const existingUser = users.find(u => u.email.toLowerCase() === cleanEmail);
+    const existingUser = await User.findOne({ email: cleanEmail }).lean();
 
     if (existingUser && existingUser.verified) {
       return res.status(400).json({
@@ -84,11 +83,10 @@ export const verifyUserSignup = async (req, res) => {
     }
 
     const { name, metadata } = verification.data;
-    const users = db.getCollection('users');
-    let user = users.find(u => u.email.toLowerCase() === cleanEmail);
+    let user = await User.findOne({ email: cleanEmail });
 
     if (!user) {
-      user = {
+      user = await User.create({
         id: `usr-${Date.now()}`,
         email: cleanEmail,
         password: metadata?.passwordHash || '',
@@ -99,33 +97,38 @@ export const verifyUserSignup = async (req, res) => {
         addresses: [],
         totalSpent: 0,
         ordersCount: 0,
-        createdAt: new Date().toISOString()
-      };
-      db.insert('users', user);
+        createdAt: new Date()
+      });
 
-      db.insert('activityLog', {
+      await ActivityLog.create({
         id: `act-${Date.now()}`,
         text: `✨ New patron ${user.name} created an account with verified email & password`,
         time: 'Just now',
         type: 'user'
       });
     } else {
-      user = db.update('users', user.id, {
-        password: metadata?.passwordHash || user.password,
-        verified: true,
-        lastLogin: new Date().toISOString()
-      });
+      user = await User.findOneAndUpdate(
+        { email: cleanEmail },
+        {
+          $set: {
+            password: metadata?.passwordHash || user.password,
+            verified: true,
+            lastLogin: new Date()
+          }
+        },
+        { returnDocument: 'after' }
+      );
     }
 
     // Generate JWT token
     const token = generateToken({
-      id: user.id,
+      id: user.id || user._id.toString(),
       email: user.email,
       name: user.name,
       role: 'customer'
     });
 
-    const sanitizedUser = { ...user };
+    const sanitizedUser = user.toObject ? user.toObject() : { ...user };
     delete sanitizedUser.password;
 
     return res.json({
@@ -155,8 +158,7 @@ export const initiateUserLogin = async (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const users = db.getCollection('users');
-    const user = users.find(u => u.email.toLowerCase() === cleanEmail);
+    const user = await User.findOne({ email: cleanEmail }).lean();
 
     if (!user) {
       return res.status(404).json({
@@ -219,26 +221,29 @@ export const verifyUserLogin = async (req, res) => {
       return res.status(400).json({ success: false, message: verification.message });
     }
 
-    const users = db.getCollection('users');
-    let user = users.find(u => u.email.toLowerCase() === cleanEmail);
+    const user = await User.findOneAndUpdate(
+      { email: cleanEmail },
+      {
+        $set: {
+          verified: true,
+          lastLogin: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    );
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'Patron record not found.' });
     }
 
-    user = db.update('users', user.id, {
-      verified: true,
-      lastLogin: new Date().toISOString()
-    });
-
     const token = generateToken({
-      id: user.id,
+      id: user.id || user._id.toString(),
       email: user.email,
       name: user.name,
       role: 'customer'
     });
 
-    const sanitizedUser = { ...user };
+    const sanitizedUser = user.toObject ? user.toObject() : { ...user };
     delete sanitizedUser.password;
 
     return res.json({
@@ -264,8 +269,7 @@ export const forgotPasswordInit = async (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const users = db.getCollection('users');
-    const user = users.find(u => u.email.toLowerCase() === cleanEmail);
+    const user = await User.findOne({ email: cleanEmail }).lean();
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'No patron account found with this email.' });
@@ -323,27 +327,30 @@ export const resetPasswordWithOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: verification.message });
     }
 
-    const users = db.getCollection('users');
-    let user = users.find(u => u.email.toLowerCase() === cleanEmail);
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const user = await User.findOneAndUpdate(
+      { email: cleanEmail },
+      {
+        $set: {
+          password: passwordHash,
+          updatedAt: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    );
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'Patron record not found.' });
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    user = db.update('users', user.id, {
-      password: passwordHash,
-      updatedAt: new Date().toISOString()
-    });
-
     const token = generateToken({
-      id: user.id,
+      id: user.id || user._id.toString(),
       email: user.email,
       name: user.name,
       role: 'customer'
     });
 
-    const sanitizedUser = { ...user };
+    const sanitizedUser = user.toObject ? user.toObject() : { ...user };
     delete sanitizedUser.password;
 
     return res.json({
@@ -377,9 +384,18 @@ export const verifyUserOtp = (req, res) => {
  * Get Authenticated Customer Profile
  * GET /api/auth/user/me
  */
-export const getMe = (req, res) => {
+export const getMe = async (req, res) => {
   try {
-    const user = db.findById('users', req.user?.id) || db.findOne('users', u => u.email?.toLowerCase() === req.user?.email?.toLowerCase());
+    const userId = req.user?.id;
+    const userEmail = req.user?.email?.toLowerCase();
+
+    const user = await User.findOne({
+      $or: [
+        { id: userId },
+        { email: userEmail }
+      ]
+    }).lean();
+
     if (!user) {
       return res.status(404).json({ success: false, message: 'Patron record not found.' });
     }
@@ -395,9 +411,9 @@ export const getMe = (req, res) => {
 
 /**
  * Add Shipping Address
- * POST /api/auth/user/address
+ * POST /api/auth/user/addresses
  */
-export const addAddress = (req, res) => {
+export const addAddress = async (req, res) => {
   try {
     const { fullName, phone, street, landmark, city, state, postalCode, country = 'India', isDefault = false } = req.body;
 
@@ -405,7 +421,13 @@ export const addAddress = (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide all mandatory address fields.' });
     }
 
-    const user = db.findById('users', req.user?.id) || db.findOne('users', u => u.email?.toLowerCase() === req.user?.email?.toLowerCase());
+    const userId = req.user?.id;
+    const userEmail = req.user?.email?.toLowerCase();
+
+    const user = await User.findOne({
+      $or: [{ id: userId }, { email: userEmail }]
+    });
+
     if (!user) return res.status(404).json({ success: false, message: 'Patron not found.' });
 
     const newAddress = {
@@ -427,12 +449,15 @@ export const addAddress = (req, res) => {
     }
     addresses.push(newAddress);
 
-    const updatedUser = db.update('users', user.id, { addresses });
+    user.addresses = addresses;
+    user.updatedAt = new Date();
+    await user.save();
+
     return res.json({
       success: true,
       message: 'Consignment address registered successfully.',
       address: newAddress,
-      addresses: updatedUser.addresses
+      addresses: user.addresses
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -441,21 +466,28 @@ export const addAddress = (req, res) => {
 
 /**
  * Delete Shipping Address
- * DELETE /api/auth/user/address/:id
+ * DELETE /api/auth/user/addresses/:id
  */
-export const deleteAddress = (req, res) => {
+export const deleteAddress = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = db.findById('users', req.user.id);
+    const userId = req.user?.id;
+    const userEmail = req.user?.email?.toLowerCase();
+
+    const user = await User.findOne({
+      $or: [{ id: userId }, { email: userEmail }]
+    });
+
     if (!user) return res.status(404).json({ success: false, message: 'Patron not found.' });
 
-    const addresses = (user.addresses || []).filter(a => a.id !== id);
-    const updatedUser = db.update('users', user.id, { addresses });
+    user.addresses = (user.addresses || []).filter(a => a.id !== id);
+    user.updatedAt = new Date();
+    await user.save();
 
     return res.json({
       success: true,
       message: 'Address removed.',
-      addresses: updatedUser.addresses
+      addresses: user.addresses
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -464,24 +496,31 @@ export const deleteAddress = (req, res) => {
 
 /**
  * Set Default Address
- * PUT /api/auth/user/address/:id/default
+ * PUT /api/auth/user/addresses/:id/default
  */
-export const setDefaultAddress = (req, res) => {
+export const setDefaultAddress = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = db.findById('users', req.user.id);
+    const userId = req.user?.id;
+    const userEmail = req.user?.email?.toLowerCase();
+
+    const user = await User.findOne({
+      $or: [{ id: userId }, { email: userEmail }]
+    });
+
     if (!user) return res.status(404).json({ success: false, message: 'Patron not found.' });
 
-    const addresses = (user.addresses || []).map(a => ({
+    user.addresses = (user.addresses || []).map(a => ({
       ...a,
       isDefault: a.id === id
     }));
-    const updatedUser = db.update('users', user.id, { addresses });
+    user.updatedAt = new Date();
+    await user.save();
 
     return res.json({
       success: true,
       message: 'Default address updated.',
-      addresses: updatedUser.addresses
+      addresses: user.addresses
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -490,18 +529,29 @@ export const setDefaultAddress = (req, res) => {
 
 /**
  * Admin: List all registered customers
- * GET /api/auth/admin/customers
+ * GET /api/admin/customers
  */
-export const getAdminCustomers = (req, res) => {
+export const getAdminCustomers = async (req, res) => {
   try {
-    const users = db.getCollection('users');
-    const sanitized = users.map(u => {
-      const copy = { ...u };
-      delete copy.password;
-      return copy;
-    });
-    return res.json({ success: true, count: sanitized.length, customers: sanitized });
+    const users = await User.find({}).select('-password').lean();
+    return res.json({ success: true, count: users.length, customers: users });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
+};
+
+export default {
+  initiateUserSignup,
+  verifyUserSignup,
+  initiateUserLogin,
+  verifyUserLogin,
+  forgotPasswordInit,
+  resetPasswordWithOtp,
+  sendUserOtp,
+  verifyUserOtp,
+  getMe,
+  addAddress,
+  deleteAddress,
+  setDefaultAddress,
+  getAdminCustomers
 };

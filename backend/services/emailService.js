@@ -13,7 +13,10 @@ const createTransporter = () => {
       host,
       port: Number(port),
       secure: Number(port) === 465,
-      auth: { user, pass }
+      auth: { user, pass },
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000
     });
   }
   return null;
@@ -22,20 +25,20 @@ const createTransporter = () => {
 // Luxury Watch Branded HTML Email Wrapper
 const renderLuxuryEmail = ({ title, preheader, contentHtml }) => `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
   <style>
-    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #0b0f19; color: #f8fafc; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f19; color: #f8fafc; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 20px auto; background-color: #111827; border: 1px solid #2d3748; border-radius: 8px; overflow: hidden; }
     .header { background: linear-gradient(180deg, #1f2937 0%, #111827 100%); padding: 30px 20px; text-align: center; border-bottom: 2px solid #d4af37; }
     .brand-title { color: #f3e5ab; font-size: 24px; font-weight: bold; letter-spacing: 4px; margin: 0; text-transform: uppercase; }
     .brand-tagline { color: #94a3b8; font-size: 11px; letter-spacing: 2px; margin-top: 6px; text-transform: uppercase; }
     .body-content { padding: 35px 30px; color: #e2e8f0; line-height: 1.6; font-size: 15px; }
     .gold-box { background: rgba(212, 175, 55, 0.08); border: 1px solid #d4af37; padding: 20px; border-radius: 6px; margin: 25px 0; text-align: center; }
-    .otp-code { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #f3e5ab; margin: 10px 0; }
+    .otp-code { font-size: 34px; font-weight: bold; letter-spacing: 8px; color: #f3e5ab; margin: 10px 0; font-family: monospace; }
     .footer { background-color: #0b0f19; padding: 25px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #1f2937; }
   </style>
 </head>
@@ -63,17 +66,22 @@ export const emailService = {
    */
   sendOtpEmail: async (email, otp, name = '') => {
     const cleanEmail = email.trim().toLowerCase();
+    const recipientName = name ? name : 'Distinguished Patron';
+
     const contentHtml = `
       <h2 style="color: #f8fafc; font-size: 18px; margin-top: 0;">Verification Code</h2>
-      <p>Dear ${name ? name : 'Distinguished Patron'},</p>
+      <p>Dear ${recipientName},</p>
       <p>Please use the one-time verification code below to authenticate your Luxury Watch session:</p>
       <div class="gold-box">
         <div style="font-size: 12px; letter-spacing: 2px; color: #94a3b8; text-transform: uppercase;">One-Time Password</div>
         <div class="otp-code">${otp}</div>
-        <div style="font-size: 12px; color: #94a3b8;">Valid for 5 minutes • Do not share this code</div>
+        <div style="font-size: 12px; color: #94a3b8;">Valid for 5 minutes • Single-use security code</div>
       </div>
-      <p style="font-size: 13px; color: #94a3b8;">If you did not request this verification code, please disregard this email.</p>
+      <p style="font-size: 13px; color: #94a3b8;"><strong>Security Notice:</strong> Never share this code with anyone. Luxury Watch Concierge staff will never request your code.</p>
+      <p style="font-size: 13px; color: #64748b;">If you did not request this verification code, please disregard this email.</p>
     `;
+
+    const plainText = `LUXURY WATCH — Verification Code\n\nDear ${recipientName},\n\nYour one-time verification code is: ${otp}\n\nThis code is valid for 5 minutes. Never share this code with anyone.\n\nLuxury Watch Concierge`;
 
     const html = renderLuxuryEmail({
       title: 'Luxury Watch — Your Verification Code',
@@ -88,15 +96,25 @@ export const emailService = {
           from: env.EMAIL_FROM || process.env.EMAIL_FROM || '"LUXURY WATCH Concierge" <concierge@luxurywatch.com>',
           to: cleanEmail,
           subject: `[LUXURY WATCH] Your Verification Code: ${otp}`,
+          text: plainText,
           html
         });
         return { success: true, method: 'smtp' };
       } catch (err) {
-        console.warn('[EmailService] SMTP Dispatch note:', err.message);
+        console.warn('⚠️ [EmailService] SMTP Dispatch note: Unable to deliver email via SMTP.');
+        if (process.env.NODE_ENV !== 'production') {
+          return { success: true, method: 'dev_mock', note: err.message };
+        }
+        return { success: false, method: 'smtp_failed', error: 'Email dispatch failed' };
       }
     }
 
-    return { success: true, method: 'simulated' };
+    // In development mode only when SMTP credentials are not configured
+    if (process.env.NODE_ENV !== 'production') {
+      return { success: true, method: 'dev_mock' };
+    }
+
+    return { success: false, method: 'smtp_unconfigured', error: 'SMTP is not configured' };
   },
 
   /**

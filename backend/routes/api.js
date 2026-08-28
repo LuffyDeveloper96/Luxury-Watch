@@ -50,6 +50,9 @@ import {
 import {
   submitContact, getContacts
 } from '../controllers/contactController.js';
+import {
+  getCart, addToCart, updateCartQuantity, removeFromCart, clearCart
+} from '../controllers/cartController.js';
 
 const router = express.Router();
 
@@ -89,6 +92,13 @@ router.post('/auth/user/addresses', requireAuth, addAddress);
 router.delete('/auth/user/addresses/:id', requireAuth, deleteAddress);
 router.put('/auth/user/addresses/:id/default', requireAuth, setDefaultAddress);
 router.get('/admin/customers', requireAdmin, getAdminCustomers);
+
+// Persistent Cart API
+router.get('/cart', requireAuth, getCart);
+router.post('/cart', requireAuth, addToCart);
+router.put('/cart/:productId', requireAuth, updateCartQuantity);
+router.delete('/cart/:productId', requireAuth, removeFromCart);
+router.delete('/cart', requireAuth, clearCart);
 
 // 4. Products API
 router.get('/products', getProducts);
@@ -141,6 +151,7 @@ router.delete('/reviews/:id', requireAdmin, deleteReview);
 // 11. Returns & Exchange Concierge API
 router.post('/returns', createReturn);
 router.get('/returns/lookup', lookupReturn);
+router.get('/returns/lookup/:orderOrReturnId', lookupReturn);
 router.get('/returns', requireAdmin, getReturns);
 router.patch('/returns/:id/status', requireAdmin, updateReturnStatus);
 
@@ -150,16 +161,23 @@ router.get('/analytics/activity', getActivityLog);
 router.post('/analytics/activity', logActivity);
 
 // 13. Homepage CMS
+router.get('/homepage', getHomepageContent);
 router.get('/homepage/content', getHomepageContent);
+router.put('/homepage', requireAdmin, updateHomepageContent);
 router.put('/homepage/content', requireAdmin, updateHomepageContent);
 
 // 14. Settings & Payment Gateways
 router.get('/settings/payment', requireAdmin, getPaymentSettings);
 router.put('/settings/payment', requireAdmin, updatePaymentSettings);
+router.post('/settings/payment', requireAdmin, updatePaymentSettings);
 router.get('/settings/store', getStoreSettings);
 router.put('/settings/store', requireAdmin, updateStoreSettings);
+router.post('/settings/store', requireAdmin, updateStoreSettings);
 router.get('/settings/security', requireAdmin, getAdminSecuritySettings);
+router.get('/settings/admin-security', requireAdmin, getAdminSecuritySettings);
 router.put('/settings/security', requireAdmin, updateAdminSecuritySettings);
+router.post('/settings/security', requireAdmin, updateAdminSecuritySettings);
+router.post('/settings/admin-security', requireAdmin, updateAdminSecuritySettings);
 
 // 15. Concierge Contact Form
 router.post('/contact', submitContact);
