@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 
 const suites = [
+  { name: 'Step 9 Deployment Smoke Suite', file: 'test-step9-deployment-readiness.js' },
   { name: 'Step 8 Auth Validation Suite', file: 'test-step8-auth-validation.js' },
   { name: 'Step 8 Deep Validation Suite', file: 'test-step8-deep-validation.js' },
   { name: '20 Attack Scenarios Suite', file: 'test-attack-scenarios.js' },
@@ -16,7 +17,7 @@ const suites = [
 ];
 
 console.log('\n======================================================================');
-console.log('🚀 LUXURY WATCH — COMPLETE MASTER REGRESSION & SECURITY RUN (12 SUITES)');
+console.log('🚀 LUXURY WATCH — COMPLETE MASTER REGRESSION & SECURITY RUN (13 SUITES)');
 console.log('======================================================================\n');
 
 let passedSuites = 0;
