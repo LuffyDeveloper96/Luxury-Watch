@@ -1,5 +1,5 @@
-// Base API Configuration
-const API_BASE = '/api';
+// Base API Configuration (Supports VITE_API_URL or relative /api proxy)
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
 const getAuthHeaders = () => {
   const adminToken = localStorage.getItem('luxury_admin_token') || localStorage.getItem('akiki_admin_token');
