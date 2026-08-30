@@ -23,8 +23,13 @@ function generateSignature(gatewayOrderId, paymentId, secret) {
   return crypto.createHmac('sha256', secret || env.RAZORPAY_KEY_SECRET || 'test_secret').update(payload).digest('hex');
 }
 
+import { connectMongoDB } from './config/db.js';
+
 async function runRemediationSecurityTestSuite() {
-  await new Promise(r => setTimeout(r, 600));
+  try {
+    await connectMongoDB();
+  } catch (e) {}
+  await new Promise(r => setTimeout(r, 1000));
 
   console.log('\n======================================================================');
   console.log('🛡️ LUXURY WATCH — STEP 6 REMEDIATION & PRODUCTION SECURITY SUITE');
@@ -61,7 +66,7 @@ async function runRemediationSecurityTestSuite() {
     const ownerEmail = `remed.owner.${timestamp}@luxurywatch.com`;
     const signupInit = await testRequest('/auth/user/signup/init', {
       method: 'POST',
-      body: JSON.stringify({ email: ownerEmail, password: 'OwnerPassword2026!', name: 'Lady Genevieve' })
+      body: JSON.stringify({ email: ownerEmail, password: 'OwnerPassword2026!', name: 'Lady Genevieve', phone: '+91 98765 43210' })
     });
     // In test environment, fetch otpSession from memory / DB
     const { getDevOtpSession } = await import('./services/otpService.js');
@@ -77,7 +82,7 @@ async function runRemediationSecurityTestSuite() {
     const attackerEmail = `remed.attacker.${timestamp}@luxurywatch.com`;
     await testRequest('/auth/user/signup/init', {
       method: 'POST',
-      body: JSON.stringify({ email: attackerEmail, password: 'AttackerPassword2026!', name: 'Intruder' })
+      body: JSON.stringify({ email: attackerEmail, password: 'AttackerPassword2026!', name: 'Intruder', phone: '+91 98765 43211' })
     });
     const attackerOtpSession = getDevOtpSession(attackerEmail);
     const attackerVerify = await testRequest('/auth/user/signup/verify', {
@@ -259,7 +264,7 @@ async function runRemediationSecurityTestSuite() {
     }
 
     await test('12b. Search with literal bracket "[" finds timepiece with bracket in title', async () => {
-      const res = await testRequest('/products?search=[');
+      const res = await testRequest('/products?search=' + encodeURIComponent('[') + '&limit=100');
       assert.strictEqual(res.status, 200);
       assert.ok(res.data.products.some(p => p.id === testProdId), 'Must find watch containing literal "["');
     });
