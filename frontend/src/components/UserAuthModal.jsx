@@ -105,31 +105,21 @@ export const UserAuthModal = () => {
           phone: phone.trim()
         });
 
-        if (res.success) {
-          setStep('otp');
-          setResendCooldown(60);
-          setSuccessMsg(`A 6-digit registration code was dispatched to ${email}.`);
-          if (res.simulatedOtp) setSimulatedOtp(res.simulatedOtp);
-        } else {
-          setErrorMsg(res.message || 'Unable to initiate registration.');
+        if (!res.success) {
+          setErrorMsg(res.message || 'Unable to register.');
         }
       } catch (err) {
-        setErrorMsg(err.message || 'Failed to send OTP.');
+        setErrorMsg(err.message || 'Failed to register.');
       }
     } else {
-      // Sign In Flow (Email + Password -> 2FA OTP)
+      // Sign In Flow (Email + Password only)
       try {
         const res = await initiateLogin({
           email: email.trim(),
           password
         });
 
-        if (res.success) {
-          setStep('otp');
-          setResendCooldown(60);
-          setSuccessMsg(`Password confirmed. A 6-digit 2FA verification code was sent to ${email}.`);
-          if (res.simulatedOtp) setSimulatedOtp(res.simulatedOtp);
-        } else {
+        if (!res.success) {
           setErrorMsg(res.message || 'Invalid credentials.');
         }
       } catch (err) {

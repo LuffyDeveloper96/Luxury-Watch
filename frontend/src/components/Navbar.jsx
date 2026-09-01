@@ -402,12 +402,13 @@ export const Navbar = ({
                 <button
                   onClick={() => {
                     setIsUserMenuOpen(false);
+                    window.location.hash = '#orders';
                     if (onOpenTracking) onOpenTracking();
                   }}
                   style={{ width: '100%', background: 'none', border: 'none', padding: '7px 8px', textAlign: 'left', fontSize: '0.75rem', color: '#0f172a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   <Package size={13} color="#8a6709" />
-                  <span>My Orders</span>
+                  <span>My Orders & Tracking</span>
                 </button>
                 <button
                   onClick={() => {
@@ -536,6 +537,7 @@ export const Navbar = ({
           <button
             onClick={() => {
               setIsMobileMenuOpen(false);
+              window.location.hash = '#orders';
               if (onOpenTracking) onOpenTracking();
             }}
             style={{
@@ -551,7 +553,7 @@ export const Navbar = ({
               marginTop: '4px'
             }}
           >
-            TRACK CONSIGNMENT
+            {isAuthenticated ? 'MY ORDERS & CONSIGNMENT TRACKING' : 'TRACK CONSIGNMENT / MY ORDERS'}
           </button>
         </div>
       )}

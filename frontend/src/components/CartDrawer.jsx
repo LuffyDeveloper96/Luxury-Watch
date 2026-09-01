@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { useUserAuth } from '../context/UserAuthContext';
 import {
   X, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Tag, Gift,
-  Truck, CheckCircle, Sparkles, Zap
+  Truck, CheckCircle, Sparkles, Zap, Lock
 } from 'lucide-react';
 import { getImageUrl } from '../services/api';
 
@@ -22,9 +23,11 @@ export const CartDrawer = () => {
     freeShippingThreshold,
     openCartCheckout,
     triggerCartCheckout,
-    setIsCheckoutOpen
+    setIsCheckoutOpen,
+    addToast
   } = useStore();
 
+  const { isAuthenticated, openAuthModal } = useUserAuth();
   const [couponCodeInput, setCouponCodeInput] = useState('');
   const [includeGiftWrap, setIncludeGiftWrap] = useState(true);
 
@@ -47,6 +50,23 @@ export const CartDrawer = () => {
   const finalTotal = Math.max(0, currentSubtotal - (discountAmount || 0));
 
   const handleProceedToCheckout = () => {
+    if (!isAuthenticated) {
+      setIsCartOpen(false);
+      if (typeof addToast === 'function') {
+        addToast('Please sign in or create an account to complete your purchase.', 'info');
+      }
+      openAuthModal('signin', () => {
+        if (typeof openCartCheckout === 'function') {
+          openCartCheckout();
+        } else if (typeof triggerCartCheckout === 'function') {
+          triggerCartCheckout();
+        } else {
+          setIsCheckoutOpen(true);
+        }
+      });
+      return;
+    }
+
     if (typeof openCartCheckout === 'function') {
       openCartCheckout();
     } else if (typeof triggerCartCheckout === 'function') {

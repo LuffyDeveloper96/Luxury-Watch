@@ -5,7 +5,7 @@ import { createOtpSession, verifyOtpSession } from '../services/otpService.js';
 import { emailService } from '../services/emailService.js';
 
 /**
- * 1. Patron Sign Up Initiation (Email + Password + OTP)
+ * 1. Patron Sign Up (Email + Password only)
  * POST /api/auth/user/signup/init
  */
 export const initiateUserSignup = async (req, res) => {
@@ -23,7 +23,7 @@ export const initiateUserSignup = async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const existingUser = await User.findOne({ email: cleanEmail }).lean();
 
-    if (existingUser && existingUser.verified) {
+    if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'An account with this email already exists. Please proceed to Sign In.'
@@ -33,30 +33,42 @@ export const initiateUserSignup = async (req, res) => {
     // Hash password with bcrypt
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create OTP session with hashed credentials in metadata
-    const otpResult = createOtpSession(cleanEmail, typeof name === 'string' ? name : '', 'signup', {
-      passwordHash,
+    const user = await User.create({
+      id: `usr-${Date.now()}`,
+      email: cleanEmail,
+      password: passwordHash,
+      name: typeof name === 'string' && name.trim() ? name.trim() : cleanEmail.split('@')[0],
       phone: typeof phone === 'string' ? phone : '',
-      name: typeof name === 'string' && name.trim() ? name.trim() : cleanEmail.split('@')[0]
+      role: 'customer',
+      verified: true,
+      addresses: [],
+      totalSpent: 0,
+      ordersCount: 0,
+      createdAt: new Date()
     });
 
-    if (!otpResult.success) {
-      return res.status(429).json({
-        success: false,
-        cooldown: true,
-        remainingSeconds: otpResult.remainingSeconds,
-        message: otpResult.message
-      });
-    }
+    await ActivityLog.create({
+      id: `act-${Date.now()}`,
+      text: `✨ New patron ${user.name} created an account with verified email & password`,
+      time: 'Just now',
+      type: 'user'
+    });
 
-    // Send 6-Digit OTP Email
-    await emailService.sendOtpEmail(cleanEmail, otpResult.rawOtp, name);
+    const token = generateToken({
+      id: user.id || user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: 'customer'
+    });
+
+    const sanitizedUser = user.toObject ? user.toObject() : { ...user };
+    delete sanitizedUser.password;
 
     return res.json({
       success: true,
-      message: `A 6-digit verification code has been dispatched to ${cleanEmail}.`,
-      step: 'otp',
-      expiresInSeconds: 300
+      message: 'Registration successful.',
+      token,
+      user: sanitizedUser
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -144,64 +156,48 @@ export const verifyUserSignup = async (req, res) => {
 };
 
 /**
- * 3. Patron Sign In Initiation (Verify Email + Password -> Send 2FA OTP)
+ * 3. Patron Sign In (Email + Password only)
  * POST /api/auth/user/login/init
  */
 export const initiateUserLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (
-      typeof email !== 'string' ||
-      typeof password !== 'string' ||
-      !email.trim() ||
-      !password.trim()
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email address and password must be valid strings.'
-      });
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password.trim()) {
+      return res.status(400).json({ success: false, message: 'Email and password are required.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const user = await User.findOne({ email: cleanEmail }).lean();
+    const user = await User.findOne({ email: cleanEmail });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'No patron account found with this email. Please create an account.'
-      });
+      return res.status(401).json({ success: false, message: 'Invalid credentials. User not found.' });
     }
 
-    // Check password if user has a password set
-    if (user.password) {
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid password. Please check your credentials.'
-        });
-      }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials. Incorrect password.' });
     }
 
-    // Password verified! Now dispatch 2FA 6-digit OTP
-    const otpResult = createOtpSession(cleanEmail, user.name, 'login');
-    if (!otpResult.success) {
-      return res.status(429).json({
-        success: false,
-        cooldown: true,
-        remainingSeconds: otpResult.remainingSeconds,
-        message: otpResult.message
-      });
-    }
+    // Update last login
+    await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } });
 
-    await emailService.sendOtpEmail(cleanEmail, otpResult.rawOtp, user.name);
+    // Generate JWT token
+    const token = generateToken({
+      id: user.id || user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: 'customer'
+    });
+
+    const sanitizedUser = user.toObject ? user.toObject() : { ...user };
+    delete sanitizedUser.password;
 
     return res.json({
       success: true,
-      message: `Password confirmed. A 6-digit 2FA verification code has been dispatched to ${cleanEmail}.`,
-      step: 'otp',
-      expiresInSeconds: 300
+      message: 'Login successful.',
+      token,
+      user: sanitizedUser
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

@@ -351,7 +351,7 @@ const MainAppContent = () => {
       const isHashAdmin = window.location.hash === '#admin' || window.location.hash.startsWith('#admin');
       const isPathAdmin = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin');
       
-      const isHashTrack = window.location.hash === '#track-order';
+      const isHashTrack = window.location.hash === '#track-order' || window.location.hash === '#orders' || window.location.hash === '#my-orders';
       
       if (isHashTrack) {
         setIsTrackingPageView(true);
@@ -466,7 +466,7 @@ const MainAppContent = () => {
       <SearchModal />
       <CheckoutModal />
       <OrderConfirmationModal
-        onOpenTracking={() => {}}
+        onOpenTracking={() => { window.location.hash = '#orders'; }}
       />
       <OrderTrackingModal
         onOpenReturnForOrder={(orderId) => handleOpenReturns(orderId)}

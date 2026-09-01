@@ -1,6 +1,7 @@
 import { Order, Product, Coupon, ActivityLog } from '../models/index.js';
 import { isValidOrderTransition } from '../models/Order.js';
 import { emailService } from '../services/emailService.js';
+import { escapeRegex } from '../utils/regex.js';
 
 export const getOrders = async (req, res) => {
   try {
@@ -41,15 +42,22 @@ export const getOrders = async (req, res) => {
 export const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const cleanId = id.trim().toUpperCase();
+    const cleanId = (id || '').trim();
+    if (!cleanId) {
+      return res.status(400).json({ success: false, message: 'Order reference or email required.' });
+    }
+
+    const safeClean = escapeRegex(cleanId);
+    const regex = new RegExp(`^${safeClean}$`, 'i');
 
     const order = await Order.findOne({
       $or: [
-        { id: cleanId },
-        { orderNumber: cleanId },
-        { trackingNumber: cleanId }
+        { id: regex },
+        { orderNumber: regex },
+        { trackingNumber: regex },
+        { 'customer.email': regex }
       ]
-    }).lean();
+    }).sort({ createdAt: -1 }).lean();
 
     if (!order) {
       return res.status(404).json({ success: false, message: `No consignment found matching "${id}".` });
@@ -75,6 +83,14 @@ export const getOrderById = async (req, res) => {
       estimatedDeliveryDate: order.estimatedDeliveryDate,
       createdAt: order.createdAt,
       itemCount: order.items?.length || 0,
+      items: order.items?.map(item => ({
+        id: item.id || item.productId,
+        name: item.name,
+        brand: item.brand,
+        quantity: item.quantity,
+        price: item.price,
+        image: item.image
+      })) || [],
       customer: {
         city: order.customer?.city || '',
         state: order.customer?.state || '',
@@ -96,12 +112,15 @@ export const getOrderById = async (req, res) => {
 
 export const getUserOrders = async (req, res) => {
   try {
-    const userEmail = req.user?.email?.toLowerCase();
+    const userEmail = req.user?.email?.trim();
     if (!userEmail) {
       return res.status(401).json({ success: false, message: 'User authentication required.' });
     }
 
-    const userOrders = await Order.find({ 'customer.email': userEmail }).sort({ createdAt: -1 }).lean();
+    const safeEmail = escapeRegex(userEmail);
+    const userOrders = await Order.find({
+      'customer.email': { $regex: new RegExp(`^${safeEmail}$`, 'i') }
+    }).sort({ createdAt: -1 }).lean();
 
     return res.json({
       success: true,

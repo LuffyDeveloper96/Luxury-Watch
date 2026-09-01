@@ -21,8 +21,16 @@ export const StoreProvider = ({ children }) => {
   const [brands, setBrands] = useState(INITIAL_BRANDS);
   // Categories
   const [categories, setCategories] = useState([]);
-  // Orders
-  const [orders, setOrders] = useState(INITIAL_ORDERS);
+  // Orders (Combined local storage & mock fallback)
+  const [orders, setOrders] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('luxury_user_orders') || '[]');
+      return Array.isArray(saved) && saved.length > 0 ? [...saved, ...INITIAL_ORDERS] : INITIAL_ORDERS;
+    } catch {
+      return INITIAL_ORDERS;
+    }
+  });
+  const [completedOrder, setCompletedOrder] = useState(null);
   // Reviews
   const [reviews, setReviews] = useState(INITIAL_REVIEWS);
   // Coupons
@@ -314,6 +322,8 @@ export const StoreProvider = ({ children }) => {
         setCategories,
         orders,
         setOrders,
+        completedOrder,
+        setCompletedOrder,
         reviews,
         setReviews,
         coupons,

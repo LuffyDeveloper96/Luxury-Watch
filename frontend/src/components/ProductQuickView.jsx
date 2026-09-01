@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { useUserAuth } from '../context/UserAuthContext';
 import { formatCurrency } from '../utils/currency';
 import { X, Star, ShieldCheck, Zap, ShoppingBag, Check, Sparkles, Truck, Lock } from 'lucide-react';
 
@@ -12,8 +13,12 @@ export const ProductQuickView = () => {
     addToCart,
     buyNow,
     triggerBuyNow,
-    setSelectedProductDetails
+    openCartCheckout,
+    setSelectedProductDetails,
+    addToast
   } = useStore();
+
+  const { isAuthenticated, openAuthModal } = useUserAuth();
 
   const product = quickViewProduct;
   if (!product) return null;
@@ -42,6 +47,34 @@ export const ProductQuickView = () => {
   };
 
   const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      if (typeof addToCart === 'function') {
+        addToCart(product, quantity, {
+          color: selectedColor,
+          strap: selectedStrap,
+          engraving: engravingText
+        });
+      }
+      if (typeof addToast === 'function') {
+        addToast('Please sign in or create an account to proceed with your acquisition.', 'info');
+      }
+      handleClose();
+      if (typeof openAuthModal === 'function') {
+        openAuthModal('signin', () => {
+          if (typeof openCartCheckout === 'function') {
+            openCartCheckout();
+          } else if (typeof buyNow === 'function') {
+            buyNow(product, quantity, {
+              color: selectedColor,
+              strap: selectedStrap,
+              engraving: engravingText
+            });
+          }
+        });
+      }
+      return;
+    }
+
     if (typeof buyNow === 'function') {
       buyNow(product, quantity, {
         color: selectedColor,

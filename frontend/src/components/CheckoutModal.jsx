@@ -23,7 +23,9 @@ export const CheckoutModal = () => {
     clearCart,
     setIsOrderTrackingOpen,
     refreshStoreData,
-    addToast
+    addToast,
+    setOrders,
+    setCompletedOrder
   } = useStore();
 
   const { user, isAuthenticated, openAuthModal } = useUserAuth();
@@ -184,6 +186,23 @@ export const CheckoutModal = () => {
 
   // Finalize order confirmation
   const handleOrderSuccess = (order) => {
+    // Persist to local storage for instant guest/client access
+    try {
+      const existing = JSON.parse(localStorage.getItem('luxury_user_orders') || '[]');
+      const updated = [order, ...existing.filter(o => o.id !== order.id)];
+      localStorage.setItem('luxury_user_orders', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Failed to cache order locally:', e);
+    }
+
+    if (typeof setOrders === 'function') {
+      setOrders(prev => [order, ...prev.filter(o => o.id !== order.id)]);
+    }
+
+    if (typeof setCompletedOrder === 'function') {
+      setCompletedOrder(order);
+    }
+
     setConfirmedOrder(order);
     clearCart();
     refreshStoreData();
@@ -559,9 +578,55 @@ export const CheckoutModal = () => {
 
         {/* Modal Scrollable Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
-          {/* STEP 1: Shipping Address Form */}
-          {step === 1 && (
-            <form onSubmit={handleProceedToDelivery}>
+          {!isAuthenticated && step < 4 ? (
+            <div style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
+              <div style={{
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(180, 140, 30, 0.12)',
+                border: '2px solid #d4af37',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1.25rem',
+                color: '#8a6709'
+              }}>
+                <Lock size={28} />
+              </div>
+              <span style={{ fontSize: '0.72rem', letterSpacing: '0.2em', color: '#8a6709', fontWeight: 800, textTransform: 'uppercase' }}>
+                PATRON AUTHENTICATION REQUIRED
+              </span>
+              <h3 style={{ fontSize: '1.35rem', color: '#0f172a', fontWeight: 800, fontFamily: 'var(--font-brand)', margin: '6px 0 0.75rem 0' }}>
+                Sign In to Complete Acquisition
+              </h3>
+              <p style={{ color: '#64748b', fontSize: '0.88rem', maxWidth: '420px', margin: '0 auto 2rem', lineHeight: 1.5 }}>
+                To secure your timepiece allocation, activate ownership warranty, and enable live consignment tracking, please sign in or create an account first.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '320px', margin: '0 auto' }}>
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('signin')}
+                  className="btn-gold"
+                  style={{ width: '100%', padding: '0.9rem', fontSize: '0.85rem', fontWeight: 700 }}
+                >
+                  Sign In with Email & Password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('signup')}
+                  className="btn-outline-gold"
+                  style={{ width: '100%', padding: '0.9rem', fontSize: '0.85rem', fontWeight: 600 }}
+                >
+                  Create New Patron Account
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* STEP 1: Shipping Address Form */}
+              {step === 1 && (
+                <form onSubmit={handleProceedToDelivery}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label className="lux-label">Full Name *</label>
@@ -811,6 +876,8 @@ export const CheckoutModal = () => {
               </div>
             </div>
           )}
+        </>
+      )}
 
           {/* STEP 4: Success & Confirmation */}
           {step === 4 && confirmedOrder && (

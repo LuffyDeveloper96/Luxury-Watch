@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { useUserAuth } from '../context/UserAuthContext';
 import { formatCurrency } from '../utils/currency';
 import { getImageUrl } from '../services/api';
 import { Heart, Eye, ShoppingBag, Zap, Star, Sparkles } from 'lucide-react';
@@ -10,12 +11,16 @@ export const ProductCard = ({ product, onSelectProduct }) => {
     addToCart,
     buyNow,
     triggerBuyNow,
+    openCartCheckout,
     toggleWishlist,
     isInWishlist,
     openQuickView,
     setQuickViewProduct,
-    setSelectedProductDetails
+    setSelectedProductDetails,
+    addToast
   } = useStore();
+
+  const { isAuthenticated, openAuthModal } = useUserAuth();
 
   const handleSelect = () => {
     if (typeof onSelectProduct === 'function') {
@@ -31,6 +36,26 @@ export const ProductCard = ({ product, onSelectProduct }) => {
     e.stopPropagation();
     const color = product.colors?.[selectedColorIdx]?.name || product.colors?.[0]?.name || '';
     const strap = product.straps?.[0]?.name || '';
+
+    if (!isAuthenticated) {
+      if (typeof addToCart === 'function') {
+        addToCart(product, 1, { color, strap });
+      }
+      if (typeof addToast === 'function') {
+        addToast('Please sign in or create an account to proceed with your acquisition.', 'info');
+      }
+      if (typeof openAuthModal === 'function') {
+        openAuthModal('signin', () => {
+          if (typeof openCartCheckout === 'function') {
+            openCartCheckout();
+          } else if (typeof buyNow === 'function') {
+            buyNow(product, 1, { color, strap });
+          }
+        });
+      }
+      return;
+    }
+
     if (typeof buyNow === 'function') {
       buyNow(product, 1, { color, strap });
     } else if (typeof triggerBuyNow === 'function') {

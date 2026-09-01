@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { useUserAuth } from '../context/UserAuthContext';
 import { formatCurrency } from '../utils/currency';
 import { getImageUrl } from '../services/api';
 import {
@@ -13,14 +14,18 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
     addToCart,
     buyNow,
     triggerBuyNow,
+    openCartCheckout,
     toggleWishlist,
     isInWishlist,
     reviews,
     addReview,
     products,
     selectedProductDetails,
-    setSelectedProductDetails
+    setSelectedProductDetails,
+    addToast
   } = useStore();
+
+  const { isAuthenticated, openAuthModal } = useUserAuth();
 
   const product = propProduct || selectedProductDetails;
 
@@ -70,6 +75,33 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
   };
 
   const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      if (typeof addToCart === 'function') {
+        addToCart(product, quantity, {
+          color: selectedColor,
+          strap: selectedStrap,
+          engraving: engravingText
+        });
+      }
+      if (typeof addToast === 'function') {
+        addToast('Please sign in or create an account to proceed with your acquisition.', 'info');
+      }
+      if (typeof openAuthModal === 'function') {
+        openAuthModal('signin', () => {
+          if (typeof openCartCheckout === 'function') {
+            openCartCheckout();
+          } else if (typeof buyNow === 'function') {
+            buyNow(product, quantity, {
+              color: selectedColor,
+              strap: selectedStrap,
+              engraving: engravingText
+            });
+          }
+        });
+      }
+      return;
+    }
+
     if (typeof buyNow === 'function') {
       buyNow(product, quantity, {
         color: selectedColor,

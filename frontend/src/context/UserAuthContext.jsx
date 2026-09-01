@@ -48,20 +48,42 @@ export const UserAuthProvider = ({ children }) => {
     }
   }, [token, refreshUserProfile]);
 
-  const openAuthModal = (tab = 'signin') => {
+  const [authSuccessCallback, setAuthSuccessCallback] = useState(null);
+
+  const openAuthModal = (tab = 'signin', onSuccess = null) => {
     setAuthModalTab(tab);
+    if (typeof onSuccess === 'function') {
+      setAuthSuccessCallback(() => onSuccess);
+    } else {
+      setAuthSuccessCallback(null);
+    }
     setIsAuthModalOpen(true);
   };
 
   const closeAuthModal = () => {
     setIsAuthModalOpen(false);
+    setAuthSuccessCallback(null);
   };
 
-  // Sign Up Flow (Email + Password + OTP)
+  // Sign Up Flow (Email + Password)
   const initiateSignup = async ({ name, email, password, phone }) => {
     setLoading(true);
     try {
-      return await userAuthAPI.initiateSignup({ name, email, password, phone });
+      const res = await userAuthAPI.initiateSignup({ name, email, password, phone });
+      if (res.success && res.user && res.token) {
+        setUser(res.user);
+        setToken(res.token);
+        localStorage.setItem('luxury_user', JSON.stringify(res.user));
+        localStorage.setItem('luxury_user_token', res.token);
+        setIsAuthModalOpen(false);
+
+        if (typeof authSuccessCallback === 'function') {
+          const cb = authSuccessCallback;
+          setAuthSuccessCallback(null);
+          setTimeout(() => cb(res.user), 150);
+        }
+      }
+      return res;
     } finally {
       setLoading(false);
     }
@@ -76,7 +98,13 @@ export const UserAuthProvider = ({ children }) => {
         setToken(res.token);
         localStorage.setItem('luxury_user', JSON.stringify(res.user));
         localStorage.setItem('luxury_user_token', res.token);
-        closeAuthModal();
+        setIsAuthModalOpen(false);
+
+        if (typeof authSuccessCallback === 'function') {
+          const cb = authSuccessCallback;
+          setAuthSuccessCallback(null);
+          setTimeout(() => cb(res.user), 150);
+        }
       }
       return res;
     } finally {
@@ -84,11 +112,25 @@ export const UserAuthProvider = ({ children }) => {
     }
   };
 
-  // Sign In Flow (Email + Password -> 2FA OTP)
+  // Sign In Flow (Email + Password)
   const initiateLogin = async ({ email, password }) => {
     setLoading(true);
     try {
-      return await userAuthAPI.initiateLogin({ email, password });
+      const res = await userAuthAPI.initiateLogin({ email, password });
+      if (res.success && res.user && res.token) {
+        setUser(res.user);
+        setToken(res.token);
+        localStorage.setItem('luxury_user', JSON.stringify(res.user));
+        localStorage.setItem('luxury_user_token', res.token);
+        setIsAuthModalOpen(false);
+
+        if (typeof authSuccessCallback === 'function') {
+          const cb = authSuccessCallback;
+          setAuthSuccessCallback(null);
+          setTimeout(() => cb(res.user), 150);
+        }
+      }
+      return res;
     } finally {
       setLoading(false);
     }
