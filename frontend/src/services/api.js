@@ -11,7 +11,7 @@ const getAuthHeaders = () => {
 export const getImageUrl = (url) => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/uploads/')) {
+  if (url.startsWith('/uploads/') || url.startsWith('/api/images/')) {
     const backendBase = API_BASE.replace(/\/api$/, '');
     return `${backendBase}${url}`;
   }
