@@ -18,7 +18,7 @@
 # SPA fallback — all routes serve index.html
 [[redirects]]
   from = "/api/*"
-  to = "https://luxury-watch-backend.onrender.com/api/:splat"
+  to = "https://luxury-watch-vibr.onrender.com/api/:splat"
   status = 200
 
 [[redirects]]
