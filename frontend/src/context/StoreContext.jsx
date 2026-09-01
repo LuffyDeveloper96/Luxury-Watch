@@ -183,11 +183,9 @@ export const StoreProvider = ({ children }) => {
           updated[existingIdx].quantity = product.stock;
         } else {
           updated[existingIdx].quantity = newQty;
-          addToast(`Updated quantity for "${product.name}" in vault bag.`);
         }
         return updated;
       }
-      addToast(`"${product.name}" added to vault bag.`);
       return [...prev, {
         product,
         quantity: Math.min(quantity, product.stock),
@@ -219,7 +217,6 @@ export const StoreProvider = ({ children }) => {
 
   const removeFromCart = (productId) => {
     setCart(prev => prev.filter(item => item.product.id !== productId));
-    addToast('Item removed from vault bag.');
   };
 
   const clearCart = () => {

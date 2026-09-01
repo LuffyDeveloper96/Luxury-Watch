@@ -22,6 +22,7 @@ import { ReviewsSection } from './components/ReviewsSection';
 import { Footer } from './components/Footer';
 import { AdminLogin } from './components/admin/AdminLogin';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { TrackConsignmentPage } from './pages/TrackConsignmentPage';
 import { SlidersHorizontal, Sparkles, Watch, ShieldCheck, Filter } from 'lucide-react';
 
 const Storefront = ({
@@ -113,7 +114,7 @@ const Storefront = ({
       <>
         <AnnouncementBar
           onOpenAdmin={onOpenAdmin}
-          onOpenTracking={() => setIsOrderTrackingOpen(true)}
+          onOpenTracking={() => { window.location.hash = '#track-order'; }}
         />
         <Navbar
           onSelectCategory={(cat) => {
@@ -126,7 +127,7 @@ const Storefront = ({
             onOpenBrandStory();
           }}
           onOpenAdmin={onOpenAdmin}
-          onOpenTracking={() => setIsOrderTrackingOpen(true)}
+          onOpenTracking={() => { window.location.hash = '#track-order'; }}
           onOpenReturns={onOpenReturns}
         />
         <ProductDetailsPage
@@ -141,7 +142,7 @@ const Storefront = ({
           }}
           onOpenAdmin={onOpenAdmin}
           onOpenBrandStory={onOpenBrandStory}
-          onOpenTracking={() => setIsOrderTrackingOpen(true)}
+          onOpenTracking={() => { window.location.hash = '#track-order'; }}
           onOpenReturns={onOpenReturns}
         />
       </>
@@ -152,14 +153,14 @@ const Storefront = ({
     <>
       <AnnouncementBar
         onOpenAdmin={onOpenAdmin}
-        onOpenTracking={() => setIsOrderTrackingOpen(true)}
+        onOpenTracking={() => { window.location.hash = '#track-order'; }}
       />
       <Navbar
         onSelectCategory={setActiveCategory}
         activeCategory={activeCategory}
         onOpenBrandStory={onOpenBrandStory}
         onOpenAdmin={onOpenAdmin}
-        onOpenTracking={() => setIsOrderTrackingOpen(true)}
+        onOpenTracking={() => { window.location.hash = '#track-order'; }}
         onOpenReturns={onOpenReturns}
       />
 
@@ -325,7 +326,7 @@ const Storefront = ({
         onSelectCategory={setActiveCategory}
         onOpenAdmin={onOpenAdmin}
         onOpenBrandStory={onOpenBrandStory}
-        onOpenTracking={() => setIsOrderTrackingOpen(true)}
+        onOpenTracking={() => { window.location.hash = '#track-order'; }}
         onOpenReturns={onOpenReturns}
       />
     </>
@@ -338,16 +339,26 @@ const MainAppContent = () => {
   const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeBrand, setActiveBrand] = useState('All');
+  const [isTrackingPageView, setIsTrackingPageView] = useState(false);
 
   // Returns Modal State
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [returnModalOrderId, setReturnModalOrderId] = useState('');
 
-  // Automatic #admin and /admin route detection
+  // Automatic #admin, /admin, and #track-order route detection
   useEffect(() => {
-    const checkAdminRoute = () => {
+    const checkRoutes = () => {
       const isHashAdmin = window.location.hash === '#admin' || window.location.hash.startsWith('#admin');
       const isPathAdmin = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin');
+      
+      const isHashTrack = window.location.hash === '#track-order';
+      
+      if (isHashTrack) {
+        setIsTrackingPageView(true);
+      } else {
+        setIsTrackingPageView(false);
+      }
+
       if (isHashAdmin || isPathAdmin) {
         if (isAdminAuthenticated) {
           setIsAdminView(true);
@@ -357,12 +368,12 @@ const MainAppContent = () => {
       }
     };
 
-    checkAdminRoute();
-    window.addEventListener('hashchange', checkAdminRoute);
-    window.addEventListener('popstate', checkAdminRoute);
+    checkRoutes();
+    window.addEventListener('hashchange', checkRoutes);
+    window.addEventListener('popstate', checkRoutes);
     return () => {
-      window.removeEventListener('hashchange', checkAdminRoute);
-      window.removeEventListener('popstate', checkAdminRoute);
+      window.removeEventListener('hashchange', checkRoutes);
+      window.removeEventListener('popstate', checkRoutes);
     };
   }, [isAdminAuthenticated]);
 
@@ -386,8 +397,29 @@ const MainAppContent = () => {
 
   return (
     <div>
-      {/* If Admin is Authenticated and in Admin View Mode */}
-      {isAdminAuthenticated && isAdminView ? (
+      {/* View Router */}
+      {isTrackingPageView ? (
+        <>
+          <Navbar 
+            onSelectCategory={(cat) => {
+              window.location.hash = '';
+              setActiveCategory(cat);
+            }}
+            activeCategory={activeCategory}
+            onOpenBrandStory={() => {
+              window.location.hash = '';
+              setTimeout(handleOpenBrandStory, 100);
+            }}
+            onOpenAdmin={handleOpenAdmin}
+            onOpenTracking={() => {}}
+            onOpenReturns={handleOpenReturns}
+          />
+          <TrackConsignmentPage 
+            onBack={() => { window.location.hash = ''; }}
+            onOpenReturnForOrder={handleOpenReturns}
+          />
+        </>
+      ) : isAdminAuthenticated && isAdminView ? (
         <AdminDashboard onBackToStore={() => setIsAdminView(false)} />
       ) : (
         <Storefront
