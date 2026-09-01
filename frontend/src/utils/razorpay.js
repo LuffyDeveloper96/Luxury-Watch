@@ -46,8 +46,8 @@ export const openRazorpayCheckout = async ({
   const loaded = await loadRazorpayScript();
   const activeKey = key || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_RAZORPAY_KEY_ID) || 'rzp_test_TWgXC7muCJnuci';
 
-  // If Razorpay SDK is loaded, key is available, AND orderId is provided (Razorpay requires backend order_id)
-  if (loaded && window.Razorpay && activeKey && !activeKey.startsWith('rzp_test_luxurywatch') && orderId) {
+  // If Razorpay SDK is loaded and key is available
+  if (loaded && window.Razorpay && activeKey && !activeKey.startsWith('rzp_test_luxurywatch')) {
     try {
       const options = {
         key: activeKey,
