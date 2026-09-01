@@ -130,7 +130,9 @@ router.post('/orders', requireAdmin, createOrder); // Admin offline order entry 
 router.patch('/orders/:id/status', requireAdmin, updateOrderStatus);
 router.post('/orders/:id/cancel', cancelOrder);
 
-// 8. Payments API (Razorpay + Verification + Webhook)
+// 8. Payments API (Razorpay Standard Web Checkout + Verification + Webhook)
+router.post('/create-order', paymentLimiter, createRazorpayOrder);
+router.post('/verify-payment', verifyRazorpayPayment);
 router.post('/payments/razorpay/order', paymentLimiter, createRazorpayOrder);
 router.post('/payments/razorpay/verify', verifyRazorpayPayment);
 router.post('/payments/razorpay/webhook', handleRazorpayWebhook);

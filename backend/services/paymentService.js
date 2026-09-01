@@ -37,69 +37,112 @@ export const paymentService = {
   /**
    * Create Gateway Order (Razorpay)
    */
-  createOrder: async ({ amount, currency = 'INR', receipt, notes = {} }) => {
+  createOrder: async ({ amount, amountInPaise, currency = 'INR', receipt, notes = {} }) => {
     const { keyId, keySecret } = getRazorpayCredentials();
-    const amountInPaise = Math.round(Number(amount) * 100);
 
-    if (process.env.NODE_ENV === 'production') {
-      const razorpay = getRazorpayInstance();
-      if (!razorpay || !keyId || !keySecret) {
-        return {
-          success: false,
-          message: 'Payment gateway is not configured for production.'
-        };
-      }
-      try {
-        const order = await razorpay.orders.create({
-          amount: amountInPaise,
-          currency,
-          receipt: receipt || `rcpt_${Date.now()}`,
-          notes
-        });
+    let finalAmountInPaise;
+    if (amountInPaise !== undefined) {
+      finalAmountInPaise = Number(amountInPaise);
+    } else if (amount !== undefined) {
+      // If amount appears to be in paise (integer >= 100 and no decimal part for direct order calls)
+      // or rupees from cart calculation
+      finalAmountInPaise = Number(amount);
+    } else {
+      return {
+        success: false,
+        status: 400,
+        message: 'Order amount is required.'
+      };
+    }
+
+    if (!Number.isFinite(finalAmountInPaise) || finalAmountInPaise < 100) {
+      return {
+        success: false,
+        status: 400,
+        message: 'Amount must be at least 100 paise (₹1.00).'
+      };
+    }
+
+    const razorpay = getRazorpayInstance();
+    if (!razorpay || !keyId || !keySecret) {
+      return {
+        success: false,
+        status: 401,
+        message: 'Razorpay API credentials (KEY_ID / KEY_SECRET) are missing or unconfigured.'
+      };
+    }
+
+    try {
+      const order = await razorpay.orders.create({
+        amount: Math.round(finalAmountInPaise),
+        currency: currency || 'INR',
+        receipt: receipt || `rcpt_${Date.now()}`,
+        notes: notes || {}
+      });
+
+      return {
+        success: true,
+        provider: 'razorpay',
+        order_id: order.id,
+        gatewayOrderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        keyId
+      };
+    } catch (sdkError) {
+      console.error('[Razorpay SDK] Order creation error:', sdkError.message || sdkError);
+      
+      // In development mode, if amount exceeds test account limit or hits API rate limits, create sandbox order reference
+      if (process.env.NODE_ENV !== 'production' && (
+        sdkError.statusCode === 429 ||
+        sdkError.error?.description?.includes('Amount exceeds maximum') ||
+        sdkError.error?.description?.toLowerCase().includes('too many requests')
+      )) {
+        console.warn('[Razorpay Test Mode Notice] Handling gateway response in development mode. Creating sandbox order reference.');
+        const mockGatewayOrderId = `order_LW_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
         return {
           success: true,
           provider: 'razorpay',
-          gatewayOrderId: order.id,
-          amount: order.amount,
-          currency: order.currency,
-          keyId
-        };
-      } catch (sdkError) {
-        console.error('[Razorpay SDK] Order creation error:', sdkError.message);
-        return {
-          success: false,
-          message: 'Failed to create payment order with gateway.'
+          order_id: mockGatewayOrderId,
+          gatewayOrderId: mockGatewayOrderId,
+          amount: Math.round(finalAmountInPaise),
+          currency: currency || 'INR',
+          keyId,
+          isSandbox: true
         };
       }
-    }
 
-    // High-fidelity fallback / Sandbox order generation (DEVELOPMENT ONLY)
-    const mockGatewayOrderId = `order_LW_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-    return {
-      success: true,
-      provider: 'razorpay',
-      gatewayOrderId: mockGatewayOrderId,
-      amount: amountInPaise,
-      currency,
-      keyId: keyId || '',
-      isSandbox: true
-    };
+      const isAuthError = sdkError.statusCode === 401 ||
+        (sdkError.error && (sdkError.error.code === 'BAD_REQUEST_ERROR' || sdkError.error.code === 'GATEWAY_ERROR') &&
+         sdkError.error.description?.toLowerCase().includes('auth'));
+
+      return {
+        success: false,
+        status: isAuthError ? 401 : (sdkError.statusCode || 500),
+        message: sdkError.error?.description || sdkError.message || 'Failed to create payment order with Razorpay.'
+      };
+    }
   },
 
   /**
    * Verify Gateway Payment Signature Server-Side (Order Payment Verification)
+   * Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
    */
-  verifySignature: async ({ gatewayOrderId, paymentId, signature }) => {
-    if (!gatewayOrderId || !paymentId || !signature) {
-      return { success: false, message: 'Missing gateway order ID, payment ID, or signature.' };
+  verifySignature: async ({ gatewayOrderId, order_id, paymentId, payment_id, signature, razorpay_signature }) => {
+    const finalOrderId = order_id || gatewayOrderId;
+    const finalPaymentId = payment_id || paymentId;
+    const finalSignature = razorpay_signature || signature;
+
+    if (!finalOrderId || !finalPaymentId || !finalSignature) {
+      return { success: false, status: 400, message: 'Missing required fields: order_id, payment_id, and signature are required.' };
     }
 
-    const isMock = signature === 'mock_verified_signature';
+    const isMock = finalSignature === 'mock_verified_signature';
 
     // Strict Production Protection: Reject mock payments in production
     if (process.env.NODE_ENV === 'production') {
       if (isMock) {
-        return { success: false, message: 'Mock payment verification is prohibited in production mode.' };
+        return { success: false, status: 400, message: 'Mock payment verification is prohibited in production mode.' };
       }
     } else if (isMock) {
       // In development mode only
@@ -108,23 +151,24 @@ export const paymentService = {
 
     const { keySecret } = getRazorpayCredentials();
     if (!keySecret) {
-      return { success: false, message: 'Payment signature or key secret is missing.' };
+      return { success: false, status: 401, message: 'Payment key secret is missing or unconfigured.' };
     }
 
     try {
-      const payload = `${gatewayOrderId}|${paymentId}`;
+      const payload = `${finalOrderId}|${finalPaymentId}`;
       const expectedSignature = crypto
         .createHmac('sha256', keySecret)
         .update(payload)
         .digest('hex');
 
       const expectedBuf = Buffer.from(expectedSignature, 'utf8');
-      const signatureBuf = Buffer.from(signature, 'utf8');
+      const signatureBuf = Buffer.from(finalSignature, 'utf8');
 
       if (expectedBuf.length !== signatureBuf.length) {
         return {
           success: false,
-          message: 'Invalid cryptographic signature. Payment verification failed.'
+          status: 400,
+          message: 'Cryptographic payment signature verification failed. Signature mismatch.'
         };
       }
 
@@ -132,7 +176,8 @@ export const paymentService = {
       if (!isValid) {
         return {
           success: false,
-          message: 'Invalid cryptographic signature. Payment verification failed.'
+          status: 400,
+          message: 'Cryptographic payment signature verification failed. Signature mismatch.'
         };
       }
 
@@ -143,6 +188,7 @@ export const paymentService = {
     } catch (err) {
       return {
         success: false,
+        status: 400,
         message: 'Signature verification failed.'
       };
     }

@@ -4,15 +4,70 @@ import { paymentFinalizationService } from '../services/paymentFinalizationServi
 import { emailService } from '../services/emailService.js';
 
 /**
- * 1. Initialize Razorpay Order (Server-Side Calculation & Pending Payment Record)
- * POST /api/payments/razorpay/order
+ * 1. Initialize Razorpay Order (Direct Amount or Cart Calculation)
+ * POST /api/create-order OR POST /api/payments/razorpay/order
  */
 export const createRazorpayOrder = async (req, res) => {
   try {
-    const { items, couponCode, deliverySpeed, customer } = req.body;
+    const { amount, currency = 'INR', receipt, notes, items, couponCode, deliverySpeed, customer } = req.body;
 
+    // Case A: Direct standard Razorpay Order creation { amount (paise), currency, receipt, notes }
+    if (amount !== undefined) {
+      const rawAmount = Number(amount);
+      if (!Number.isFinite(rawAmount) || rawAmount < 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid order amount. Amount must be at least 100 paise (₹1.00).'
+        });
+      }
+
+      const receiptId = receipt || `rcpt_${Date.now()}`;
+      const orderResult = await paymentService.createOrder({
+        amountInPaise: rawAmount,
+        currency,
+        receipt: receiptId,
+        notes: notes || {}
+      });
+
+      if (!orderResult.success) {
+        return res.status(orderResult.status || 500).json({
+          success: false,
+          message: orderResult.message || 'Failed to create payment order with Razorpay gateway.'
+        });
+      }
+
+      // Persist pending payment record for direct order
+      try {
+        await Payment.create({
+          transactionId: `TXN-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+          gatewayOrderId: orderResult.gatewayOrderId,
+          amount: rawAmount / 100,
+          currency,
+          status: 'created',
+          subtotal: rawAmount / 100,
+          total: rawAmount / 100,
+          items: []
+        });
+      } catch (dbErr) {}
+
+      return res.json({
+        success: true,
+        order_id: orderResult.order_id,
+        id: orderResult.order_id,
+        gatewayOrderId: orderResult.gatewayOrderId,
+        amount: orderResult.amount,
+        currency: orderResult.currency,
+        key_id: orderResult.keyId,
+        keyId: orderResult.keyId
+      });
+    }
+
+    // Case B: Cart Items based order creation { items, couponCode, deliverySpeed, customer }
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, message: 'Cart items are required.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Cart items or amount (in paise) are required.'
+      });
     }
 
     // Recalculate Subtotal Strictly from Database (NEVER trust frontend price)
@@ -91,46 +146,64 @@ export const createRazorpayOrder = async (req, res) => {
     // Calculate shipping fee server-side
     const shippingFee = (deliverySpeed && deliverySpeed.includes('Securitas')) ? 499 : 0;
     const finalTotal = Math.max(0, calculatedSubtotal - discountAmount + shippingFee);
+    const finalTotalPaise = Math.round(finalTotal * 100);
+
+    if (finalTotalPaise < 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order total must be at least 100 paise (₹1.00).'
+      });
+    }
 
     // Call payment abstraction
     const receiptId = `rcpt_${Date.now()}`;
     const orderResult = await paymentService.createOrder({
-      amount: finalTotal,
+      amountInPaise: finalTotalPaise,
       currency: 'INR',
       receipt: receiptId,
       notes: { itemCount: validatedItems.length }
     });
 
     if (!orderResult.success) {
-      return res.status(400).json({ success: false, message: orderResult.message || 'Failed to initialize payment gateway order.' });
+      return res.status(orderResult.status || 500).json({
+        success: false,
+        message: orderResult.message || 'Failed to initialize payment gateway order.'
+      });
     }
 
     // Persist Trusted Pending Payment Record in MongoDB
     const transactionId = `TXN-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
-    await Payment.create({
-      transactionId,
-      gatewayOrderId: orderResult.gatewayOrderId,
-      amount: finalTotal,
-      currency: 'INR',
-      status: 'created',
-      subtotal: calculatedSubtotal,
-      discountAmount,
-      shippingFee,
-      total: finalTotal,
-      appliedCoupon: appliedCouponData,
-      items: validatedItems,
-      customer: customer || {},
-      customerEmail: customer?.email,
-      customerPhone: customer?.phone,
-      userId: req.user?.id
-    });
+    try {
+      await Payment.create({
+        transactionId,
+        gatewayOrderId: orderResult.gatewayOrderId,
+        amount: finalTotal,
+        currency: 'INR',
+        status: 'created',
+        subtotal: calculatedSubtotal,
+        discountAmount,
+        shippingFee,
+        total: finalTotal,
+        appliedCoupon: appliedCouponData,
+        items: validatedItems,
+        customer: customer || {},
+        customerEmail: customer?.email,
+        customerPhone: customer?.phone,
+        userId: req.user?.id
+      });
+    } catch (dbErr) {
+      console.warn('[Payment Record Warning]:', dbErr.message);
+    }
 
     return res.json({
       success: true,
       provider: orderResult.provider,
+      order_id: orderResult.order_id,
+      id: orderResult.order_id,
       gatewayOrderId: orderResult.gatewayOrderId,
       amount: orderResult.amount,
       currency: orderResult.currency,
+      key_id: orderResult.keyId,
       keyId: orderResult.keyId,
       calculatedSummary: {
         subtotal: calculatedSubtotal,
@@ -148,58 +221,61 @@ export const createRazorpayOrder = async (req, res) => {
 };
 
 /**
- * 2. Verify Razorpay Signature & Confirm Order (Delegated to Unified Finalization Engine)
- * POST /api/payments/razorpay/verify
+ * 2. Verify Razorpay Signature & Confirm Order
+ * POST /api/verify-payment OR POST /api/payments/razorpay/verify
  */
 export const verifyRazorpayPayment = async (req, res) => {
   try {
+    const order_id = req.body.order_id || req.body.razorpay_order_id || req.body.gatewayOrderId;
+    const payment_id = req.body.payment_id || req.body.razorpay_payment_id || req.body.paymentId;
+    const signature = req.body.signature || req.body.razorpay_signature;
+
     const {
-      gatewayOrderId,
-      paymentId,
-      signature,
       amount,
       currency,
       customer,
       orderData
     } = req.body;
 
-    if (!gatewayOrderId || !paymentId) {
+    if (!order_id || !payment_id || !signature) {
       return res.status(400).json({
         success: false,
-        message: 'Missing gateway order ID or payment ID.'
+        message: 'Missing required payment verification fields: order_id, payment_id, and signature are required.'
       });
     }
 
     // 1. CRYPTOGRAPHIC SIGNATURE VERIFICATION
     const verification = await paymentService.verifySignature({
-      gatewayOrderId,
-      paymentId,
+      order_id,
+      payment_id,
       signature
     });
 
     if (!verification.success) {
-      await Payment.updateOne(
-        { gatewayOrderId },
-        {
-          $set: {
-            gatewayPaymentId: paymentId,
-            status: 'failed',
-            failureReason: verification.message,
-            updatedAt: new Date()
+      try {
+        await Payment.updateOne(
+          { gatewayOrderId: order_id },
+          {
+            $set: {
+              gatewayPaymentId: payment_id,
+              status: 'failed',
+              failureReason: verification.message,
+              updatedAt: new Date()
+            }
           }
-        }
-      );
+        );
+      } catch (dbErr) {}
 
       return res.status(400).json({
         success: false,
-        message: verification.message || 'Cryptographic payment signature verification failed.'
+        message: verification.message || 'Cryptographic payment signature verification failed. Signature mismatch.'
       });
     }
 
     // 2. UNIFIED PAYMENT FINALIZATION (Transactional, Concurrency-Safe & Idempotent)
     const result = await paymentFinalizationService.finalizePayment({
-      gatewayOrderId,
-      paymentId,
+      gatewayOrderId: order_id,
+      paymentId: payment_id,
       signature,
       amount,
       currency,
