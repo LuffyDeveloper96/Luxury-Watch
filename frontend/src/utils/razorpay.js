@@ -44,7 +44,7 @@ export const openRazorpayCheckout = async ({
   onOpenFallbackSimulator
 }) => {
   const loaded = await loadRazorpayScript();
-  const activeKey = key || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_RAZORPAY_KEY_ID) || '';
+  const activeKey = key || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_RAZORPAY_KEY_ID) || 'rzp_test_TWgXC7muCJnuci';
 
   // If Razorpay SDK is loaded and key is available
   if (loaded && window.Razorpay && activeKey && !activeKey.startsWith('rzp_test_luxurywatch')) {
@@ -55,7 +55,7 @@ export const openRazorpayCheckout = async ({
         currency,
         name,
         description,
-        order_id: orderId,
+        ...(orderId ? { order_id: orderId } : {}),
         image: image || undefined,
         prefill: {
           name: prefill.name || '',
@@ -75,8 +75,8 @@ export const openRazorpayCheckout = async ({
           if (onSuccess) {
             onSuccess({
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature
+              razorpay_order_id: response.razorpay_order_id || orderId || '',
+              razorpay_signature: response.razorpay_signature || ''
             });
           }
         }

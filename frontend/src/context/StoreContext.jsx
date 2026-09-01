@@ -3,23 +3,30 @@ import {
   productsAPI, brandsAPI, categoriesAPI, ordersAPI,
   reviewsAPI, couponsAPI, analyticsAPI, homepageAPI, settingsAPI
 } from '../services/api';
+import {
+  INITIAL_BRANDS,
+  INITIAL_PRODUCTS,
+  INITIAL_REVIEWS,
+  INITIAL_ORDERS,
+  INITIAL_COUPONS
+} from '../data/initialProducts';
 import { formatCurrency } from '../utils/currency';
 
 const StoreContext = createContext();
 
 export const StoreProvider = ({ children }) => {
-  // Products Catalog
-  const [products, setProducts] = useState([]);
+  // Products Catalog (initialized with built-in catalog, updated when backend responds)
+  const [products, setProducts] = useState(INITIAL_PRODUCTS);
   // Brands
-  const [brands, setBrands] = useState([]);
+  const [brands, setBrands] = useState(INITIAL_BRANDS);
   // Categories
   const [categories, setCategories] = useState([]);
   // Orders
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState(INITIAL_ORDERS);
   // Reviews
-  const [reviews, setReviews] = useState([]);
+  const [reviews, setReviews] = useState(INITIAL_REVIEWS);
   // Coupons
-  const [coupons, setCoupons] = useState([]);
+  const [coupons, setCoupons] = useState(INITIAL_COUPONS);
 
   // Cart state
   const [cart, setCart] = useState(() => {
@@ -108,11 +115,11 @@ export const StoreProvider = ({ children }) => {
 
       const [prodRes, brandRes, catRes, revRes, cpnRes, actRes, hpRes, setRes] = results;
 
-      if (prodRes.status === 'fulfilled' && prodRes.value?.products) {
+      if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value?.products) && prodRes.value.products.length > 0) {
         setProducts(prodRes.value.products);
         setIsBackendConnected(true);
       }
-      if (brandRes.status === 'fulfilled' && brandRes.value?.brands) {
+      if (brandRes.status === 'fulfilled' && Array.isArray(brandRes.value?.brands) && brandRes.value.brands.length > 0) {
         setBrands(brandRes.value.brands);
       }
       if (catRes.status === 'fulfilled' && catRes.value?.categories) {
