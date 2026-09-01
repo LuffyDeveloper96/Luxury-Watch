@@ -493,30 +493,6 @@ export const Navbar = ({
               </span>
             )}
           </button>
-
-          {/* Master Admin Portal Key */}
-          <button
-            onClick={onOpenAdmin}
-            style={{
-              background: 'rgba(180, 140, 30, 0.1)',
-              border: '1px solid rgba(180, 140, 30, 0.35)',
-              color: '#8a6709',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              padding: '4px 8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              marginLeft: '2px',
-              transition: 'all 0.2s ease'
-            }}
-            title="Master Administrator Portal"
-          >
-            <ShieldCheck size={14} color="#8a6709" />
-            <span className="desktop-only">Admin</span>
-          </button>
         </div>
       </div>
 
@@ -576,26 +552,6 @@ export const Navbar = ({
             }}
           >
             TRACK CONSIGNMENT
-          </button>
-          <button
-            onClick={() => {
-              setIsMobileMenuOpen(false);
-              if (onOpenAdmin) onOpenAdmin();
-            }}
-            style={{
-              gridColumn: 'span 2',
-              padding: '9px',
-              background: 'rgba(180, 140, 30, 0.12)',
-              color: '#8a6709',
-              border: '1px solid #d4af37',
-              borderRadius: '6px',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              marginTop: '2px'
-            }}
-          >
-            MASTER ADMINISTRATOR PORTAL
           </button>
         </div>
       )}

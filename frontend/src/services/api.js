@@ -8,13 +8,29 @@ const getAuthHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+export const getImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/uploads/')) {
+    const backendBase = API_BASE.replace(/\/api$/, '');
+    return `${backendBase}${url}`;
+  }
+  return url;
+};
+
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
   const headers = {
-    'Content-Type': 'application/json',
     ...getAuthHeaders(),
     ...options.headers
   };
+
+  // Auto-set Content-Type for JSON, but let browser handle FormData boundaries
+  if (options.body && options.body instanceof FormData) {
+    delete headers['Content-Type'];
+  } else if (!headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   try {
     const res = await fetch(url, {
@@ -158,6 +174,14 @@ export const productsAPI = {
     return request('/products', {
       method: 'POST',
       body: JSON.stringify(productData)
+    });
+  },
+  uploadImage: async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return request('/upload', {
+      method: 'POST',
+      body: formData
     });
   },
   update: async (id, productData) => {

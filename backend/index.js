@@ -64,6 +64,13 @@ const localDistPath = path.join(__dirname, 'dist');
 const distPath = fs.existsSync(frontendDistPath) ? frontendDistPath : localDistPath;
 app.use(express.static(distPath));
 
+// Serve uploaded images
+const uploadsPath = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsPath));
+
 // Fallback for frontend SPA routing or missing API endpoints
 app.use((req, res, next) => {
   if (req.path.startsWith('/api')) {

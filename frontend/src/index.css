@@ -329,12 +329,59 @@ h1, h2, h3, h4, h5, h6 {
 
 .lux-label {
   display: block;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #475569;
   text-transform: uppercase;
-  color: var(--text-secondary);
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+
+/* ==========================================================================
+   ADMIN DASHBOARD RESPONSIVENESS
+   ========================================================================== */
+.admin-layout {
+  flex-direction: row;
+}
+
+.admin-sidebar {
+  width: 240px;
+  background: #111827;
+  border-right: 1px solid #1f2937;
+  padding: 1.25rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 1.75rem;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+  .admin-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #1f2937;
+    padding: 0.75rem;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .admin-sidebar button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .admin-content {
+    padding: 1rem;
+  }
+  .admin-table-container {
+    overflow-x: auto;
+  }
 }
 
 /* Responsive Product Grid */

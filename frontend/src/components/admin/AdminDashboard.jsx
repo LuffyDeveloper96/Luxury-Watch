@@ -3,7 +3,7 @@ import { useStore } from '../../context/StoreContext';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import {
   productsAPI, brandsAPI, categoriesAPI, ordersAPI,
-  couponsAPI, reviewsAPI, analyticsAPI, homepageAPI, settingsAPI
+  couponsAPI, reviewsAPI, analyticsAPI, homepageAPI, settingsAPI, getImageUrl
 } from '../../services/api';
 import {
   BarChart3, Package, ShoppingBag, Tag, Settings, Activity,
@@ -342,17 +342,9 @@ export const AdminDashboard = ({ onBackToStore }) => {
       </header>
 
       {/* Main Admin Layout */}
-      <div style={{ display: 'flex', flex: 1 }}>
+      <div className="admin-layout" style={{ display: 'flex', flex: 1 }}>
         {/* Sidebar Navigation */}
-        <aside style={{
-          width: '240px',
-          background: '#111827',
-          borderRight: '1px solid #1f2937',
-          padding: '1.25rem 0.75rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px'
-        }}>
+        <aside className="admin-sidebar">
           {[
             { id: 'overview', label: 'Dashboard Overview', icon: BarChart3 },
             { id: 'products', label: 'Products Vault', icon: Package },
@@ -394,7 +386,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
         </aside>
 
         {/* Content Area */}
-        <main style={{ flex: 1, padding: '1.75rem', overflowY: 'auto' }}>
+        <main className="admin-content">
           {/* TAB 1: Overview */}
           {activeTab === 'overview' && (
             <div>
@@ -516,7 +508,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                 </button>
               </div>
 
-              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', overflow: 'hidden' }}>
+              <div className="admin-table-container" style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ background: '#1f2937', color: '#94a3b8', borderBottom: '1px solid #374151' }}>
@@ -532,7 +524,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     {productsList.map(prod => (
                       <tr key={prod.id} style={{ borderBottom: '1px solid #1f2937' }}>
                         <td style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <img src={prod.images?.[0]} alt={prod.name} style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} />
+                          <img src={getImageUrl(prod.images?.[0])} alt={prod.name} style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} />
                           <div>
                             <div style={{ fontWeight: 600, color: '#ffffff' }}>{prod.name}</div>
                             <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{prod.category}</div>
@@ -641,7 +633,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                 LIVE VAULT INVENTORY & STOCK CONTROLLER
               </h2>
 
-              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', overflow: 'hidden' }}>
+              <div className="admin-table-container" style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ background: '#1f2937', color: '#94a3b8' }}>
@@ -727,7 +719,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                 </div>
               </div>
 
-              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', overflow: 'hidden' }}>
+              <div className="admin-table-container" style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ background: '#1f2937', color: '#94a3b8' }}>
@@ -995,32 +987,40 @@ export const AdminDashboard = ({ onBackToStore }) => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label className="lux-label" style={{ color: '#94a3b8' }}>Brand *</label>
-                  <select
+                  <input
+                    list="brands-datalist"
+                    required
                     value={productForm.brand}
                     onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })}
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
-                  >
+                    placeholder="e.g. Rolex"
+                  />
+                  <datalist id="brands-datalist">
                     {brandsList.map(b => (
-                      <option key={b.id} value={b.name}>{b.name}</option>
+                      <option key={b.id} value={b.name} />
                     ))}
-                  </select>
+                  </datalist>
                 </div>
                 <div>
                   <label className="lux-label" style={{ color: '#94a3b8' }}>Category *</label>
-                  <select
+                  <input
+                    list="category-datalist"
+                    required
                     value={productForm.category}
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
-                  >
-                    <option value="Dive & Sport">Dive & Sport</option>
-                    <option value="Chronographs">Chronographs</option>
-                    <option value="Skeletons">Skeletons</option>
-                    <option value="Luxury">Luxury</option>
-                    <option value="Automatic">Automatic</option>
-                    <option value="Diamond Editions">Diamond Editions</option>
-                  </select>
+                    placeholder="e.g. Dive & Sport"
+                  />
+                  <datalist id="category-datalist">
+                    <option value="Dive & Sport" />
+                    <option value="Chronographs" />
+                    <option value="Skeletons" />
+                    <option value="Luxury" />
+                    <option value="Automatic" />
+                    <option value="Diamond Editions" />
+                  </datalist>
                 </div>
               </div>
 
@@ -1060,16 +1060,35 @@ export const AdminDashboard = ({ onBackToStore }) => {
               </div>
 
               <div style={{ marginBottom: '1rem' }}>
-                <label className="lux-label" style={{ color: '#94a3b8' }}>Image URL *</label>
-                <input
-                  type="text"
-                  required
-                  value={productForm.images?.[0] || ''}
-                  onChange={(e) => setProductForm({ ...productForm, images: [e.target.value] })}
-                  placeholder="/images/watches/rolex_submariner.jpg"
-                  className="lux-input"
-                  style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
-                />
+                <label className="lux-label" style={{ color: '#94a3b8' }}>Product Image *</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      try {
+                        const res = await productsAPI.uploadImage(file);
+                        if (res.success && res.url) {
+                          setProductForm({ ...productForm, images: [res.url] });
+                        }
+                      } catch (err) {
+                        alert('Image upload failed: ' + err.message);
+                      }
+                    }}
+                    className="lux-input"
+                    style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', flex: 1 }}
+                  />
+                  {productForm.images?.[0] && (
+                    <img src={getImageUrl(productForm.images[0])} alt="Preview" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
+                  )}
+                </div>
+                {productForm.images?.[0] && (
+                   <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px' }}>
+                     Current Image: {productForm.images[0]}
+                   </div>
+                )}
               </div>
 
               <div style={{ marginBottom: '1.25rem' }}>

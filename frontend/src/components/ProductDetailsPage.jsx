@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { formatCurrency } from '../utils/currency';
+import { getImageUrl } from '../services/api';
 import {
   ArrowLeft, Star, ShieldCheck, Zap, ShoppingBag, Truck, Lock,
   Sparkles, Award, RefreshCw, CheckCircle2, ChevronRight, MessageSquare, Send
@@ -159,7 +160,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
               boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)'
             }}>
               <img
-                src={product.images[activeImgIdx] || product.images[0]}
+                src={getImageUrl(product.images[activeImgIdx] || product.images[0])}
                 alt={product.name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
@@ -209,7 +210,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                     transition: 'all 0.2s'
                   }}
                 >
-                  <img src={img} alt="angle" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={getImageUrl(img)} alt="angle" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
             </div>
@@ -876,7 +877,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                   }}
                 >
                   <img
-                    src={rel.images[0]}
+                    src={getImageUrl(rel.images[0])}
                     alt={rel.name}
                     style={{ width: '100%', height: '220px', objectFit: 'cover', borderRadius: '4px', marginBottom: '0.75rem', backgroundColor: '#f8f7f4' }}
                   />

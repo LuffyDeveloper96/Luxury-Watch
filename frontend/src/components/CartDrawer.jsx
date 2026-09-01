@@ -4,6 +4,7 @@ import {
   X, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Tag, Gift,
   Truck, CheckCircle, Sparkles, Zap
 } from 'lucide-react';
+import { getImageUrl } from '../services/api';
 
 export const CartDrawer = () => {
   const {
@@ -166,7 +167,7 @@ export const CartDrawer = () => {
                 >
                   {/* Item Image */}
                   <img
-                    src={item.product?.images?.[0] || '/images/watches/rolex_submariner.jpg'}
+                    src={getImageUrl(item.product?.images?.[0] || '/images/watches/rolex_submariner.jpg')}
                     alt={item.product?.name || 'Watch'}
                     style={{
                       width: '75px',

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { formatCurrency } from '../utils/currency';
+import { getImageUrl } from '../services/api';
 import { Heart, Eye, ShoppingBag, Zap, Star, Sparkles } from 'lucide-react';
 
 export const ProductCard = ({ product, onSelectProduct }) => {
@@ -75,7 +76,7 @@ export const ProductCard = ({ product, onSelectProduct }) => {
         onClick={handleSelect}
       >
         <img
-          src={currentImg}
+          src={getImageUrl(currentImg)}
           alt={product.name}
           style={{
             position: 'absolute',

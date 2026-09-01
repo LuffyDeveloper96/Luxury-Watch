@@ -1,6 +1,22 @@
 import express from 'express';
+import multer from 'multer';
+import path from 'path';
 import { requireAdmin, requireAuth, optionalAuth } from '../middleware/auth.js';
 import { apiLimiter, otpLimiter, paymentLimiter } from '../middleware/rateLimiter.js';
+
+// Setup Multer for image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`);
+  }
+});
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB max size
+});
 
 // Controllers
 import { adminLogin, adminVerify } from '../controllers/authController.js';
@@ -58,6 +74,15 @@ const router = express.Router();
 
 // Apply Global API rate limiter
 router.use(apiLimiter);
+
+// 0. Image Upload Route
+router.post('/upload', requireAdmin, upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded' });
+  }
+  const imageUrl = `/uploads/${req.file.filename}`;
+  res.json({ success: true, url: imageUrl });
+});
 
 // 1. System Health Check
 router.get('/health', (req, res) => {
