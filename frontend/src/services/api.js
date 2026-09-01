@@ -261,8 +261,20 @@ export const ordersAPI = {
   }
 };
 
-// 7. Payments API (Razorpay)
+// 7. Payments API (Razorpay Standard Web Checkout)
 export const paymentsAPI = {
+  createOrder: async (orderData) => {
+    return request('/create-order', {
+      method: 'POST',
+      body: JSON.stringify(orderData)
+    });
+  },
+  verifyPayment: async (verificationData) => {
+    return request('/verify-payment', {
+      method: 'POST',
+      body: JSON.stringify(verificationData)
+    });
+  },
   createRazorpayOrder: async (paymentData) => {
     return request('/payments/razorpay/order', {
       method: 'POST',

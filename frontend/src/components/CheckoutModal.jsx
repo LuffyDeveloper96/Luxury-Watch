@@ -196,11 +196,11 @@ export const CheckoutModal = () => {
     });
   };
 
-  // Launch Razorpay / Simulator Gateway
+  // Launch Razorpay Standard Checkout Gateway
   const handleRazorpayPayment = async () => {
     setIsProcessing(true);
     try {
-      // 1. Initialize Order on Backend
+      // 1. Initialize Order on Backend (POST /api/create-order or /api/payments/razorpay/order)
       const orderInitRes = await paymentsAPI.createRazorpayOrder({
         items: effectiveItems.map(item => ({
           id: item.product.id,
@@ -211,24 +211,36 @@ export const CheckoutModal = () => {
           selectedStrap: item.selectedStrap
         })),
         couponCode: appliedCoupon?.code,
-        deliverySpeed: formData.deliverySpeed
+        deliverySpeed: formData.deliverySpeed,
+        customer: {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          postalCode: formData.postalCode
+        }
       });
 
-      if (!orderInitRes.success || !orderInitRes.gatewayOrderId) {
-        throw new Error(orderInitRes.message || 'Failed to initialize payment gateway.');
+      const orderId = orderInitRes.order_id || orderInitRes.gatewayOrderId || orderInitRes.id;
+      if (!orderInitRes.success || !orderId) {
+        throw new Error(orderInitRes.message || 'Failed to initialize payment gateway order.');
       }
 
       const orderPayload = buildOrderPayload({
-        gatewayOrderId: orderInitRes.gatewayOrderId,
+        gatewayOrderId: orderId,
         method: 'razorpay'
       });
 
-      // 2. Open Razorpay or fallback simulator
+      const keyId = orderInitRes.keyId || orderInitRes.key_id || (import.meta.env?.VITE_RAZORPAY_KEY_ID) || paymentSettings.razorpayKeyId;
+
+      // 2. Open Razorpay Standard Checkout modal
       openRazorpayCheckout({
-        key: orderInitRes.keyId || paymentSettings.razorpayKeyId,
+        key: keyId,
         amount: orderInitRes.amount,
         currency: orderInitRes.currency || 'INR',
-        orderId: orderInitRes.gatewayOrderId,
+        orderId: orderId,
         name: 'LUXURY WATCH',
         description: `Haute Horlogerie Consignment (${effectiveItems.length} item(s))`,
         prefill: {
@@ -246,48 +258,50 @@ export const CheckoutModal = () => {
         },
         onSuccess: async (verifyData) => {
           try {
+            // STEP 3: Send razorpay_payment_id, razorpay_order_id, razorpay_signature to verify endpoint
             const verifyRes = await paymentsAPI.verifyRazorpayPayment({
+              order_id: verifyData.razorpay_order_id,
               gatewayOrderId: verifyData.razorpay_order_id,
+              payment_id: verifyData.razorpay_payment_id,
               paymentId: verifyData.razorpay_payment_id,
               signature: verifyData.razorpay_signature,
               orderData: orderPayload
             });
 
-            if (verifyRes.success && verifyRes.order) {
-              handleOrderSuccess(verifyRes.order);
+            if (verifyRes.success && (verifyRes.order || verifyRes.message)) {
+              handleOrderSuccess(verifyRes.order || orderPayload);
             } else {
-              throw new Error(verifyRes.message || 'Signature verification failed.');
+              throw new Error(verifyRes.message || 'Payment signature verification failed.');
             }
           } catch (verr) {
-            alert(`Payment verification note: ${verr.message}`);
+            console.error('[Verification Error]:', verr.message);
+            addToast(`Payment verification error: ${verr.message}`, 'error');
           } finally {
             setIsProcessing(false);
           }
         },
         onDismiss: () => {
           setIsProcessing(false);
-          addToast('Payment session dismissed. You may retry at any time.', 'warning');
+          addToast('Payment session dismissed. You may retry whenever you are ready.', 'warning');
         },
         onError: (err) => {
           setIsProcessing(false);
-          // Auto fallback to built-in simulator
-          setSimulatorData({
-            gatewayOrderId: orderInitRes.gatewayOrderId,
+          console.error('[Razorpay Failed Event]:', err);
+          paymentsAPI.logFailure({
+            gatewayOrderId: orderId,
+            paymentId: err?.metadata?.payment_id || '',
+            errorReason: err?.description || err?.reason || 'Payment failed on Razorpay gateway.',
             amount: orderInitRes.amount,
-            orderPayload
-          });
-          setShowSimulator(true);
+            customerEmail: formData.email
+          }).catch(() => {});
+
+          addToast(`Payment declined: ${err?.description || 'Transaction could not be completed.'}`, 'error');
         }
       });
     } catch (err) {
       setIsProcessing(false);
-      // If backend network error, still allow simulator
-      setSimulatorData({
-        gatewayOrderId: `order_LW_${Date.now()}`,
-        amount: finalTotal * 100,
-        orderPayload: buildOrderPayload({ method: 'razorpay' })
-      });
-      setShowSimulator(true);
+      console.error('[Razorpay Checkout Error]:', err.message);
+      addToast(`Payment initialization failed: ${err.message}`, 'error');
     }
   };
 

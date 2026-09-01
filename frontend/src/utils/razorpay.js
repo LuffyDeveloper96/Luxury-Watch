@@ -1,5 +1,5 @@
 /**
- * Dynamically load the Razorpay checkout script
+ * Dynamically load the Razorpay checkout script if not already present
  */
 export const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -7,14 +7,18 @@ export const loadRazorpayScript = () => {
       resolve(true);
       return;
     }
+    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(true));
+      existing.addEventListener('error', () => resolve(false));
+      return;
+    }
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
-    script.onload = () => {
-      resolve(true);
-    };
+    script.onload = () => resolve(true);
     script.onerror = () => {
-      console.warn('Official Razorpay CDN not reachable or blocked by client adblocker.');
+      console.warn('[Razorpay] Official CDN not reachable or blocked by client.');
       resolve(false);
     };
     document.body.appendChild(script);
@@ -22,7 +26,7 @@ export const loadRazorpayScript = () => {
 };
 
 /**
- * Open Razorpay Checkout Modal (with graceful fallback handling)
+ * Open Razorpay Standard Checkout Modal
  */
 export const openRazorpayCheckout = async ({
   key,
@@ -30,8 +34,8 @@ export const openRazorpayCheckout = async ({
   currency = 'INR',
   orderId,
   name = 'LUXURY WATCH',
-  description = 'Haute Horlogerie Consignment Allocation',
-  image = '/images/watches/rolex_submariner.jpg',
+  description = 'Haute Horlogerie Timepiece Purchase',
+  image = '',
   prefill = {},
   theme = { color: '#0f172a' },
   onSuccess,
@@ -40,17 +44,19 @@ export const openRazorpayCheckout = async ({
   onOpenFallbackSimulator
 }) => {
   const loaded = await loadRazorpayScript();
+  const activeKey = key || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_RAZORPAY_KEY_ID) || '';
 
-  // If Razorpay SDK loaded and key is valid format
-  if (loaded && window.Razorpay && key && !key.startsWith('rzp_test_luxurywatch')) {
+  // If Razorpay SDK is loaded and key is available
+  if (loaded && window.Razorpay && activeKey && !activeKey.startsWith('rzp_test_luxurywatch')) {
     try {
       const options = {
-        key,
+        key: activeKey,
         amount,
         currency,
         name,
         description,
         order_id: orderId,
+        image: image || undefined,
         prefill: {
           name: prefill.name || '',
           email: prefill.email || '',
@@ -61,6 +67,7 @@ export const openRazorpayCheckout = async ({
         },
         modal: {
           ondismiss: () => {
+            console.log('[Razorpay] Checkout modal dismissed by user.');
             if (onDismiss) onDismiss();
           }
         },
@@ -77,16 +84,18 @@ export const openRazorpayCheckout = async ({
 
       const razorpayInstance = new window.Razorpay(options);
       razorpayInstance.on('payment.failed', (response) => {
+        console.error('[Razorpay] Payment failed event:', response.error);
         if (onError) onError(response.error);
       });
+
       razorpayInstance.open();
       return;
     } catch (err) {
-      console.warn('[Razorpay] Official popup init note:', err.message);
+      console.warn('[Razorpay] Standard checkout modal open note:', err.message);
     }
   }
 
-  // If in sandbox mode or CDN unreachable, trigger built-in interactive simulator
+  // Fallback simulator for sandbox development when CDN or key is unavailable
   if (onOpenFallbackSimulator) {
     onOpenFallbackSimulator({
       gatewayOrderId: orderId,
@@ -94,7 +103,6 @@ export const openRazorpayCheckout = async ({
       currency
     });
   } else if (onSuccess) {
-    // Direct simulated success
     onSuccess({
       razorpay_payment_id: `pay_sim_${Date.now()}`,
       razorpay_order_id: orderId,
