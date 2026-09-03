@@ -7,10 +7,11 @@ const reviewSchema = new mongoose.Schema({
   rating: { type: Number, required: true, min: 1, max: 5 },
   title: { type: String, required: true },
   comment: { type: String, required: true },
-  verified: { type: Boolean, default: true },
+  verified: { type: Boolean, default: false },
   avatar: { type: String, default: 'LW' },
-  location: { type: String, default: 'Geneva / India' },
+  location: { type: String, default: 'India' },
   status: { type: String, enum: ['approved', 'pending', 'hidden'], default: 'approved' },
+  source: { type: String, enum: ['seed', 'user'], default: 'user' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

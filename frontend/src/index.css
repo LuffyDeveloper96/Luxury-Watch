@@ -422,6 +422,35 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Infinite Review Marquee Scroll */
+@keyframes reviewScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.review-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.review-card-hover:hover {
+  transform: translateY(-3px);
+  border-color: rgba(212, 175, 55, 0.45) !important;
+  box-shadow: 0 10px 30px rgba(180, 140, 30, 0.12) !important;
+}
+
+/* Reduced Motion Accessibility for Infinite Marquees */
+@media (prefers-reduced-motion: reduce) {
+  .review-marquee-track {
+    animation: none !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+  }
+}
+
 /* Modals Backdrop */
 .modal-backdrop {
   position: fixed;

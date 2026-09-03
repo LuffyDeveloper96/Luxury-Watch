@@ -114,11 +114,30 @@ export const Footer = ({
               CUSTOMER CONCIERGE
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.78rem', color: '#cbd5e1' }}>
-              <span onClick={onOpenTracking} style={{ cursor: 'pointer' }}>Track Consignment</span>
-              <span onClick={onOpenReturns} style={{ cursor: 'pointer' }}>Returns & Exchanges</span>
-              <span onClick={onOpenBrandStory} style={{ cursor: 'pointer' }}>Authenticity & Warranty</span>
+              <span onClick={onOpenTracking} style={{ cursor: 'pointer', transition: 'color 0.15s ease' }} onMouseEnter={(e) => e.currentTarget.style.color = '#d4af37'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>Track Consignment</span>
+              <span onClick={onOpenReturns} style={{ cursor: 'pointer', transition: 'color 0.15s ease' }} onMouseEnter={(e) => e.currentTarget.style.color = '#d4af37'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>Returns & Exchanges</span>
+              <span onClick={onOpenBrandStory} style={{ cursor: 'pointer', transition: 'color 0.15s ease' }} onMouseEnter={(e) => e.currentTarget.style.color = '#d4af37'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>Authenticity & Warranty</span>
               <span>Shipping & Delivery Policy</span>
               <span>24/7 Atelier Support</span>
+              <a
+                href="#admin"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onOpenAdmin) onOpenAdmin();
+                }}
+                style={{
+                  color: '#cbd5e1',
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  transition: 'color 0.15s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#d4af37'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}
+                onFocus={(e) => e.currentTarget.style.color = '#d4af37'}
+                onBlur={(e) => e.currentTarget.style.color = '#cbd5e1'}
+              >
+                Admin Portal
+              </a>
             </div>
           </div>
 
@@ -144,7 +163,7 @@ export const Footer = ({
           </div>
         </div>
 
-        {/* Bottom Bar: Copyright & Admin Key */}
+        {/* Bottom Bar: Copyright & Scroll to Top */}
         <div style={{
           borderTop: '1px solid #1f2937',
           paddingTop: '1.5rem',
@@ -161,24 +180,6 @@ export const Footer = ({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button
-              onClick={onOpenAdmin}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#475569',
-                fontSize: '0.7rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-              title="Master Administrator Portal"
-            >
-              <Lock size={11} />
-              <span>Master Admin</span>
-            </button>
-
             <button
               onClick={scrollToTop}
               style={{

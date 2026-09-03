@@ -113,7 +113,6 @@ const Storefront = ({
     return (
       <>
         <AnnouncementBar
-          onOpenAdmin={onOpenAdmin}
           onOpenTracking={() => { window.location.hash = '#track-order'; }}
         />
         <Navbar
@@ -152,7 +151,6 @@ const Storefront = ({
   return (
     <>
       <AnnouncementBar
-        onOpenAdmin={onOpenAdmin}
         onOpenTracking={() => { window.location.hash = '#track-order'; }}
       />
       <Navbar
@@ -378,6 +376,9 @@ const MainAppContent = () => {
   }, [isAdminAuthenticated]);
 
   const handleOpenAdmin = () => {
+    if (window.location.hash !== '#admin') {
+      window.location.hash = '#admin';
+    }
     if (isAdminAuthenticated) {
       setIsAdminView(true);
     } else {
@@ -420,7 +421,12 @@ const MainAppContent = () => {
           />
         </>
       ) : isAdminAuthenticated && isAdminView ? (
-        <AdminDashboard onBackToStore={() => setIsAdminView(false)} />
+        <AdminDashboard onBackToStore={() => {
+          if (window.location.hash.includes('admin')) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+          setIsAdminView(false);
+        }} />
       ) : (
         <Storefront
           onOpenAdmin={handleOpenAdmin}

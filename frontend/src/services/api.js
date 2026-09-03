@@ -205,8 +205,9 @@ export const productsAPI = {
 
 // 4. Brands API (Database-driven)
 export const brandsAPI = {
-  getAll: async () => {
-    return request('/brands');
+  getAll: async (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(qs ? `/brands?${qs}` : '/brands');
   },
   getBySlug: async (slugOrId) => {
     return request(`/brands/${encodeURIComponent(slugOrId)}`);
@@ -226,6 +227,14 @@ export const brandsAPI = {
   delete: async (id) => {
     return request(`/brands/${id}`, {
       method: 'DELETE'
+    });
+  },
+  uploadImage: async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return request('/upload', {
+      method: 'POST',
+      body: formData
     });
   }
 };

@@ -20,6 +20,23 @@ export const getReviews = async (req, res) => {
       reviews
     });
   } catch (err) {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const storePath = path.resolve(process.cwd(), 'backend/data/store.json');
+      if (fs.existsSync(storePath)) {
+        const storeData = JSON.parse(fs.readFileSync(storePath, 'utf8'));
+        let storeReviews = storeData.reviews || [];
+        if (req.query.productId) {
+          storeReviews = storeReviews.filter(r => r.productId === req.query.productId);
+        }
+        return res.json({
+          success: true,
+          count: storeReviews.length,
+          reviews: storeReviews
+        });
+      }
+    } catch (fallbackErr) {}
     return res.status(500).json({ success: false, message: err.message });
   }
 };

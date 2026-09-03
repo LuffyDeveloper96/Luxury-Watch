@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { Sparkles, ShieldCheck, Truck } from 'lucide-react';
 
-export const AnnouncementBar = ({ onOpenAdmin, onOpenTracking }) => {
+export const AnnouncementBar = ({ onOpenTracking }) => {
   const { storeSettings, homepageContent } = useStore();
 
   const announcementText =
@@ -69,7 +69,7 @@ export const AnnouncementBar = ({ onOpenAdmin, onOpenTracking }) => {
           </span>
         </div>
 
-        {/* Right: Order Tracking & Master Admin */}
+        {/* Right: Order Tracking */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', whiteSpace: 'nowrap' }}>
           <button
             onClick={onOpenTracking}
@@ -90,29 +90,6 @@ export const AnnouncementBar = ({ onOpenAdmin, onOpenTracking }) => {
           >
             <Truck size={13} color="#d4af37" />
             <span>Track Consignment</span>
-          </button>
-
-          <button
-            onClick={onOpenAdmin}
-            style={{
-              background: 'rgba(212, 175, 55, 0.15)',
-              border: '1px solid rgba(212, 175, 55, 0.4)',
-              color: '#f3e5ab',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: 'inherit',
-              textTransform: 'uppercase',
-              letterSpacing: 'inherit',
-              padding: '2px 8px',
-              transition: 'all 0.2s ease'
-            }}
-            title="Master Administrator Portal"
-          >
-            <ShieldCheck size={12} color="#d4af37" />
-            <span>Admin Portal</span>
           </button>
         </div>
       </div>

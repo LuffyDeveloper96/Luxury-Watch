@@ -65,19 +65,25 @@ export const AdminDashboard = ({ onBackToStore }) => {
     }
   });
 
-  // Brand Modal State
+  // Brand Modal & Management State
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
+  const [brandToDelete, setBrandToDelete] = useState(null);
+  const [isDeleteBrandModalOpen, setIsDeleteBrandModalOpen] = useState(false);
+  const [isSavingBrand, setIsSavingBrand] = useState(false);
   const [brandForm, setBrandForm] = useState({
     name: '',
-    tagline: '',
-    origin: 'Geneva, Switzerland',
-    founded: '1905',
-    hallmark: '',
-    logoUrl: '',
-    color: '#006039',
+    slug: '',
+    badge: 'OFFICIAL ICON',
+    location: 'Geneva, Switzerland',
+    established: '1905',
+    featuredCollection: '',
+    description: '',
+    image: '/images/watches/rolex_submariner.jpg',
+    imageAlt: '',
+    filterTarget: '',
     displayOrder: 1,
-    isFeatured: true
+    isActive: true
   });
 
   // Coupon Modal State
@@ -96,7 +102,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
       const results = await Promise.allSettled([
         analyticsAPI.getSummary(),
         productsAPI.getAll(),
-        brandsAPI.getAll(),
+        brandsAPI.getAll({ all: 'true' }),
         categoriesAPI.getAll(),
         ordersAPI.getAll(),
         couponsAPI.getAll(),
@@ -172,31 +178,133 @@ export const AdminDashboard = ({ onBackToStore }) => {
   };
 
   // Brand CRUD Handlers
+  const handleOpenAddBrand = () => {
+    setEditingBrand(null);
+    setBrandForm({
+      name: '',
+      slug: '',
+      badge: 'OFFICIAL ICON',
+      location: 'Geneva, Switzerland',
+      established: '1905',
+      featuredCollection: '',
+      description: '',
+      image: '/images/watches/rolex_submariner.jpg',
+      imageAlt: '',
+      filterTarget: '',
+      displayOrder: brandsList.length + 1,
+      isActive: true
+    });
+    setIsBrandModalOpen(true);
+  };
+
+  const handleOpenEditBrand = (brand) => {
+    setEditingBrand(brand);
+    setBrandForm({
+      name: brand.name || '',
+      slug: brand.slug || '',
+      badge: brand.badge || brand.tag || 'OFFICIAL ICON',
+      location: brand.location || (brand.origin ? brand.origin.split('•')[0].trim() : ''),
+      established: brand.established || brand.founded || '',
+      featuredCollection: brand.featuredCollection || brand.model || brand.hallmark || '',
+      description: brand.description || brand.subtitle || brand.tagline || '',
+      image: brand.image || brand.bannerUrl || '/images/watches/rolex_submariner.jpg',
+      imageAlt: brand.imageAlt || '',
+      filterTarget: brand.filterTarget || brand.name || '',
+      displayOrder: typeof brand.displayOrder === 'number' ? brand.displayOrder : 1,
+      isActive: brand.isActive !== false && brand.active !== false
+    });
+    setIsBrandModalOpen(true);
+  };
+
   const handleSaveBrand = async (e) => {
     e.preventDefault();
+    if (!brandForm.name || !brandForm.name.trim()) {
+      alert('Brand name is required');
+      return;
+    }
+    setIsSavingBrand(true);
     try {
+      const cleanName = brandForm.name.trim();
+      const generatedSlug = brandForm.slug
+        ? brandForm.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+        : cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+      const payload = {
+        ...brandForm,
+        name: cleanName,
+        slug: generatedSlug,
+        badge: brandForm.badge || 'OFFICIAL ICON',
+        tag: brandForm.badge || 'OFFICIAL ICON',
+        location: brandForm.location || 'Geneva, Switzerland',
+        established: brandForm.established || '',
+        founded: brandForm.established || '',
+        origin: brandForm.established ? `${brandForm.location || 'Geneva, Switzerland'} • Est. ${brandForm.established}` : (brandForm.location || 'Geneva, Switzerland'),
+        featuredCollection: brandForm.featuredCollection || '',
+        model: brandForm.featuredCollection || '',
+        description: brandForm.description || '',
+        subtitle: brandForm.description || '',
+        image: brandForm.image || '/images/watches/rolex_submariner.jpg',
+        imageAlt: brandForm.imageAlt || `${cleanName} Watch Collection`,
+        filterTarget: brandForm.filterTarget || cleanName,
+        displayOrder: Number(brandForm.displayOrder) || 1,
+        active: Boolean(brandForm.isActive),
+        isActive: Boolean(brandForm.isActive)
+      };
+
       if (editingBrand) {
-        await brandsAPI.update(editingBrand.id, brandForm);
+        await brandsAPI.update(editingBrand.id, payload);
       } else {
-        await brandsAPI.create(brandForm);
+        await brandsAPI.create(payload);
       }
       setIsBrandModalOpen(false);
       setEditingBrand(null);
-      loadAdminData();
+      await loadAdminData();
       refreshStoreData();
     } catch (err) {
       alert(err.message || 'Failed to save brand');
+    } finally {
+      setIsSavingBrand(false);
     }
   };
 
-  const handleDeleteBrand = async (id) => {
-    if (!window.confirm('Delete brand from showcase?')) return;
+  const handlePromptDeleteBrand = (brand) => {
+    setBrandToDelete(brand);
+    setIsDeleteBrandModalOpen(true);
+  };
+
+  const handleConfirmDeleteBrand = async () => {
+    if (!brandToDelete) return;
     try {
-      await brandsAPI.delete(id);
-      loadAdminData();
+      await brandsAPI.delete(brandToDelete.id);
+      setIsDeleteBrandModalOpen(false);
+      setBrandToDelete(null);
+      await loadAdminData();
       refreshStoreData();
     } catch (err) {
       alert(err.message || 'Failed to delete brand');
+    }
+  };
+
+  const handleToggleBrandStatus = async (brand) => {
+    try {
+      const currentActive = brand.isActive !== false && brand.active !== false;
+      await brandsAPI.update(brand.id, { isActive: !currentActive, active: !currentActive });
+      await loadAdminData();
+      refreshStoreData();
+    } catch (err) {
+      alert(err.message || 'Failed to toggle brand status');
+    }
+  };
+
+  const handleAdjustBrandOrder = async (brand, delta) => {
+    try {
+      const currentOrder = typeof brand.displayOrder === 'number' ? brand.displayOrder : 1;
+      const newOrder = Math.max(1, currentOrder + delta);
+      await brandsAPI.update(brand.id, { displayOrder: newOrder });
+      await loadAdminData();
+      refreshStoreData();
+    } catch (err) {
+      alert(err.message || 'Failed to update display order');
     }
   };
 
@@ -348,7 +456,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
           {[
             { id: 'overview', label: 'Dashboard Overview', icon: BarChart3 },
             { id: 'products', label: 'Products Vault', icon: Package },
-            { id: 'brands', label: 'Prestige Brands', icon: Sparkles },
+            { id: 'brands', label: 'Brands & Collections', icon: Sparkles },
             { id: 'inventory', label: 'Stock & Inventory', icon: SlidersHorizontal },
             { id: 'orders', label: 'Consignments & Orders', icon: ShoppingBag },
             { id: 'coupons', label: 'VIP Promotion Codes', icon: Tag },
@@ -562,66 +670,270 @@ export const AdminDashboard = ({ onBackToStore }) => {
             </div>
           )}
 
-          {/* TAB 3: Brands Management */}
+          {/* TAB 3: Brands & Collections Management */}
           {activeTab === 'brands' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.3rem', margin: 0, color: '#ffffff' }}>
-                  PRESTIGE BRAND SHOWCASE MANAGEMENT ({brandsList.length})
-                </h2>
-                <button
-                  onClick={() => {
-                    setEditingBrand(null);
-                    setBrandForm({
-                      name: '',
-                      tagline: '',
-                      origin: 'Geneva, Switzerland',
-                      founded: '1905',
-                      hallmark: '',
-                      logoUrl: '',
-                      color: '#006039',
-                      displayOrder: brandsList.length + 1,
-                      isFeatured: true
-                    });
-                    setIsBrandModalOpen(true);
-                  }}
-                  className="btn-gold"
-                  style={{ padding: '8px 16px', fontSize: '0.8rem' }}
-                >
-                  <Plus size={15} />
-                  <span>ADD BRAND</span>
-                </button>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                marginBottom: '1.5rem'
+              }}>
+                <div>
+                  <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.4rem', margin: 0, color: '#ffffff' }}>
+                    BRANDS & COLLECTIONS
+                  </h2>
+                  <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '4px 0 0 0' }}>
+                    Manage luxury brand cards, collections, badges, and storefront display ordering.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '6px', fontSize: '0.72rem' }}>
+                    <span style={{ background: '#1f2937', color: '#94a3b8', padding: '5px 10px', borderRadius: '4px' }}>
+                      Total: <strong style={{ color: '#ffffff' }}>{brandsList.length}</strong>
+                    </span>
+                    <span style={{ background: 'rgba(22, 163, 74, 0.15)', color: '#4ade80', padding: '5px 10px', borderRadius: '4px', border: '1px solid rgba(22, 163, 74, 0.3)' }}>
+                      Active: <strong>{brandsList.filter(b => b.isActive !== false && b.active !== false).length}</strong>
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={handleOpenAddBrand}
+                    className="btn-gold"
+                    style={{ padding: '8px 16px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Plus size={15} />
+                    <span>+ Add New Brand</span>
+                  </button>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-                {brandsList.map(brand => (
-                  <div key={brand.id} style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', padding: '1.25rem', position: 'relative' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1rem', color: '#f3e5ab', margin: '0 0 4px 0' }}>{brand.name}</h3>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          onClick={() => {
-                            setEditingBrand(brand);
-                            setBrandForm(brand);
-                            setIsBrandModalOpen(true);
-                          }}
-                          style={{ background: 'none', border: 'none', color: '#d4af37', cursor: 'pointer' }}
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBrand(brand.id)}
-                          style={{ background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer' }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{brand.origin} • Est. {brand.founded}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#cbd5e1', marginTop: '6px', fontStyle: 'italic' }}>"{brand.tagline || brand.hallmark}"</div>
-                    <div style={{ marginTop: '10px', fontSize: '0.68rem', color: '#d4af37' }}>Display Order: #{brand.displayOrder}</div>
-                  </div>
-                ))}
+              {/* Brands Table */}
+              <div className="admin-table-container" style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ background: '#1f2937', color: '#94a3b8' }}>
+                      <th style={{ padding: '12px 16px' }}>Brand</th>
+                      <th style={{ padding: '12px 16px' }}>Badge / Tag</th>
+                      <th style={{ padding: '12px 16px' }}>Featured Collection</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center' }}>Order</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {brandsList.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b' }}>
+                          No brands found. Click "+ Add New Brand" to add your first watch brand.
+                        </td>
+                      </tr>
+                    ) : (
+                      brandsList
+                        .slice()
+                        .sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0))
+                        .map(brand => {
+                          const isAct = brand.isActive !== false && brand.active !== false;
+                          const bgImg = brand.image || brand.bannerUrl || '/images/watches/rolex_submariner.jpg';
+                          const locText = brand.origin || (brand.established ? `${brand.location || 'Switzerland'} • Est. ${brand.established}` : brand.location);
+
+                          return (
+                            <tr key={brand.id || brand.slug} style={{ borderBottom: '1px solid #1f2937' }}>
+                              {/* Brand info */}
+                              <td style={{ padding: '12px 16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <img
+                                    src={getImageUrl(bgImg)}
+                                    alt={brand.name}
+                                    onError={(e) => { e.target.src = '/images/watches/rolex_submariner.jpg'; }}
+                                    style={{
+                                      width: '42px',
+                                      height: '42px',
+                                      borderRadius: '6px',
+                                      objectFit: 'cover',
+                                      border: '1px solid rgba(212, 175, 55, 0.3)',
+                                      background: '#0b0f19'
+                                    }}
+                                  />
+                                  <div>
+                                    <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.88rem' }}>
+                                      {brand.name}
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '2px' }}>
+                                      {locText}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Badge */}
+                              <td style={{ padding: '12px 16px' }}>
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  fontWeight: 700,
+                                  background: 'rgba(212, 175, 55, 0.15)',
+                                  color: '#f3e5ab',
+                                  padding: '3px 8px',
+                                  borderRadius: '4px',
+                                  border: '1px solid rgba(212, 175, 55, 0.3)',
+                                  letterSpacing: '0.05em'
+                                }}>
+                                  {brand.badge || brand.tag || 'ICON'}
+                                </span>
+                              </td>
+
+                              {/* Featured Collection */}
+                              <td style={{ padding: '12px 16px', maxWidth: '240px' }}>
+                                <div style={{ color: '#cbd5e1', fontWeight: 600, fontSize: '0.78rem' }}>
+                                  {brand.featuredCollection || brand.model || '—'}
+                                </div>
+                                <div style={{
+                                  color: '#64748b',
+                                  fontSize: '0.68rem',
+                                  marginTop: '2px',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis'
+                                }}>
+                                  {brand.description || brand.subtitle || ''}
+                                </div>
+                              </td>
+
+                              {/* Order */}
+                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <button
+                                    onClick={() => handleAdjustBrandOrder(brand, -1)}
+                                    title="Move up"
+                                    style={{
+                                      background: '#1f2937',
+                                      border: '1px solid #374151',
+                                      color: '#94a3b8',
+                                      borderRadius: '3px',
+                                      width: '20px',
+                                      height: '20px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: 'pointer',
+                                      fontSize: '0.7rem'
+                                    }}
+                                  >
+                                    ▲
+                                  </button>
+                                  <span style={{
+                                    display: 'inline-block',
+                                    minWidth: '28px',
+                                    fontWeight: 700,
+                                    color: '#f3e5ab',
+                                    textAlign: 'center'
+                                  }}>
+                                    {brand.displayOrder}
+                                  </span>
+                                  <button
+                                    onClick={() => handleAdjustBrandOrder(brand, 1)}
+                                    title="Move down"
+                                    style={{
+                                      background: '#1f2937',
+                                      border: '1px solid #374151',
+                                      color: '#94a3b8',
+                                      borderRadius: '3px',
+                                      width: '20px',
+                                      height: '20px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: 'pointer',
+                                      fontSize: '0.7rem'
+                                    }}
+                                  >
+                                    ▼
+                                  </button>
+                                </div>
+                              </td>
+
+                              {/* Status Toggle */}
+                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                <button
+                                  onClick={() => handleToggleBrandStatus(brand)}
+                                  style={{
+                                    background: isAct ? 'rgba(22, 163, 74, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                    border: isAct ? '1px solid rgba(22, 163, 74, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                                    color: isAct ? '#4ade80' : '#f87171',
+                                    padding: '4px 10px',
+                                    borderRadius: '50px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px'
+                                  }}
+                                  title={isAct ? "Click to deactivate brand" : "Click to activate brand"}
+                                >
+                                  <span style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    background: isAct ? '#4ade80' : '#f87171'
+                                  }} />
+                                  <span>{isAct ? 'Active' : 'Inactive'}</span>
+                                </button>
+                              </td>
+
+                              {/* Actions */}
+                              <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                                <div style={{ display: 'inline-flex', gap: '8px' }}>
+                                  <button
+                                    onClick={() => handleOpenEditBrand(brand)}
+                                    title="Edit Brand"
+                                    style={{
+                                      background: 'rgba(212, 175, 55, 0.1)',
+                                      border: '1px solid rgba(212, 175, 55, 0.3)',
+                                      color: '#d4af37',
+                                      borderRadius: '4px',
+                                      padding: '6px 10px',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      fontSize: '0.72rem'
+                                    }}
+                                  >
+                                    <Edit size={13} />
+                                    <span>Edit</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handlePromptDeleteBrand(brand)}
+                                    title="Delete Brand"
+                                    style={{
+                                      background: 'rgba(239, 68, 68, 0.1)',
+                                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                                      color: '#f87171',
+                                      borderRadius: '4px',
+                                      padding: '6px 10px',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      fontSize: '0.72rem'
+                                    }}
+                                  >
+                                    <Trash2 size={13} />
+                                    <span>Delete</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -1115,86 +1427,356 @@ export const AdminDashboard = ({ onBackToStore }) => {
         </div>
       )}
 
-      {/* Brand Modal */}
+      {/* Brand Create / Edit Modal */}
       {isBrandModalOpen && (
         <div style={{
           position: 'fixed',
           inset: 0,
           zIndex: 1200,
-          background: 'rgba(0, 0, 0, 0.8)',
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '1rem'
+          padding: '1rem',
+          overflowY: 'auto'
         }}>
-          <div style={{ background: '#111827', border: '1px solid #d4af37', borderRadius: '8px', padding: '1.5rem', width: '100%', maxWidth: '480px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', color: '#f3e5ab', margin: 0 }}>
-                {editingBrand ? 'EDIT BRAND' : 'ADD NEW PRESTIGE BRAND'}
-              </h3>
+          <div style={{
+            background: '#111827',
+            border: '1px solid rgba(212, 175, 55, 0.5)',
+            borderRadius: '10px',
+            padding: '1.75rem',
+            width: '100%',
+            maxWidth: '560px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #1f2937' }}>
+              <div>
+                <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.2rem', color: '#f3e5ab', margin: 0 }}>
+                  {editingBrand ? `EDIT BRAND: ${editingBrand.name}` : 'ADD NEW BRAND & COLLECTION'}
+                </h3>
+                <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '3px 0 0 0' }}>
+                  Changes will automatically reflect in the customer storefront.
+                </p>
+              </div>
               <button onClick={() => setIsBrandModalOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleSaveBrand}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label className="lux-label" style={{ color: '#94a3b8' }}>Brand Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={brandForm.name}
-                  onChange={(e) => setBrandForm({ ...brandForm, name: e.target.value })}
-                  placeholder="e.g. Titan, Casio, Rolex"
-                  className="lux-input"
-                  style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
-                />
+              {/* SECTION 1: BASIC INFORMATION */}
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#d4af37', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+                1. Basic Brand Information
               </div>
 
-              <div style={{ marginBottom: '1rem' }}>
-                <label className="lux-label" style={{ color: '#94a3b8' }}>Tagline / Hallmark</label>
-                <input
-                  type="text"
-                  value={brandForm.tagline || ''}
-                  onChange={(e) => setBrandForm({ ...brandForm, tagline: e.target.value })}
-                  placeholder="e.g. Master of Grand Complications"
-                  className="lux-input"
-                  style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '0.85rem' }}>
                 <div>
-                  <label className="lux-label" style={{ color: '#94a3b8' }}>Origin</label>
+                  <label className="lux-label" style={{ color: '#94a3b8' }}>Brand Name *</label>
                   <input
                     type="text"
-                    value={brandForm.origin}
-                    onChange={(e) => setBrandForm({ ...brandForm, origin: e.target.value })}
+                    required
+                    value={brandForm.name}
+                    onChange={(e) => setBrandForm({ ...brandForm, name: e.target.value })}
+                    placeholder="e.g. Rolex, Titan, Casio"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
                 </div>
+
                 <div>
-                  <label className="lux-label" style={{ color: '#94a3b8' }}>Display Order</label>
+                  <label className="lux-label" style={{ color: '#94a3b8' }}>Slug (URL / Key)</label>
+                  <input
+                    type="text"
+                    value={brandForm.slug}
+                    onChange={(e) => setBrandForm({ ...brandForm, slug: e.target.value })}
+                    placeholder="e.g. rolex, titan"
+                    className="lux-input"
+                    style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.85rem', marginBottom: '1.25rem' }}>
+                <div>
+                  <label className="lux-label" style={{ color: '#94a3b8' }}>Badge / Tag *</label>
+                  <input
+                    type="text"
+                    value={brandForm.badge}
+                    onChange={(e) => setBrandForm({ ...brandForm, badge: e.target.value })}
+                    placeholder="e.g. OFFICIAL ICON, INDIAN ICON"
+                    className="lux-input"
+                    style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="lux-label" style={{ color: '#94a3b8' }}>Location</label>
+                  <input
+                    type="text"
+                    value={brandForm.location}
+                    onChange={(e) => setBrandForm({ ...brandForm, location: e.target.value })}
+                    placeholder="e.g. Geneva, Switzerland"
+                    className="lux-input"
+                    style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="lux-label" style={{ color: '#94a3b8' }}>Established</label>
+                  <input
+                    type="text"
+                    value={brandForm.established}
+                    onChange={(e) => setBrandForm({ ...brandForm, established: e.target.value })}
+                    placeholder="e.g. 1905, 1984"
+                    className="lux-input"
+                    style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 2: COLLECTION INFORMATION */}
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#d4af37', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #1f2937' }}>
+                2. Featured Collection Information
+              </div>
+
+              <div style={{ marginBottom: '0.85rem' }}>
+                <label className="lux-label" style={{ color: '#94a3b8' }}>Featured Collection / Title</label>
+                <input
+                  type="text"
+                  value={brandForm.featuredCollection}
+                  onChange={(e) => setBrandForm({ ...brandForm, featuredCollection: e.target.value })}
+                  placeholder="e.g. Submariner & Daytona Panda"
+                  className="lux-input"
+                  style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '0.85rem' }}>
+                <label className="lux-label" style={{ color: '#94a3b8' }}>Description / Card Subtitle</label>
+                <textarea
+                  rows={2}
+                  value={brandForm.description}
+                  onChange={(e) => setBrandForm({ ...brandForm, description: e.target.value })}
+                  placeholder="e.g. Legendary 904L Oystersteel architecture with Cerachrom ceramic bezel..."
+                  className="lux-input"
+                  style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label className="lux-label" style={{ color: '#94a3b8' }}>Collection Filter Target</label>
+                <input
+                  type="text"
+                  value={brandForm.filterTarget}
+                  onChange={(e) => setBrandForm({ ...brandForm, filterTarget: e.target.value })}
+                  placeholder="Defaults to Brand Name (e.g. Rolex, Titan)"
+                  className="lux-input"
+                  style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
+                />
+                <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '3px' }}>
+                  Identifier used when customer clicks "Explore [Brand] Collection →" to filter products in catalog.
+                </div>
+              </div>
+
+              {/* SECTION 3: VISUAL INFORMATION & IMAGE UPLOAD */}
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#d4af37', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #1f2937' }}>
+                3. Brand Card Image & Visuals
+              </div>
+
+              <div style={{ marginBottom: '0.85rem' }}>
+                <label className="lux-label" style={{ color: '#94a3b8' }}>Brand Card Image (Upload File or Enter URL)</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '6px' }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      try {
+                        const res = await brandsAPI.uploadImage(file);
+                        if (res.success && res.url) {
+                          setBrandForm({ ...brandForm, image: res.url });
+                        }
+                      } catch (err) {
+                        alert('Image upload failed: ' + err.message);
+                      }
+                    }}
+                    className="lux-input"
+                    style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', flex: 1 }}
+                  />
+                  {brandForm.image && (
+                    <img
+                      src={getImageUrl(brandForm.image)}
+                      alt="Brand Preview"
+                      onError={(e) => { e.target.src = '/images/watches/rolex_submariner.jpg'; }}
+                      style={{
+                        width: '46px',
+                        height: '46px',
+                        objectFit: 'cover',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(212, 175, 55, 0.4)'
+                      }}
+                    />
+                  )}
+                </div>
+
+                <input
+                  type="text"
+                  value={brandForm.image}
+                  onChange={(e) => setBrandForm({ ...brandForm, image: e.target.value })}
+                  placeholder="Or paste image URL (e.g. /images/watches/rolex_submariner.jpg)"
+                  className="lux-input"
+                  style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', fontSize: '0.75rem' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label className="lux-label" style={{ color: '#94a3b8' }}>Image Alt Text</label>
+                <input
+                  type="text"
+                  value={brandForm.imageAlt || ''}
+                  onChange={(e) => setBrandForm({ ...brandForm, imageAlt: e.target.value })}
+                  placeholder="e.g. Rolex Submariner & Daytona Panda Luxury Watch"
+                  className="lux-input"
+                  style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
+                />
+              </div>
+
+              {/* SECTION 4: DISPLAY SETTINGS & STATUS */}
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#d4af37', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #1f2937' }}>
+                4. Display Settings & Status
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <label className="lux-label" style={{ color: '#94a3b8' }}>Display Order (Sequence)</label>
                   <input
                     type="number"
+                    min="1"
                     value={brandForm.displayOrder}
                     onChange={(e) => setBrandForm({ ...brandForm, displayOrder: Number(e.target.value) })}
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
+                  <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '3px' }}>
+                    Controls position in the storefront brand grid (e.g. 1 = first card).
+                  </div>
+                </div>
+
+                <div>
+                  <label className="lux-label" style={{ color: '#94a3b8' }}>Active Status</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '38px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.82rem', color: '#ffffff' }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(brandForm.isActive)}
+                        onChange={(e) => setBrandForm({ ...brandForm, isActive: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#d4af37', cursor: 'pointer' }}
+                      />
+                      <span>{brandForm.isActive ? 'Active (Visible on Website)' : 'Inactive (Hidden from Website)'}</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button type="button" onClick={() => setIsBrandModalOpen(false)} style={{ background: '#1f2937', border: '1px solid #374151', color: '#ffffff', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}>
+              {/* Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '0.75rem', borderTop: '1px solid #1f2937' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsBrandModalOpen(false)}
+                  style={{
+                    background: '#1f2937',
+                    border: '1px solid #374151',
+                    color: '#ffffff',
+                    padding: '8px 18px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem'
+                  }}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn-gold" style={{ padding: '8px 20px' }}>
-                  <span>SAVE BRAND</span>
+                <button
+                  type="submit"
+                  disabled={isSavingBrand}
+                  className="btn-gold"
+                  style={{ padding: '8px 22px', fontSize: '0.8rem', opacity: isSavingBrand ? 0.7 : 1 }}
+                >
+                  <span>{isSavingBrand ? 'SAVING...' : (editingBrand ? 'SAVE CHANGES' : 'CREATE BRAND')}</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteBrandModalOpen && brandToDelete && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1300,
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#111827',
+            border: '1px solid #ef4444',
+            borderRadius: '8px',
+            padding: '1.5rem',
+            width: '100%',
+            maxWidth: '420px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.7)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', color: '#ef4444' }}>
+              <AlertCircle size={24} />
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#ffffff' }}>
+                Delete Brand?
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.84rem', color: '#cbd5e1', lineHeight: 1.5, margin: '0 0 1.25rem 0' }}>
+              Delete <strong>{brandToDelete.name}</strong>? This will remove the brand from the website.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => { setIsDeleteBrandModalOpen(false); setBrandToDelete(null); }}
+                style={{
+                  background: '#1f2937',
+                  border: '1px solid #374151',
+                  color: '#ffffff',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteBrand}
+                style={{
+                  background: '#ef4444',
+                  border: 'none',
+                  color: '#ffffff',
+                  padding: '8px 18px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontWeight: 700
+                }}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
