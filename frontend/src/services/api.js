@@ -1,5 +1,9 @@
-// Base API Configuration (Supports VITE_API_URL or relative /api proxy)
-const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+// Base API Configuration (Supports VITE_API_URL or defaults to production Render backend)
+const PROD_BACKEND_URL = 'https://luxury-watch-vibr.onrender.com/api';
+const API_BASE = (
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? PROD_BACKEND_URL : '/api')
+).replace(/\/$/, '');
 
 const getAuthHeaders = () => {
   const adminToken = localStorage.getItem('luxury_admin_token') || localStorage.getItem('akiki_admin_token');
