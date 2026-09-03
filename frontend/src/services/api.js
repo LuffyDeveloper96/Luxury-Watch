@@ -66,33 +66,21 @@ export const authAPI = {
   }
 };
 
-// 2. User Authentication API (Email + Password + OTP Verification)
+// 2. User Authentication API (Direct Email + Password Authentication)
 export const userAuthAPI = {
-  // Sign Up Flow
+  // Direct Sign Up Flow
   initiateSignup: async ({ name, email, password, phone }) => {
     return request('/auth/user/signup/init', {
       method: 'POST',
       body: JSON.stringify({ name, email, password, phone })
     });
   },
-  verifySignup: async ({ email, otp }) => {
-    return request('/auth/user/signup/verify', {
-      method: 'POST',
-      body: JSON.stringify({ email, otp })
-    });
-  },
 
-  // Sign In Flow (Email + Password -> 2FA OTP)
+  // Direct Sign In Flow (Email + Password)
   initiateLogin: async ({ email, password }) => {
     return request('/auth/user/login/init', {
       method: 'POST',
       body: JSON.stringify({ email, password })
-    });
-  },
-  verifyLogin: async ({ email, otp }) => {
-    return request('/auth/user/login/verify', {
-      method: 'POST',
-      body: JSON.stringify({ email, otp })
     });
   },
 
@@ -107,20 +95,6 @@ export const userAuthAPI = {
     return request('/auth/user/reset-password', {
       method: 'POST',
       body: JSON.stringify({ email, otp, newPassword })
-    });
-  },
-
-  // Legacy & direct OTP helpers
-  sendOtp: async (email, name, purpose = 'login') => {
-    return request('/auth/user/send-otp', {
-      method: 'POST',
-      body: JSON.stringify({ email, name, purpose })
-    });
-  },
-  verifyOtp: async (email, otp, name = '', phone = '') => {
-    return request('/auth/user/verify-otp', {
-      method: 'POST',
-      body: JSON.stringify({ email, otp, name, phone })
     });
   },
   getMe: async (token) => {

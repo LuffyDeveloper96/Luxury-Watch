@@ -63,6 +63,14 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Lightweight External Uptime Monitor Health Check
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'Luxury Watch API'
+  });
+});
+
 // Mount API Routes
 app.use('/api', apiRouter);
 

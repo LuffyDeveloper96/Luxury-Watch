@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useUserAuth } from '../context/UserAuthContext';
 import {
-  X, Mail, ShieldCheck, ArrowRight, RefreshCw, KeyRound,
-  Sparkles, User, Phone, Lock, Eye, EyeOff, CheckCircle2
+  X, Mail, ShieldCheck, ArrowRight,
+  User, Phone, Lock, Eye, EyeOff
 } from 'lucide-react';
 
 export const UserAuthModal = () => {
@@ -12,15 +12,13 @@ export const UserAuthModal = () => {
     authModalTab,
     setAuthModalTab,
     initiateSignup,
-    verifySignup,
     initiateLogin,
-    verifyLogin,
     forgotPassword,
     resetPassword,
     loading
   } = useUserAuth();
 
-  const [step, setStep] = useState('form'); // 'form' | 'otp'
+  const [step, setStep] = useState('form'); // 'form' | 'reset-code'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,8 +26,7 @@ export const UserAuthModal = () => {
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [simulatedOtp, setSimulatedOtp] = useState('');
+  const [resetCode, setResetCode] = useState(['', '', '', '', '', '']);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -46,7 +43,7 @@ export const UserAuthModal = () => {
   useEffect(() => {
     if (isAuthModalOpen) {
       setStep('form');
-      setOtp(['', '', '', '', '', '']);
+      setResetCode(['', '', '', '', '', '']);
       setErrorMsg('');
       setSuccessMsg('');
     }
@@ -54,7 +51,7 @@ export const UserAuthModal = () => {
 
   if (!isAuthModalOpen) return null;
 
-  // Step 1: Submit Form (Email + Password validation -> Send OTP)
+  // Step 1: Submit Form (Direct Email + Password Signup / Signin)
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -69,10 +66,9 @@ export const UserAuthModal = () => {
       try {
         const res = await forgotPassword(email.trim());
         if (res.success) {
-          setStep('otp');
+          setStep('reset-code');
           setResendCooldown(60);
           setSuccessMsg(`A 6-digit password reset code was dispatched to ${email}.`);
-          if (res.simulatedOtp) setSimulatedOtp(res.simulatedOtp);
         } else {
           setErrorMsg(res.message || 'Unable to process password reset.');
         }
@@ -112,7 +108,7 @@ export const UserAuthModal = () => {
         setErrorMsg(err.message || 'Failed to register.');
       }
     } else {
-      // Sign In Flow (Email + Password only)
+      // Direct Sign In Flow (Email + Password)
       try {
         const res = await initiateLogin({
           email: email.trim(),
@@ -128,67 +124,58 @@ export const UserAuthModal = () => {
     }
   };
 
-  // Step 2: Handle OTP Verification
-  const handleOtpChange = (index, value) => {
+  // Handle Password Reset Code Changes
+  const handleResetCodeChange = (index, value) => {
     if (value.length > 1) {
       const pasted = value.replace(/\D/g, '').slice(0, 6);
       if (pasted.length > 0) {
-        const newOtp = [...otp];
+        const newCode = [...resetCode];
         for (let i = 0; i < 6; i++) {
-          newOtp[i] = pasted[i] || '';
+          newCode[i] = pasted[i] || '';
         }
-        setOtp(newOtp);
-        const nextInput = document.getElementById(`otp-digit-${Math.min(5, pasted.length)}`);
+        setResetCode(newCode);
+        const nextInput = document.getElementById(`reset-digit-${Math.min(5, pasted.length)}`);
         if (nextInput) nextInput.focus();
       }
       return;
     }
 
-    const newOtp = [...otp];
-    newOtp[index] = value.slice(-1);
-    setOtp(newOtp);
+    const newCode = [...resetCode];
+    newCode[index] = value.slice(-1);
+    setResetCode(newCode);
 
     if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-digit-${index + 1}`);
+      const nextInput = document.getElementById(`reset-digit-${index + 1}`);
       if (nextInput) nextInput.focus();
     }
   };
 
   const handleKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-digit-${index - 1}`);
+    if (e.key === 'Backspace' && !resetCode[index] && index > 0) {
+      const prevInput = document.getElementById(`reset-digit-${index - 1}`);
       if (prevInput) prevInput.focus();
     }
   };
 
-  const handleVerifyOtp = async (e) => {
+  const handleResetPasswordSubmit = async (e) => {
     e.preventDefault();
-    const fullOtp = otp.join('');
-    if (fullOtp.length !== 6) {
-      setErrorMsg('Please enter all 6 digits of the verification code.');
+    const fullCode = resetCode.join('');
+    if (fullCode.length !== 6) {
+      setErrorMsg('Please enter all 6 digits of the password reset code.');
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setErrorMsg('New password must be at least 6 characters in length.');
       return;
     }
 
     setErrorMsg('');
     try {
-      if (authModalTab === 'signup') {
-        const res = await verifySignup({ email: email.trim(), otp: fullOtp });
-        if (!res?.success) setErrorMsg(res?.message || 'Registration verification failed.');
-      } else if (authModalTab === 'forgot') {
-        const res = await resetPassword({ email: email.trim(), otp: fullOtp, newPassword: password });
-        if (!res?.success) setErrorMsg(res?.message || 'Password reset failed.');
-      } else {
-        const res = await verifyLogin({ email: email.trim(), otp: fullOtp });
-        if (!res?.success) setErrorMsg(res?.message || '2FA Verification failed.');
-      }
+      const res = await resetPassword({ email: email.trim(), otp: fullCode, newPassword: password });
+      if (!res?.success) setErrorMsg(res?.message || 'Password reset failed.');
     } catch (err) {
-      setErrorMsg(err.message || 'Invalid or expired verification code.');
-    }
-  };
-
-  const handleAutoFillPreview = () => {
-    if (simulatedOtp && simulatedOtp.length === 6) {
-      setOtp(simulatedOtp.split(''));
+      setErrorMsg(err.message || 'Invalid or expired reset code.');
     }
   };
 
@@ -253,12 +240,12 @@ export const UserAuthModal = () => {
           </div>
 
           <span style={{ fontSize: '0.62rem', letterSpacing: '0.15em', color: '#8a6709', fontWeight: 700, textTransform: 'uppercase' }}>
-            HAUTE HORLOGERIE 2-FACTOR AUTHENTICATION
+            HAUTE HORLOGERIE PATRON ACCESS
           </span>
           <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.2rem', color: '#0f172a', margin: '4px 0 0 0' }}>
             {step === 'form'
               ? (authModalTab === 'signup' ? 'CREATE PATRON ACCOUNT' : authModalTab === 'forgot' ? 'RESET PASSWORD' : 'PATRON SIGN IN')
-              : 'ENTER 6-DIGIT EMAIL OTP'}
+              : 'ENTER RESET CODE'}
           </h2>
         </div>
 
@@ -330,7 +317,7 @@ export const UserAuthModal = () => {
             </div>
           )}
 
-          {/* STEP 1: Form (Email + Password) */}
+          {/* Form (Email + Password) */}
           {step === 'form' ? (
             <form onSubmit={handleFormSubmit}>
               {/* Sign Up Name Field */}
@@ -451,12 +438,12 @@ export const UserAuthModal = () => {
               >
                 <span>
                   {loading
-                    ? 'VERIFYING...'
+                    ? 'PROCESSING...'
                     : authModalTab === 'signup'
-                    ? 'CONTINUE TO EMAIL OTP'
+                    ? 'CREATE ACCOUNT'
                     : authModalTab === 'forgot'
-                    ? 'SEND RESET OTP'
-                    : 'SIGN IN & VERIFY OTP'}
+                    ? 'SEND RESET CODE'
+                    : 'SIGN IN'}
                 </span>
                 <ArrowRight size={15} />
               </button>
@@ -474,23 +461,23 @@ export const UserAuthModal = () => {
               )}
             </form>
           ) : (
-            /* STEP 2: Enter 6-Digit OTP */
-            <form onSubmit={handleVerifyOtp}>
+            /* Forgot Password: Enter 6-Digit Reset Code & New Password */
+            <form onSubmit={handleResetPasswordSubmit}>
               <p style={{ fontSize: '0.78rem', color: '#475569', textAlign: 'center', margin: '0 0 1.25rem 0' }}>
-                Enter the 6-digit verification code sent to <strong>{email}</strong>
+                Enter the 6-digit reset code sent to <strong>{email}</strong>
               </p>
 
               {/* 6-Digit PIN Boxes */}
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                {otp.map((digit, idx) => (
+                {resetCode.map((digit, idx) => (
                   <input
                     key={idx}
-                    id={`otp-digit-${idx}`}
+                    id={`reset-digit-${idx}`}
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
                     value={digit}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
+                    onChange={(e) => handleResetCodeChange(idx, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(idx, e)}
                     style={{
                       width: '44px',
@@ -509,40 +496,18 @@ export const UserAuthModal = () => {
                 ))}
               </div>
 
-              {/* Instant Preview Code Helper */}
-              {simulatedOtp && (
-                <div
-                  style={{
-                    padding: '8px 12px',
-                    background: 'rgba(212, 175, 55, 0.08)',
-                    border: '1px dashed #d4af37',
-                    borderRadius: '6px',
-                    fontSize: '0.72rem',
-                    color: '#8a6709',
-                    textAlign: 'center',
-                    marginBottom: '1rem',
-                    cursor: 'pointer'
-                  }}
-                  onClick={handleAutoFillPreview}
-                >
-                  <span>⚡ Instant Preview Code: <strong>{simulatedOtp}</strong> (Click to auto-fill)</span>
-                </div>
-              )}
-
-              {/* New Password field if in Forgot Password Mode */}
-              {authModalTab === 'forgot' && (
-                <div style={{ marginBottom: '1rem' }}>
-                  <label className="lux-label">Set New Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 6 characters"
-                    className="lux-input"
-                  />
-                </div>
-              )}
+              {/* New Password field */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="lux-label">Set New Password *</label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min. 6 characters"
+                  className="lux-input"
+                />
+              </div>
 
               <button
                 type="submit"
@@ -550,7 +515,7 @@ export const UserAuthModal = () => {
                 className="btn-gold"
                 style={{ width: '100%', padding: '11px', fontSize: '0.85rem' }}
               >
-                <span>{loading ? 'AUTHENTICATING...' : 'VERIFY & ACCESS VAULT'}</span>
+                <span>{loading ? 'AUTHENTICATING...' : 'UPDATE PASSWORD & SIGN IN'}</span>
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1.25rem', fontSize: '0.75rem' }}>
@@ -559,7 +524,7 @@ export const UserAuthModal = () => {
                   onClick={() => setStep('form')}
                   style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
                 >
-                  Change Email / Password
+                  Change Email
                 </button>
 
                 <button

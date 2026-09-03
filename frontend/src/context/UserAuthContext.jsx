@@ -84,6 +84,8 @@ export const UserAuthProvider = ({ children }) => {
         }
       }
       return res;
+    } catch (err) {
+      return { success: false, message: err.message || 'Unable to register.' };
     } finally {
       setLoading(false);
     }
@@ -107,6 +109,8 @@ export const UserAuthProvider = ({ children }) => {
         }
       }
       return res;
+    } catch (err) {
+      return { success: false, message: err.message || 'Verification failed.' };
     } finally {
       setLoading(false);
     }
@@ -131,6 +135,8 @@ export const UserAuthProvider = ({ children }) => {
         }
       }
       return res;
+    } catch (err) {
+      return { success: false, message: err.message || 'Invalid credentials.' };
     } finally {
       setLoading(false);
     }
@@ -148,6 +154,8 @@ export const UserAuthProvider = ({ children }) => {
         closeAuthModal();
       }
       return res;
+    } catch (err) {
+      return { success: false, message: err.message || '2FA Verification failed.' };
     } finally {
       setLoading(false);
     }
@@ -158,6 +166,8 @@ export const UserAuthProvider = ({ children }) => {
     setLoading(true);
     try {
       return await userAuthAPI.forgotPassword(email);
+    } catch (err) {
+      return { success: false, message: err.message || 'Failed to dispatch reset code.' };
     } finally {
       setLoading(false);
     }
@@ -175,6 +185,8 @@ export const UserAuthProvider = ({ children }) => {
         closeAuthModal();
       }
       return res;
+    } catch (err) {
+      return { success: false, message: err.message || 'Password reset failed.' };
     } finally {
       setLoading(false);
     }

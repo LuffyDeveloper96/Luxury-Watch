@@ -120,17 +120,13 @@ router.get('/health', (req, res) => {
 router.post('/auth/admin/login', adminLogin);
 router.get('/auth/admin/verify', requireAdmin, adminVerify);
 
-// 3. User Authentication & Profile (Email + Password + OTP Verification)
-router.post('/auth/user/signup/init', otpLimiter, initiateUserSignup);
-router.post('/auth/user/signup/verify', verifyUserSignup);
-router.post('/auth/user/login/init', otpLimiter, initiateUserLogin);
-router.post('/auth/user/login/verify', verifyUserLogin);
+// 3. User Authentication & Profile (Direct Email + Password Authentication)
+router.post('/auth/user/signup', initiateUserSignup);
+router.post('/auth/user/signup/init', initiateUserSignup);
+router.post('/auth/user/login', initiateUserLogin);
+router.post('/auth/user/login/init', initiateUserLogin);
 router.post('/auth/user/forgot-password', otpLimiter, forgotPasswordInit);
 router.post('/auth/user/reset-password', resetPasswordWithOtp);
-
-// Legacy & Direct OTP endpoints
-router.post('/auth/user/send-otp', otpLimiter, sendUserOtp);
-router.post('/auth/user/verify-otp', verifyUserOtp);
 
 // Patron Profile & Address Management
 router.get('/auth/user/me', requireAuth, getMe);
