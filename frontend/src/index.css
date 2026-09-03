@@ -465,7 +465,15 @@ h1, h2, h3, h4, h5, h6 {
   padding: 1rem;
 }
 
-/* Mobile Adjustments */
+/* Mobile Adjustments & Global Overflow Safeguards */
+img, svg, video, canvas {
+  max-width: 100%;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
 @media (max-width: 768px) {
   .btn-gold, .btn-outline-gold, .btn-buy-now {
     padding: 0.75rem 1.25rem;
@@ -476,4 +484,16 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0.65rem 0.85rem;
     font-size: 0.82rem;
   }
+
+  /* Prevent text overflow on small mobile */
+  h1, h2 {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+}
+
+/* Ensure no elements cause horizontal scroll */
+.overflow-guard {
+  max-width: 100vw;
+  overflow-x: hidden;
 }
