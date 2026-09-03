@@ -33,13 +33,21 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:5173',
   'https://luxurywatch.in',
-  'https://luxury-watch.netlify.app'
+  'https://luxury-watch.netlify.app',
+  'https://luxury-watch-henna.vercel.app'
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser requests or matching origins
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*') || env.NODE_ENV !== 'production') {
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      allowedOrigins.includes('*') ||
+      env.NODE_ENV !== 'production' ||
+      /\.vercel\.app$/.test(origin) ||
+      /\.netlify\.app$/.test(origin)
+    ) {
       return callback(null, true);
     }
     return callback(new Error(`Origin '${origin}' not allowed by CORS policy.`));

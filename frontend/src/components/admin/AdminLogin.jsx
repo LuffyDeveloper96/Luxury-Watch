@@ -142,7 +142,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@luxurywatch.com"
+                  placeholder="luxury.watch.store2020@gmail.com"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', paddingLeft: '34px' }}
                 />
@@ -202,7 +202,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
             color: '#d4af37',
             textAlign: 'center'
           }}>
-            <span>🔒 Sealed Master Account: <strong>admin@luxurywatch.com</strong></span>
+            <span>🔒 Sealed Master Account: <strong>luxury.watch.store2020@gmail.com</strong></span>
           </div>
         </div>
       </div>
