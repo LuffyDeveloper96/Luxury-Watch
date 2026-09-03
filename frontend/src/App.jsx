@@ -23,6 +23,7 @@ import { Footer } from './components/Footer';
 import { AdminLogin } from './components/admin/AdminLogin';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { TrackConsignmentPage } from './pages/TrackConsignmentPage';
+import { BrandPage } from './components/BrandPage';
 import { SlidersHorizontal, Sparkles, Watch, ShieldCheck, Filter } from 'lucide-react';
 
 const Storefront = ({
@@ -30,17 +31,15 @@ const Storefront = ({
   onOpenTracking,
   onOpenBrandStory,
   onOpenReturns,
+  onSelectBrand,
   activeCategory,
-  setActiveCategory,
-  activeBrand,
-  setActiveBrand
+  setActiveCategory
 }) => {
   const {
     products,
     brands,
     selectedProductDetails,
-    setSelectedProductDetails,
-    setIsOrderTrackingOpen
+    setSelectedProductDetails
   } = useStore();
 
   const [sortBy, setSortBy] = useState('featured'); // 'featured' | 'price-low' | 'price-high' | 'rating'
@@ -120,7 +119,12 @@ const Storefront = ({
             setSelectedProductDetails(null);
             setActiveCategory(cat);
           }}
+          onSelectBrand={onSelectBrand}
           activeCategory={activeCategory}
+          onNavigateHome={() => {
+            setSelectedProductDetails(null);
+            setActiveCategory('All');
+          }}
           onOpenBrandStory={() => {
             setSelectedProductDetails(null);
             onOpenBrandStory();
@@ -155,7 +159,9 @@ const Storefront = ({
       />
       <Navbar
         onSelectCategory={setActiveCategory}
+        onSelectBrand={onSelectBrand}
         activeCategory={activeCategory}
+        onNavigateHome={() => setActiveCategory('All')}
         onOpenBrandStory={onOpenBrandStory}
         onOpenAdmin={onOpenAdmin}
         onOpenTracking={() => { window.location.hash = '#track-order'; }}
@@ -176,8 +182,11 @@ const Storefront = ({
         }}
       />
 
-      {/* Curated Collections Grid */}
-      <CollectionGrid onSelectCategory={setActiveCategory} />
+      {/* Curated Collections Grid with Brand Links */}
+      <CollectionGrid
+        onSelectCategory={setActiveCategory}
+        onSelectBrand={onSelectBrand}
+      />
 
       {/* Main Catalog Showcase Section */}
       <section id="catalog-section" style={{ padding: 'clamp(3rem, 6vw, 5rem) 0', background: '#fbfbf9' }}>
@@ -333,29 +342,28 @@ const Storefront = ({
 
 const MainAppContent = () => {
   const { isAdminAuthenticated } = useAdminAuth();
+  const { setSelectedProductDetails } = useStore();
   const [isAdminView, setIsAdminView] = useState(false);
   const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
-  const [activeBrand, setActiveBrand] = useState('All');
+  const [activeBrandSlug, setActiveBrandSlug] = useState(null);
   const [isTrackingPageView, setIsTrackingPageView] = useState(false);
 
   // Returns Modal State
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [returnModalOrderId, setReturnModalOrderId] = useState('');
 
-  // Automatic #admin, /admin, and #track-order route detection
+  // Automatic routing detection (pathname & hash)
   useEffect(() => {
     const checkRoutes = () => {
-      const isHashAdmin = window.location.hash === '#admin' || window.location.hash.startsWith('#admin');
-      const isPathAdmin = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin');
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+
+      const isHashAdmin = hash === '#admin' || hash.startsWith('#admin');
+      const isPathAdmin = path === '/admin' || path.startsWith('/admin');
+      const isHashTrack = hash === '#track-order' || hash === '#orders' || hash === '#my-orders';
       
-      const isHashTrack = window.location.hash === '#track-order' || window.location.hash === '#orders' || window.location.hash === '#my-orders';
-      
-      if (isHashTrack) {
-        setIsTrackingPageView(true);
-      } else {
-        setIsTrackingPageView(false);
-      }
+      setIsTrackingPageView(isHashTrack);
 
       if (isHashAdmin || isPathAdmin) {
         if (isAdminAuthenticated) {
@@ -363,6 +371,25 @@ const MainAppContent = () => {
         } else {
           setShowAdminLoginModal(true);
         }
+      }
+
+      // Detect /brands/:brandSlug or #brands/:brandSlug
+      if (path.startsWith('/brands/')) {
+        const slug = path.replace('/brands/', '').split('/')[0]?.trim();
+        if (slug) {
+          setActiveBrandSlug(slug);
+        } else {
+          setActiveBrandSlug(null);
+        }
+      } else if (hash.startsWith('#brands/') || hash.startsWith('#brand/')) {
+        const slug = hash.replace(/^#(brands|brand)\//, '').split('/')[0]?.trim();
+        if (slug) {
+          setActiveBrandSlug(slug);
+        } else {
+          setActiveBrandSlug(null);
+        }
+      } else {
+        setActiveBrandSlug(null);
       }
     };
 
@@ -386,6 +413,19 @@ const MainAppContent = () => {
     }
   };
 
+  const handleSelectBrand = (slug) => {
+    if (setSelectedProductDetails) setSelectedProductDetails(null);
+    window.history.pushState(null, '', `/brands/${slug}`);
+    setActiveBrandSlug(slug);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackToStore = () => {
+    window.history.pushState(null, '', '/');
+    setActiveBrandSlug(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleOpenBrandStory = () => {
     const el = document.getElementById('heritage-section');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -406,7 +446,9 @@ const MainAppContent = () => {
               window.location.hash = '';
               setActiveCategory(cat);
             }}
+            onSelectBrand={handleSelectBrand}
             activeCategory={activeCategory}
+            onNavigateHome={handleBackToStore}
             onOpenBrandStory={() => {
               window.location.hash = '';
               setTimeout(handleOpenBrandStory, 100);
@@ -427,15 +469,53 @@ const MainAppContent = () => {
           }
           setIsAdminView(false);
         }} />
+      ) : activeBrandSlug ? (
+        <>
+          <AnnouncementBar
+            onOpenTracking={() => { window.location.hash = '#track-order'; }}
+          />
+          <Navbar
+            onSelectCategory={(cat) => {
+              handleBackToStore();
+              setActiveCategory(cat);
+            }}
+            onSelectBrand={handleSelectBrand}
+            activeCategory={activeCategory}
+            onNavigateHome={handleBackToStore}
+            onOpenBrandStory={() => {
+              handleBackToStore();
+              setTimeout(handleOpenBrandStory, 100);
+            }}
+            onOpenAdmin={handleOpenAdmin}
+            onOpenTracking={() => { window.location.hash = '#track-order'; }}
+            onOpenReturns={handleOpenReturns}
+          />
+          <BrandPage
+            brandSlug={activeBrandSlug}
+            onBackToStore={handleBackToStore}
+            onSelectProduct={(p) => {
+              if (setSelectedProductDetails) setSelectedProductDetails(p);
+            }}
+          />
+          <Footer
+            onSelectCategory={(cat) => {
+              handleBackToStore();
+              setActiveCategory(cat);
+            }}
+            onOpenAdmin={handleOpenAdmin}
+            onOpenBrandStory={handleOpenBrandStory}
+            onOpenTracking={() => { window.location.hash = '#track-order'; }}
+            onOpenReturns={handleOpenReturns}
+          />
+        </>
       ) : (
         <Storefront
           onOpenAdmin={handleOpenAdmin}
           onOpenBrandStory={handleOpenBrandStory}
           onOpenReturns={handleOpenReturns}
+          onSelectBrand={handleSelectBrand}
           activeCategory={activeCategory}
           setActiveCategory={setActiveCategory}
-          activeBrand={activeBrand}
-          setActiveBrand={setActiveBrand}
         />
       )}
 
@@ -455,7 +535,7 @@ const MainAppContent = () => {
         />
       )}
 
-      {/* User Authentication Modal (Sign In / Register with Email OTP) */}
+      {/* User Authentication Modal (Direct Email + Password Authentication) */}
       <UserAuthModal />
 
       {/* Customer Returns & Exchanges Modal */}

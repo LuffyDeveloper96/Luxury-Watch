@@ -108,7 +108,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
             ADMINISTRATOR ACCESS
           </h2>
           <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '6px 0 0 0' }}>
-            Restricted to the single designated Master Account.
+            Restricted to authorized executive personnel.
           </p>
         </div>
 
@@ -134,7 +134,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
 
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: '1rem' }}>
-              <label className="lux-label" style={{ color: '#cbd5e1' }}>Designated Admin Email</label>
+              <label className="lux-label" style={{ color: '#cbd5e1' }}>Administrator Email</label>
               <div style={{ position: 'relative' }}>
                 <Mail size={15} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
                 <input
@@ -142,7 +142,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="luxury.watch.store2020@gmail.com"
+                  placeholder="admin@luxurywatch.com"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', paddingLeft: '34px' }}
                 />
@@ -150,7 +150,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
-              <label className="lux-label" style={{ color: '#cbd5e1' }}>Master Vault Password</label>
+              <label className="lux-label" style={{ color: '#cbd5e1' }}>Master Password</label>
               <div style={{ position: 'relative' }}>
                 <Lock size={15} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
                 <input
@@ -166,7 +166,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
-              <label className="lux-label" style={{ color: '#cbd5e1' }}>Security PIN</label>
+              <label className="lux-label" style={{ color: '#cbd5e1' }}>Security PIN (Optional)</label>
               <div style={{ position: 'relative' }}>
                 <KeyRound size={15} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
                 <input
@@ -191,19 +191,6 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
               <ArrowRight size={15} />
             </button>
           </form>
-
-          <div style={{
-            marginTop: '1.25rem',
-            padding: '10px',
-            background: 'rgba(212, 175, 55, 0.06)',
-            border: '1px dashed rgba(212, 175, 55, 0.3)',
-            borderRadius: '6px',
-            fontSize: '0.7rem',
-            color: '#d4af37',
-            textAlign: 'center'
-          }}>
-            <span>🔒 Sealed Master Account: <strong>luxury.watch.store2020@gmail.com</strong></span>
-          </div>
         </div>
       </div>
     </div>

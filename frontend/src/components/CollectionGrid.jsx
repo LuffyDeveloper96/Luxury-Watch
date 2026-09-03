@@ -3,7 +3,7 @@ import { ArrowUpRight, Sparkles, Award, Layers } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { INITIAL_BRANDS } from '../data/initialBrands';
 
-export const CollectionGrid = ({ onSelectCategory }) => {
+export const CollectionGrid = ({ onSelectCategory, onSelectBrand }) => {
   const [viewMode, setViewMode] = useState('brands'); // 'brands' | 'complications'
   const { brands } = useStore();
 
@@ -48,9 +48,19 @@ export const CollectionGrid = ({ onSelectCategory }) => {
     }
   ];
 
-  const handleCardClick = (target) => {
+  const handleBrandClick = (brand) => {
+    const slug = brand.slug || brand.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    if (typeof onSelectBrand === 'function') {
+      onSelectBrand(slug);
+    } else {
+      window.history.pushState(null, '', `/brands/${slug}`);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  };
+
+  const handleComplicationClick = (category) => {
     if (typeof onSelectCategory === 'function') {
-      onSelectCategory(target);
+      onSelectCategory(category);
     }
     const el = document.getElementById('catalog-section');
     if (el) {
@@ -205,8 +215,8 @@ export const CollectionGrid = ({ onSelectCategory }) => {
 
                 return (
                   <div
-                    key={brand.id || brand.slug}
-                    onClick={() => handleCardClick(filterId)}
+                    key={brand.id || brand.slug || brand.name}
+                    onClick={() => handleBrandClick(brand)}
                     className="glass-card"
                     style={{
                       position: 'relative',
@@ -378,7 +388,7 @@ export const CollectionGrid = ({ onSelectCategory }) => {
             {horologyComplications.map((col, idx) => (
               <div
                 key={idx}
-                onClick={() => handleCardClick(col.category)}
+                onClick={() => handleComplicationClick(col.category)}
                 className="glass-card"
                 style={{
                   position: 'relative',
