@@ -24,6 +24,12 @@ const productSchema = new mongoose.Schema({
   badge: { type: String, default: '' },
   badgeType: { type: String, default: 'gold' },
   images: [{ type: String }],
+  media: [{
+    type: { type: String, enum: ['image', 'video'], default: 'image' },
+    url: { type: String, required: true },
+    thumbnail: { type: String, default: '' },
+    order: { type: Number, default: 0 }
+  }],
   description: { type: String, default: '' },
   shortDescription: { type: String, default: '' },
   specs: {

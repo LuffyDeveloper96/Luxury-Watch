@@ -244,8 +244,44 @@ export const createProduct = async (req, res) => {
     const slug = newProductData.slug || newProductData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const id = newProductData.id || `lw-${slug}-${Date.now().toString().slice(-4)}`;
 
+    // Media validation (Maximum 5 media items)
+    let validatedMedia = [];
+    if (newProductData.media) {
+      if (!Array.isArray(newProductData.media)) {
+        return res.status(400).json({ success: false, message: 'Media must be an array.' });
+      }
+      if (newProductData.media.length > 5) {
+        return res.status(400).json({ success: false, message: 'Maximum 5 media items allowed per product.' });
+      }
+      for (const item of newProductData.media) {
+        if (!item || !item.url || typeof item.url !== 'string') {
+          return res.status(400).json({ success: false, message: 'Each media item must have a valid URL.' });
+        }
+        const itemType = item.type === 'video' ? 'video' : 'image';
+        validatedMedia.push({
+          type: itemType,
+          url: item.url.trim(),
+          thumbnail: item.thumbnail || '',
+          order: typeof item.order === 'number' ? item.order : validatedMedia.length
+        });
+      }
+    } else if (Array.isArray(newProductData.images) && newProductData.images.length > 0) {
+      validatedMedia = newProductData.images.slice(0, 5).map((img, idx) => ({
+        type: typeof img === 'string' && /\.(mp4|webm|ogg|mov)$/i.test(img) ? 'video' : 'image',
+        url: typeof img === 'string' ? img.trim() : (img?.url || ''),
+        thumbnail: '',
+        order: idx
+      }));
+    }
+
+    const syncedImages = validatedMedia.length > 0 
+      ? validatedMedia.map(m => m.url) 
+      : (Array.isArray(newProductData.images) ? newProductData.images.slice(0, 5) : []);
+
     const productToInsert = {
       ...newProductData,
+      media: validatedMedia,
+      images: syncedImages,
       id,
       slug,
       rating: newProductData.rating || 5.0,
@@ -280,11 +316,46 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const updates = { ...req.body };
 
     const existing = await Product.findOne({ $or: [{ id }, { slug: id }] });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Timepiece not found.' });
+    }
+
+    // Media validation (Maximum 5 media items)
+    if (updates.media !== undefined) {
+      if (!Array.isArray(updates.media)) {
+        return res.status(400).json({ success: false, message: 'Media must be an array.' });
+      }
+      if (updates.media.length > 5) {
+        return res.status(400).json({ success: false, message: 'Maximum 5 media items allowed per product.' });
+      }
+      const validatedMedia = [];
+      for (const item of updates.media) {
+        if (!item || !item.url || typeof item.url !== 'string') {
+          return res.status(400).json({ success: false, message: 'Each media item must have a valid URL.' });
+        }
+        const itemType = item.type === 'video' ? 'video' : 'image';
+        validatedMedia.push({
+          type: itemType,
+          url: item.url.trim(),
+          thumbnail: item.thumbnail || '',
+          order: typeof item.order === 'number' ? item.order : validatedMedia.length
+        });
+      }
+      updates.media = validatedMedia;
+      updates.images = validatedMedia.map(m => m.url);
+    } else if (updates.images !== undefined && Array.isArray(updates.images)) {
+      if (updates.images.length > 5) {
+        return res.status(400).json({ success: false, message: 'Maximum 5 media items allowed per product.' });
+      }
+      updates.media = updates.images.slice(0, 5).map((img, idx) => ({
+        type: typeof img === 'string' && /\.(mp4|webm|ogg|mov)$/i.test(img) ? 'video' : 'image',
+        url: typeof img === 'string' ? img.trim() : (img?.url || ''),
+        thumbnail: '',
+        order: idx
+      }));
     }
 
     const updated = await Product.findOneAndUpdate(

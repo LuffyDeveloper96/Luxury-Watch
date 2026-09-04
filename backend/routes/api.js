@@ -4,11 +4,20 @@ import path from 'path';
 import { requireAdmin, requireAuth, optionalAuth } from '../middleware/auth.js';
 import { apiLimiter, otpLimiter, paymentLimiter } from '../middleware/rateLimiter.js';
 
-// Setup Multer for image uploads (Memory Storage)
+// Setup Multer for media uploads (Memory Storage)
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB max size
+  limits: { fileSize: 30 * 1024 * 1024 }, // 30MB max size for HD product videos and images
+  fileFilter: (req, file, cb) => {
+    const isImage = file.mimetype.startsWith('image/');
+    const isVideo = file.mimetype.startsWith('video/') || /\.(mp4|webm|mov|ogg)$/i.test(file.originalname);
+    if (isImage || isVideo) {
+      cb(null, true);
+    } else {
+      cb(new Error('Unsupported media format. Please upload an image (JPG, PNG, WebP) or video (MP4, WebM, MOV).'));
+    }
+  }
 });
 
 import { Image } from '../models/Image.js';
@@ -70,37 +79,83 @@ const router = express.Router();
 // Apply Global API rate limiter
 router.use(apiLimiter);
 
-// 0. Image Upload Route (Stores in MongoDB for persistence on free tier)
-router.post('/upload', requireAdmin, upload.single('image'), async (req, res) => {
+// 0. Media Upload Route (Stores in MongoDB for persistence on free tier)
+router.post('/upload', requireAdmin, (req, res, next) => {
+  upload.any()(req, res, (err) => {
+    if (err) return res.status(400).json({ success: false, message: err.message });
+    next();
+  });
+}, async (req, res) => {
   try {
-    if (!req.file) {
+    const file = req.files?.[0] || req.file;
+    if (!file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
     
     const newImage = new Image({
-      data: req.file.buffer,
-      contentType: req.file.mimetype
+      data: file.buffer,
+      contentType: file.mimetype || 'image/jpeg'
     });
     await newImage.save();
 
-    const imageUrl = `/api/images/${newImage._id}`;
-    res.json({ success: true, url: imageUrl });
+    const mediaUrl = `/api/images/${newImage._id}`;
+    const mediaType = file.mimetype?.startsWith('video/') ? 'video' : 'image';
+    res.json({ success: true, url: mediaUrl, type: mediaType, contentType: file.mimetype });
   } catch (err) {
-    console.error('Image upload error:', err);
-    res.status(500).json({ success: false, message: 'Image upload failed' });
+    console.error('Media upload error:', err);
+    res.status(500).json({ success: false, message: 'Media upload failed' });
   }
 });
 
-// 0.1 Image Fetch Route
+// 0.1 Media / Image Fetch Route with HTTP Range Request Support for Video Streaming
 router.get('/images/:id', async (req, res) => {
   try {
     const image = await Image.findById(req.params.id);
     if (!image) {
-      return res.status(404).send('Image not found');
+      return res.status(404).send('Media not found');
     }
-    res.set('Content-Type', image.contentType);
-    res.send(image.data);
+
+    const buffer = image.data;
+    if (!buffer) {
+      return res.status(404).send('Media buffer is empty');
+    }
+
+    const totalSize = buffer.length;
+    const contentType = image.contentType || 'image/jpeg';
+    const range = req.headers.range;
+
+    res.set('Accept-Ranges', 'bytes');
+
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : totalSize - 1;
+
+      if (isNaN(start) || start >= totalSize || (end !== undefined && end >= totalSize) || start > end) {
+        res.status(416).set('Content-Range', `bytes */${totalSize}`);
+        return res.end();
+      }
+
+      const chunkSize = (end - start) + 1;
+      const chunk = buffer.subarray ? buffer.subarray(start, end + 1) : buffer.slice(start, end + 1);
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${totalSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunkSize,
+        'Content-Type': contentType
+      });
+      return res.end(chunk);
+    } else {
+      res.writeHead(200, {
+        'Content-Length': totalSize,
+        'Content-Type': contentType,
+        'Accept-Ranges': 'bytes'
+      });
+      return res.end(buffer);
+    }
   } catch (err) {
+    console.error('Fetch media error:', err);
     res.status(500).send('Server Error');
   }
 });

@@ -13,13 +13,47 @@ const getAuthHeaders = () => {
 };
 
 export const getImageUrl = (url) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/uploads/') || url.startsWith('/api/images/')) {
-    const backendBase = API_BASE.replace(/\/api$/, '');
-    return `${backendBase}${url}`;
+  if (!url || typeof url !== 'string') return '/images/watches/rolex_submariner.jpg';
+  const cleanUrl = url.trim();
+  if (!cleanUrl || cleanUrl === 'undefined' || cleanUrl === 'null') return '/images/watches/rolex_submariner.jpg';
+
+  // 1. If URL contains localhost or 127.0.0.1 (e.g. from local development admin uploads), normalize to production backend in prod
+  if (cleanUrl.includes('localhost:') || cleanUrl.includes('127.0.0.1:')) {
+    const pathPart = cleanUrl.replace(/^https?:\/\/[^/]+/, '');
+    if (pathPart.startsWith('/uploads/') || pathPart.startsWith('/api/images/')) {
+      const backendBase = (import.meta.env.PROD ? PROD_BACKEND_URL : (import.meta.env.VITE_API_URL || '/api')).replace(/\/api$/, '');
+      return `${backendBase}${pathPart}`;
+    }
+    return pathPart || '/images/watches/rolex_submariner.jpg';
   }
-  return url;
+
+  // 2. Full HTTPS or HTTP URLs (e.g. CDN, video buckets)
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+    return cleanUrl;
+  }
+
+  // 3. Backend uploaded images or media (/uploads/... or /api/images/...)
+  if (cleanUrl.startsWith('/uploads/') || cleanUrl.startsWith('/api/images/') || cleanUrl.startsWith('api/images/') || cleanUrl.startsWith('uploads/')) {
+    const normalizedPath = cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`;
+    const backendBase = (import.meta.env.PROD ? PROD_BACKEND_URL : (import.meta.env.VITE_API_URL || '/api')).replace(/\/api$/, '');
+    return `${backendBase}${normalizedPath}`;
+  }
+
+  // 4. Frontend static assets (/images/watches/...)
+  if (cleanUrl.startsWith('/images/')) {
+    return cleanUrl;
+  }
+
+  if (cleanUrl.startsWith('images/')) {
+    return `/${cleanUrl}`;
+  }
+
+  // 5. Bare filename like 'casio_gshock.jpg'
+  if (/\.(jpe?g|png|webp|svg|gif|avif|mp4|webm)$/i.test(cleanUrl)) {
+    return `/images/watches/${cleanUrl.replace(/^\//, '')}`;
+  }
+
+  return cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`;
 };
 
 async function request(endpoint, options = {}) {
@@ -152,6 +186,14 @@ export const productsAPI = {
     return request('/products', {
       method: 'POST',
       body: JSON.stringify(productData)
+    });
+  },
+  uploadMedia: async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return request('/upload', {
+      method: 'POST',
+      body: formData
     });
   },
   uploadImage: async (file) => {

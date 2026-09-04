@@ -5,12 +5,14 @@ import {
   productsAPI, brandsAPI, categoriesAPI, ordersAPI,
   couponsAPI, reviewsAPI, analyticsAPI, homepageAPI, settingsAPI, getImageUrl
 } from '../../services/api';
+import { normalizeProductMedia } from '../../utils/media';
 import {
   BarChart3, Package, ShoppingBag, Tag, Settings, Activity,
   Plus, Trash2, Edit, CheckCircle2, Truck, DollarSign, Users,
   Eye, LogOut, ArrowUpRight, ShieldCheck, Search, Sparkles,
   AlertCircle, Save, X, CreditCard, QrCode, Lock, Copy, RotateCcw,
-  SlidersHorizontal, Layout, Check, ChevronDown, MessageSquare
+  SlidersHorizontal, Layout, Check, ChevronDown, MessageSquare,
+  ArrowUp, ArrowDown, Upload, Play, Video, Image as ImageIcon
 } from 'lucide-react';
 
 export const AdminDashboard = ({ onBackToStore }) => {
@@ -138,14 +140,106 @@ export const AdminDashboard = ({ onBackToStore }) => {
     loadAdminData();
   }, []);
 
+  // Product Media Management Handlers
+  const handleAddMediaItem = () => {
+    const current = productForm.media || normalizeProductMedia(productForm);
+    if (current.length >= 5) {
+      alert('Maximum 5 media items allowed per product.');
+      return;
+    }
+    const updated = [...current, { type: 'image', url: '/images/watches/rolex_submariner.jpg' }];
+    setProductForm({
+      ...productForm,
+      media: updated,
+      images: updated.map(m => m.url)
+    });
+  };
+
+  const handleUpdateMediaUrl = (index, url) => {
+    const current = [...(productForm.media || normalizeProductMedia(productForm))];
+    if (current[index]) {
+      current[index] = { ...current[index], url };
+      setProductForm({
+        ...productForm,
+        media: current,
+        images: current.map(m => m.url)
+      });
+    }
+  };
+
+  const handleUpdateMediaType = (index, type) => {
+    const current = [...(productForm.media || normalizeProductMedia(productForm))];
+    if (current[index]) {
+      current[index] = { ...current[index], type };
+      setProductForm({
+        ...productForm,
+        media: current
+      });
+    }
+  };
+
+  const handleReplaceMedia = (index, url, type) => {
+    const current = [...(productForm.media || normalizeProductMedia(productForm))];
+    if (current[index]) {
+      current[index] = { ...current[index], url, type: type || current[index].type || 'image' };
+      setProductForm({
+        ...productForm,
+        media: current,
+        images: current.map(m => m.url)
+      });
+    }
+  };
+
+  const handleMoveMedia = (fromIndex, toIndex) => {
+    const current = [...(productForm.media || normalizeProductMedia(productForm))];
+    if (toIndex < 0 || toIndex >= current.length) return;
+    const [moved] = current.splice(fromIndex, 1);
+    current.splice(toIndex, 0, moved);
+    setProductForm({
+      ...productForm,
+      media: current,
+      images: current.map(m => m.url)
+    });
+  };
+
+  const handleDeleteMedia = (index) => {
+    const current = [...(productForm.media || normalizeProductMedia(productForm))];
+    if (current.length <= 1) {
+      alert('A timepiece must have at least 1 media item.');
+      return;
+    }
+    current.splice(index, 1);
+    setProductForm({
+      ...productForm,
+      media: current,
+      images: current.map(m => m.url)
+    });
+  };
+
   // Product CRUD Handlers
   const handleSaveProduct = async (e) => {
     e.preventDefault();
     try {
+      const mediaToSave = productForm.media || normalizeProductMedia(productForm);
+      if (mediaToSave.length > 5) {
+        alert('Maximum 5 media items allowed per product.');
+        return;
+      }
+      if (mediaToSave.length === 0) {
+        alert('Please add at least 1 media item.');
+        return;
+      }
+
+      const payload = {
+        ...productForm,
+        media: mediaToSave,
+        images: mediaToSave.map(m => m.url)
+      };
+
       if (editingProduct) {
-        await productsAPI.update(editingProduct.id, productForm);
+        await productsAPI.update(editingProduct.id, payload);
       } else {
-        await productsAPI.create(productForm);
+        await productsAPI.create(payload);
       }
       setIsProductModalOpen(false);
       setEditingProduct(null);
@@ -603,6 +697,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                       comparePrice: 5999,
                       stock: 5,
                       sku: `LW-${Date.now().toString().slice(-4)}`,
+                      media: [{ type: 'image', url: '/images/watches/rolex_submariner.jpg' }],
                       images: ['/images/watches/rolex_submariner.jpg'],
                       description: 'Swiss certified automatic chronometer.'
                     });
@@ -632,7 +727,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     {productsList.map(prod => (
                       <tr key={prod.id} style={{ borderBottom: '1px solid #1f2937' }}>
                         <td style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <img src={getImageUrl(prod.images?.[0])} alt={prod.name} style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} />
+                          <img src={getImageUrl(prod.images?.[0] || prod.media?.[0]?.url)} alt={prod.name} style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} />
                           <div>
                             <div style={{ fontWeight: 600, color: '#ffffff' }}>{prod.name}</div>
                             <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{prod.category}</div>
@@ -647,8 +742,13 @@ export const AdminDashboard = ({ onBackToStore }) => {
                         <td style={{ padding: '10px 14px', textAlign: 'right' }}>
                           <button
                             onClick={() => {
+                              const initialMedia = normalizeProductMedia(prod);
                               setEditingProduct(prod);
-                              setProductForm(prod);
+                              setProductForm({
+                                ...prod,
+                                media: initialMedia.length > 0 ? initialMedia : [{ type: 'image', url: '/images/watches/rolex_submariner.jpg' }],
+                                images: prod.images || initialMedia.map(m => m.url)
+                              });
                               setIsProductModalOpen(true);
                             }}
                             style={{ background: 'none', border: 'none', color: '#d4af37', cursor: 'pointer', marginRight: '8px' }}
@@ -1371,36 +1471,250 @@ export const AdminDashboard = ({ onBackToStore }) => {
                 </div>
               </div>
 
-              <div style={{ marginBottom: '1rem' }}>
-                <label className="lux-label" style={{ color: '#94a3b8' }}>Product Image *</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files[0];
-                      if (!file) return;
-                      try {
-                        const res = await productsAPI.uploadImage(file);
-                        if (res.success && res.url) {
-                          setProductForm({ ...productForm, images: [res.url] });
-                        }
-                      } catch (err) {
-                        alert('Image upload failed: ' + err.message);
-                      }
+              {/* PRODUCT MEDIA SECTION (UP TO 5 ITEMS) */}
+              <div style={{
+                marginBottom: '1.25rem',
+                padding: '1rem',
+                background: '#0b0f19',
+                border: '1px solid #1f2937',
+                borderRadius: '6px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '8px' }}>
+                  <div>
+                    <label className="lux-label" style={{ color: '#f3e5ab', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ImageIcon size={15} color="#d4af37" />
+                      <span>PRODUCT MEDIA ({(productForm.media || []).length} / 5)</span>
+                    </label>
+                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '2px' }}>
+                      Add up to 5 images or videos. Media 1 is the primary storefront cover.
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddMediaItem}
+                    disabled={(productForm.media || []).length >= 5}
+                    className="btn-outline-gold"
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.72rem',
+                      opacity: (productForm.media || []).length >= 5 ? 0.4 : 1,
+                      cursor: (productForm.media || []).length >= 5 ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
                     }}
-                    className="lux-input"
-                    style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', flex: 1 }}
-                  />
-                  {productForm.images?.[0] && (
-                    <img src={getImageUrl(productForm.images[0])} alt="Preview" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
+                  >
+                    <Plus size={13} />
+                    <span>+ Add Media</span>
+                  </button>
+                </div>
+
+                {/* Media Items List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {(productForm.media || []).length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '1rem', color: '#64748b', fontSize: '0.75rem' }}>
+                      No media items added yet. Click "+ Add Media" to add images or videos.
+                    </div>
+                  ) : (
+                    (productForm.media || []).map((mediaItem, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 10px',
+                          background: '#111827',
+                          border: idx === 0 ? '1px solid rgba(212, 175, 55, 0.4)' : '1px solid #1f2937',
+                          borderRadius: '6px',
+                          flexWrap: 'wrap'
+                        }}
+                      >
+                        {/* Media Preview Box */}
+                        <div style={{
+                          width: '46px',
+                          height: '46px',
+                          borderRadius: '4px',
+                          overflow: 'hidden',
+                          background: '#0b0f19',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {mediaItem.type === 'video' ? (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0b0f19' }}>
+                              <Play size={15} color="#d4af37" fill="#d4af37" />
+                              <span style={{ fontSize: '0.5rem', color: '#f3e5ab', fontWeight: 700 }}>VIDEO</span>
+                            </div>
+                          ) : (
+                            <img
+                              src={getImageUrl(mediaItem.url)}
+                              alt={`Media ${idx + 1}`}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          )}
+                        </div>
+
+                        {/* Media Info & Type Selector */}
+                        <div style={{ flex: 1, minWidth: '150px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: idx === 0 ? '#f3e5ab' : '#ffffff' }}>
+                              Media {idx + 1} {idx === 0 && <span style={{ color: '#d4af37', fontSize: '0.65rem', fontWeight: 600 }}>(Primary)</span>}
+                            </span>
+                            <select
+                              value={mediaItem.type || 'image'}
+                              onChange={(e) => handleUpdateMediaType(idx, e.target.value)}
+                              style={{
+                                background: '#0b0f19',
+                                color: '#d4af37',
+                                border: '1px solid #374151',
+                                borderRadius: '3px',
+                                padding: '2px 4px',
+                                fontSize: '0.68rem'
+                              }}
+                            >
+                              <option value="image">Image</option>
+                              <option value="video">Video</option>
+                            </select>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="URL or path (/images/watches/... or https://...)"
+                            value={mediaItem.url || ''}
+                            onChange={(e) => handleUpdateMediaUrl(idx, e.target.value)}
+                            className="lux-input"
+                            style={{
+                              padding: '4px 6px',
+                              fontSize: '0.7rem',
+                              background: '#0b0f19',
+                              color: '#ffffff',
+                              borderColor: '#374151',
+                              width: '100%'
+                            }}
+                          />
+                        </div>
+
+                        {/* Action Controls: Replace/Upload, Move Up, Move Down, Delete */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {/* File Upload / Replace */}
+                          <label
+                            style={{
+                              background: '#1f2937',
+                              border: '1px solid #374151',
+                              color: '#f3e5ab',
+                              padding: '5px 8px',
+                              borderRadius: '3px',
+                              fontSize: '0.68rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                            title="Upload/Replace Media File"
+                          >
+                            <Upload size={11} />
+                            <span>Upload</span>
+                            <input
+                              type="file"
+                              accept={mediaItem.type === 'video' ? 'video/mp4,video/webm,video/ogg,video/quicktime,video/*' : 'image/jpeg,image/png,image/webp,image/gif,image/*'}
+                              style={{ display: 'none' }}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+
+                                const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|ogg)$/i.test(file.name);
+                                const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|svg|gif)$/i.test(file.name);
+
+                                if (!isVideo && !isImage) {
+                                  alert('Unsupported file format. Please upload an image (JPG, PNG, WebP) or video (MP4, WebM).');
+                                  e.target.value = '';
+                                  return;
+                                }
+
+                                const maxBytes = isVideo ? 30 * 1024 * 1024 : 10 * 1024 * 1024;
+                                if (file.size > maxBytes) {
+                                  alert(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is ${isVideo ? '30MB' : '10MB'}.`);
+                                  e.target.value = '';
+                                  return;
+                                }
+
+                                try {
+                                  const res = await productsAPI.uploadMedia(file);
+                                  if (res && res.success && res.url) {
+                                    const detectedType = isVideo ? 'video' : (res.type || 'image');
+                                    handleReplaceMedia(idx, res.url, detectedType);
+                                  } else {
+                                    alert(res?.message || 'Upload failed. Please check your connection and try again.');
+                                  }
+                                } catch (err) {
+                                  alert('Upload failed: ' + (err.message || 'Network connection error'));
+                                } finally {
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </label>
+
+                          {/* Move Up */}
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => handleMoveMedia(idx, idx - 1)}
+                            style={{
+                              background: '#1f2937',
+                              border: '1px solid #374151',
+                              color: idx === 0 ? '#4b5563' : '#ffffff',
+                              padding: '5px',
+                              borderRadius: '3px',
+                              cursor: idx === 0 ? 'not-allowed' : 'pointer'
+                            }}
+                            title="Move Up"
+                          >
+                            <ArrowUp size={12} />
+                          </button>
+
+                          {/* Move Down */}
+                          <button
+                            type="button"
+                            disabled={idx === (productForm.media || []).length - 1}
+                            onClick={() => handleMoveMedia(idx, idx + 1)}
+                            style={{
+                              background: '#1f2937',
+                              border: '1px solid #374151',
+                              color: idx === (productForm.media || []).length - 1 ? '#4b5563' : '#ffffff',
+                              padding: '5px',
+                              borderRadius: '3px',
+                              cursor: idx === (productForm.media || []).length - 1 ? 'not-allowed' : 'pointer'
+                            }}
+                            title="Move Down"
+                          >
+                            <ArrowDown size={12} />
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMedia(idx)}
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.1)',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              color: '#f87171',
+                              padding: '5px',
+                              borderRadius: '3px',
+                              cursor: 'pointer'
+                            }}
+                            title="Delete Media"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
                   )}
                 </div>
-                {productForm.images?.[0] && (
-                   <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px' }}>
-                     Current Image: {productForm.images[0]}
-                   </div>
-                )}
               </div>
 
               <div style={{ marginBottom: '1.25rem' }}>

@@ -22,7 +22,15 @@ export const INITIAL_PRODUCTS = [
       "/images/watches/rolex_submariner_1.jpg",
       "/images/watches/rolex_submariner_2.jpg",
       "/images/watches/rolex_submariner_3.jpg",
-      "/images/watches/rolex_submariner_4.jpg"
+      "/images/watches/rolex_submariner_4.jpg",
+      "/images/watches/rolex_submariner.jpg"
+    ],
+    media: [
+      { type: "image", url: "/images/watches/rolex_submariner_1.jpg" },
+      { type: "image", url: "/images/watches/rolex_submariner_2.jpg" },
+      { type: "image", url: "/images/watches/rolex_submariner_3.jpg" },
+      { type: "image", url: "/images/watches/rolex_submariner_4.jpg" },
+      { type: "image", url: "/images/watches/rolex_submariner.jpg" }
     ],
     description: "The quintessential diving watch. Featuring Rolex's legendary 904L Oystersteel architecture, unidirectional Cerachrom emerald green bezel, date window with Cyclops magnifier, and Chromalight luminescent display.",
     specs: {
@@ -67,6 +75,13 @@ export const INITIAL_PRODUCTS = [
       "/images/watches/rolex_daytona_2.jpg",
       "/images/watches/rolex_daytona_3.jpg",
       "/images/watches/rolex_daytona_4.jpg"
+    ],
+    media: [
+      { type: "image", url: "/images/watches/rolex_daytona_1.jpg" },
+      { type: "image", url: "/images/watches/rolex_daytona_2.jpg" },
+      { type: "image", url: "/images/watches/rolex_daytona_3.jpg" },
+      { type: "image", url: "/images/watches/rolex_daytona_4.jpg" },
+      { type: "video", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" }
     ],
     description: "The benchmark for motorsport chronographs. Equipped with the in-house Calibre 4130 movement, black Cerachrom bezel with tachymetric scale, and high-contrast tri-compax Panda chronograph subdials.",
     specs: {

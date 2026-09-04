@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { useUserAuth } from '../context/UserAuthContext';
 import { formatCurrency } from '../utils/currency';
-import { X, Star, ShieldCheck, Zap, ShoppingBag, Check, Sparkles, Truck, Lock } from 'lucide-react';
+import { getImageUrl } from '../services/api';
+import { normalizeProductMedia } from '../utils/media';
+import { X, Star, ShieldCheck, Zap, ShoppingBag, Check, Sparkles, Truck, Lock, Play, Video } from 'lucide-react';
 
 export const ProductQuickView = () => {
   const {
@@ -31,11 +33,23 @@ export const ProductQuickView = () => {
     }
   };
 
-  const [activeImgIdx, setActiveImgIdx] = useState(0);
+  const mediaList = normalizeProductMedia(product).slice(0, 5);
+  const [activeMediaIdx, setActiveMediaIdx] = useState(0);
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0]?.name || '');
   const [selectedStrap, setSelectedStrap] = useState(product.straps?.[0]?.name || '');
   const [engravingText, setEngravingText] = useState('');
   const [quantity, setQuantity] = useState(1);
+
+  // Reset active media index and selections whenever opened product changes
+  useEffect(() => {
+    setActiveMediaIdx(0);
+    setSelectedColor(product?.colors?.[0]?.name || '');
+    setSelectedStrap(product?.straps?.[0]?.name || '');
+    setQuantity(1);
+    setEngravingText('');
+  }, [product?.id]);
+
+  const activeMedia = mediaList[activeMediaIdx] || mediaList[0] || { type: 'image', url: '/images/watches/rolex_submariner.jpg' };
 
   const handleAddToCart = () => {
     addToCart(product, quantity, {
@@ -97,7 +111,7 @@ export const ProductQuickView = () => {
         className="glass-panel animate-slide-right"
         onClick={e => e.stopPropagation()}
         style={{
-          width: 'min(94vw, 900px)',
+          width: 'min(94vw, 920px)',
           maxHeight: '90vh',
           overflowY: 'auto',
           backgroundColor: '#ffffff',
@@ -141,52 +155,147 @@ export const ProductQuickView = () => {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
           gap: '1.5rem',
           alignItems: 'start'
         }}>
-          {/* Gallery Side */}
-          <div>
-            <div style={{
-              position: 'relative',
-              borderRadius: '6px',
-              overflow: 'hidden',
-              backgroundColor: '#f8f7f4',
-              aspectRatio: '1',
-              marginBottom: '1rem',
-              border: '1px solid rgba(0, 0, 0, 0.08)'
+          {/* Gallery Side: Amazon/Flipkart Multi-Media Gallery (Up to 5 media items) */}
+          <div className="quick-inspection-gallery">
+            <div className="quick-inspection-gallery-inner" style={{
+              display: 'flex',
+              gap: '12px',
+              flexDirection: 'row',
+              alignItems: 'flex-start'
             }}>
-              <img
-                src={product.images[activeImgIdx] || product.images[0]}
-                alt={product.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              {product.badge && (
-                <span className="badge-luxury badge-gold" style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                  {product.badge}
-                </span>
-              )}
-            </div>
+              {/* Vertical Thumbnails List (Horizontal on mobile) */}
+              <div
+                className="quick-inspection-thumbnails"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  flexShrink: 0,
+                  maxWidth: '70px',
+                  maxHeight: '440px',
+                  overflowY: 'auto'
+                }}
+              >
+                {mediaList.map((item, idx) => {
+                  const isSelected = activeMediaIdx === idx;
+                  const isVid = item.type === 'video';
+                  return (
+                    <button
+                      key={item.id || idx}
+                      type="button"
+                      onClick={() => setActiveMediaIdx(idx)}
+                      style={{
+                        width: '58px',
+                        height: '58px',
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        padding: 0,
+                        border: isSelected ? '2px solid #d4af37' : '1px solid rgba(0, 0, 0, 0.14)',
+                        boxShadow: isSelected ? '0 0 10px rgba(212, 175, 55, 0.45)' : 'none',
+                        backgroundColor: '#f8f7f4',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0
+                      }}
+                      title={isVid ? `Media ${idx + 1}: Video` : `Media ${idx + 1}: Image`}
+                      aria-label={isVid ? `View video ${idx + 1}` : `View image ${idx + 1}`}
+                    >
+                      {isVid ? (
+                        <div style={{ width: '100%', height: '100%', background: '#0f172a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                          <Play size={18} fill="#d4af37" color="#d4af37" />
+                          <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#f3e5ab', letterSpacing: '0.05em', marginTop: '2px' }}>
+                            VIDEO
+                          </span>
+                        </div>
+                      ) : (
+                        <img
+                          src={getImageUrl(item.url)}
+                          alt={`${product.name} thumbnail ${idx + 1}`}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = getImageUrl(product.images?.[0] || product.image || '/images/watches/rolex_submariner.jpg');
+                          }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-            {/* Thumbnails */}
-            <div style={{ display: 'flex', gap: '0.6rem' }}>
-              {product.images.map((img, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => setActiveImgIdx(idx)}
-                  style={{
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '4px',
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    border: activeImgIdx === idx ? '2px solid #d4af37' : '1px solid rgba(0, 0, 0, 0.1)',
-                    backgroundColor: '#f8f7f4'
-                  }}
-                >
-                  <img src={img} alt="thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-              ))}
+              {/* Main Selected Media Stage */}
+              <div
+                className="quick-inspection-main-media"
+                style={{
+                  position: 'relative',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                  backgroundColor: '#f8f7f4',
+                  aspectRatio: '1',
+                  flex: 1,
+                  minWidth: 0,
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {activeMedia.type === 'video' ? (
+                  <video
+                    key={activeMedia.url}
+                    src={getImageUrl(activeMedia.url)}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      maxHeight: '440px',
+                      objectFit: 'contain',
+                      backgroundColor: '#0b0f19'
+                    }}
+                  />
+                ) : (
+                  <img
+                    key={activeMedia.url}
+                    src={getImageUrl(activeMedia.url)}
+                    alt={product.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = getImageUrl(product.images?.[0] || product.image || '/images/watches/rolex_submariner.jpg');
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      transition: 'opacity 0.25s ease'
+                    }}
+                  />
+                )}
+
+                {product.badge && (
+                  <span
+                    className="badge-luxury badge-gold"
+                    style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px',
+                      zIndex: 2,
+                      pointerEvents: 'none'
+                    }}
+                  >
+                    {product.badge}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -260,7 +369,7 @@ export const ProductQuickView = () => {
                       key={i}
                       onClick={() => {
                         setSelectedColor(c.name);
-                        if (c.imageIndex !== undefined) setActiveImgIdx(c.imageIndex);
+                        if (c.imageIndex !== undefined) setActiveMediaIdx(c.imageIndex);
                       }}
                       style={{
                         background: selectedColor === c.name ? 'rgba(180, 140, 30, 0.12)' : '#ffffff',

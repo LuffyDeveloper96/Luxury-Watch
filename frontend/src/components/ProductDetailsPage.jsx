@@ -3,9 +3,10 @@ import { useStore } from '../context/StoreContext';
 import { useUserAuth } from '../context/UserAuthContext';
 import { formatCurrency } from '../utils/currency';
 import { getImageUrl } from '../services/api';
+import { normalizeProductMedia } from '../utils/media';
 import {
   ArrowLeft, Star, ShieldCheck, Zap, ShoppingBag, Truck, Lock,
-  Sparkles, Award, RefreshCw, CheckCircle2, ChevronRight, MessageSquare, Send
+  Sparkles, Award, RefreshCw, CheckCircle2, ChevronRight, MessageSquare, Send, Play
 } from 'lucide-react';
 
 export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOtherProduct }) => {
@@ -181,6 +182,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
         }}>
           {/* Left Column: Multi-Angle Gallery & Caseback Visualizer */}
           <div>
+            {/* Main Stage Media */}
             <div style={{
               position: 'relative',
               borderRadius: '8px',
@@ -189,13 +191,39 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
               aspectRatio: '1',
               marginBottom: '1.25rem',
               border: '1px solid rgba(180, 140, 30, 0.25)',
-              boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)'
+              boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}>
-              <img
-                src={getImageUrl(product.images[activeImgIdx] || product.images[0])}
-                alt={product.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              {(() => {
+                const mediaItems = normalizeProductMedia(product).slice(0, 5);
+                const currentMedia = mediaItems[activeImgIdx] || mediaItems[0] || { type: 'image', url: product.images?.[0] || '/images/watches/rolex_submariner.jpg' };
+                if (currentMedia.type === 'video') {
+                  return (
+                    <video
+                      key={currentMedia.url}
+                      src={getImageUrl(currentMedia.url)}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#0b0f19' }}
+                    />
+                  );
+                }
+                return (
+                  <img
+                    key={currentMedia.url}
+                    src={getImageUrl(currentMedia.url)}
+                    alt={product.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = getImageUrl(product.images?.[0] || product.image || '/images/watches/rolex_submariner.jpg');
+                    }}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                );
+              })()}
 
               {product.badge && (
                 <span className="badge-luxury badge-gold" style={{ position: 'absolute', top: '16px', left: '16px' }}>
@@ -226,10 +254,10 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
             </div>
 
             {/* Thumbnail selector */}
-            <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '2rem' }}>
-              {product.images.map((img, idx) => (
+            <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '4px' }}>
+              {normalizeProductMedia(product).slice(0, 5).map((mediaItem, idx) => (
                 <div
-                  key={idx}
+                  key={mediaItem.id || idx}
                   onClick={() => setActiveImgIdx(idx)}
                   style={{
                     width: '80px',
@@ -237,12 +265,33 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                     borderRadius: '6px',
                     overflow: 'hidden',
                     cursor: 'pointer',
+                    position: 'relative',
                     border: activeImgIdx === idx ? '2px solid #d4af37' : '1px solid rgba(0,0,0,0.1)',
+                    boxShadow: activeImgIdx === idx ? '0 0 10px rgba(212, 175, 55, 0.4)' : 'none',
                     backgroundColor: '#f8f7f4',
-                    transition: 'all 0.2s'
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    flexShrink: 0
                   }}
                 >
-                  <img src={getImageUrl(img)} alt="angle" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {mediaItem.type === 'video' ? (
+                    <div style={{ width: '100%', height: '100%', background: '#0f172a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <Play size={20} fill="#d4af37" color="#d4af37" />
+                      <span style={{ fontSize: '0.6rem', color: '#f3e5ab', fontWeight: 700, marginTop: '2px' }}>VIDEO</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={getImageUrl(mediaItem.url)}
+                      alt="thumbnail"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = getImageUrl(product.images?.[0] || product.image || '/images/watches/rolex_submariner.jpg');
+                      }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  )}
                 </div>
               ))}
             </div>

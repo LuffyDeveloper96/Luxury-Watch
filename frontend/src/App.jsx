@@ -5,7 +5,6 @@ import { UserAuthProvider, useUserAuth } from './context/UserAuthContext';
 import { AnnouncementBar } from './components/AnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
-import { CollectionGrid } from './components/CollectionGrid';
 import { ProductCard } from './components/ProductCard';
 import { ProductQuickView } from './components/ProductQuickView';
 import { ProductDetailsPage } from './components/ProductDetailsPage';
@@ -180,12 +179,6 @@ const Storefront = ({
           const el = document.getElementById('catalog-section');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
-      />
-
-      {/* Curated Collections Grid with Brand Links */}
-      <CollectionGrid
-        onSelectCategory={setActiveCategory}
-        onSelectBrand={onSelectBrand}
       />
 
       {/* Main Catalog Showcase Section */}
