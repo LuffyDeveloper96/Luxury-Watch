@@ -23,7 +23,7 @@ import { AdminLogin } from './components/admin/AdminLogin';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { TrackConsignmentPage } from './pages/TrackConsignmentPage';
 import { BrandPage } from './components/BrandPage';
-import { SlidersHorizontal, Sparkles, Watch, ShieldCheck, Filter } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
 
 const Storefront = ({
   onOpenAdmin,
@@ -36,7 +36,6 @@ const Storefront = ({
 }) => {
   const {
     products,
-    brands,
     selectedProductDetails,
     setSelectedProductDetails
   } = useStore();
