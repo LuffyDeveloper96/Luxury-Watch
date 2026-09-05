@@ -34,6 +34,7 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
   'https://luxurywatch.in',
   'https://luxury-watch.netlify.app',
+  'https://luxurywatch08.netlify.app',
   'https://luxury-watch-henna.vercel.app'
 ].filter(Boolean);
 

@@ -200,10 +200,10 @@ npm run test:api
 3. Configure settings:
    * **Base directory**: `frontend`
    * **Build command**: `npm run build`
-   * **Publish directory**: `frontend/dist`
+   * **Publish directory**: `dist` (or leave as configured by `netlify.toml`)
 4. Add Environment Variables:
-   * `VITE_API_URL`: `https://<your-render-backend-subdomain>.onrender.com/api`
-   * `VITE_RAZORPAY_KEY_ID`: `<Your Razorpay Key ID>`
+   * `VITE_API_URL`: `https://luxury-watch-vibr.onrender.com/api`
+   * `VITE_RAZORPAY_KEY_ID`: `rzp_test_TWgXC7muCJnuci`
 
 > ℹ️ **SPA Redirection**: `frontend/public/_redirects` is pre-configured with `/* /index.html 200` to ensure direct link navigation works flawlessly on Netlify.
 
