@@ -332,20 +332,70 @@ const Storefront = ({
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Synchronous route detector — reads window.location BEFORE first render
+// so that refresh on /brands/rolex, #track-order, #admin etc. works correctly
+// without a homepage flash.
+// ─────────────────────────────────────────────────────────────────────────────
+const detectRouteFromUrl = () => {
+  const path = window.location.pathname;
+  const hash = window.location.hash;
+  return { path, hash };
+};
+
+const getInitialBrandSlug = () => {
+  const { path, hash } = detectRouteFromUrl();
+  if (path.startsWith('/brands/')) {
+    const slug = path.replace('/brands/', '').split('/')[0]?.trim();
+    return slug || null;
+  }
+  if (hash.startsWith('#brands/') || hash.startsWith('#brand/')) {
+    const slug = hash.replace(/^#(brands|brand)\//, '').split('/')[0]?.trim();
+    return slug || null;
+  }
+  return null;
+};
+
+const getInitialTrackingView = () => {
+  const { path, hash } = detectRouteFromUrl();
+  // Hash-based tracking routes
+  if (hash === '#track-order' || hash === '#orders' || hash === '#my-orders') return true;
+  // Pathname-based tracking routes
+  if (path === '/orders' || path.startsWith('/orders/')) return true;
+  return false;
+};
+
+const getInitialAdminRoute = () => {
+  const { path, hash } = detectRouteFromUrl();
+  return path === '/admin' || path.startsWith('/admin') || hash === '#admin' || hash.startsWith('#admin');
+};
+
 const MainAppContent = () => {
   const { isAdminAuthenticated } = useAdminAuth();
   const { setSelectedProductDetails } = useStore();
+
+  // ── Synchronous initialization from window.location ──────────────────────
+  // These initializers run once before first render, ensuring the correct page
+  // renders immediately on refresh without routing through the homepage first.
   const [isAdminView, setIsAdminView] = useState(false);
-  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
+  const [showAdminLoginModal, setShowAdminLoginModal] = useState(() => getInitialAdminRoute());
   const [activeCategory, setActiveCategory] = useState('All');
-  const [activeBrandSlug, setActiveBrandSlug] = useState(null);
-  const [isTrackingPageView, setIsTrackingPageView] = useState(false);
+  const [activeBrandSlug, setActiveBrandSlug] = useState(() => getInitialBrandSlug());
+  const [isTrackingPageView, setIsTrackingPageView] = useState(() => getInitialTrackingView());
 
   // Returns Modal State
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [returnModalOrderId, setReturnModalOrderId] = useState('');
 
-  // Automatic routing detection (pathname & hash)
+  // When admin auth finishes loading, resolve the admin route
+  useEffect(() => {
+    if (isAdminAuthenticated && getInitialAdminRoute()) {
+      setIsAdminView(true);
+      setShowAdminLoginModal(false);
+    }
+  }, [isAdminAuthenticated]);
+
+  // Listen for hash/popstate changes (for in-app navigation after initial load)
   useEffect(() => {
     const checkRoutes = () => {
       const path = window.location.pathname;
@@ -354,12 +404,14 @@ const MainAppContent = () => {
       const isHashAdmin = hash === '#admin' || hash.startsWith('#admin');
       const isPathAdmin = path === '/admin' || path.startsWith('/admin');
       const isHashTrack = hash === '#track-order' || hash === '#orders' || hash === '#my-orders';
-      
-      setIsTrackingPageView(isHashTrack);
+      const isPathTrack = path === '/orders' || path.startsWith('/orders/');
+
+      setIsTrackingPageView(isHashTrack || isPathTrack);
 
       if (isHashAdmin || isPathAdmin) {
         if (isAdminAuthenticated) {
           setIsAdminView(true);
+          setShowAdminLoginModal(false);
         } else {
           setShowAdminLoginModal(true);
         }
@@ -368,24 +420,18 @@ const MainAppContent = () => {
       // Detect /brands/:brandSlug or #brands/:brandSlug
       if (path.startsWith('/brands/')) {
         const slug = path.replace('/brands/', '').split('/')[0]?.trim();
-        if (slug) {
-          setActiveBrandSlug(slug);
-        } else {
-          setActiveBrandSlug(null);
-        }
+        setActiveBrandSlug(slug || null);
       } else if (hash.startsWith('#brands/') || hash.startsWith('#brand/')) {
         const slug = hash.replace(/^#(brands|brand)\//, '').split('/')[0]?.trim();
-        if (slug) {
-          setActiveBrandSlug(slug);
-        } else {
+        setActiveBrandSlug(slug || null);
+      } else if (!isHashAdmin && !isPathAdmin && !isHashTrack && !isPathTrack) {
+        // Only clear brand slug if we're navigating to a genuinely non-brand page
+        if (!path.startsWith('/brands/')) {
           setActiveBrandSlug(null);
         }
-      } else {
-        setActiveBrandSlug(null);
       }
     };
 
-    checkRoutes();
     window.addEventListener('hashchange', checkRoutes);
     window.addEventListener('popstate', checkRoutes);
     return () => {
@@ -450,7 +496,15 @@ const MainAppContent = () => {
             onOpenReturns={handleOpenReturns}
           />
           <TrackConsignmentPage 
-            onBack={() => { window.location.hash = ''; }}
+            onBack={() => {
+              // Clear both hash and pathname-based tracking routes
+              if (window.location.hash) {
+                window.location.hash = '';
+              } else if (window.location.pathname.startsWith('/orders')) {
+                window.history.pushState(null, '', '/');
+              }
+              setIsTrackingPageView(false);
+            }}
             onOpenReturnForOrder={handleOpenReturns}
           />
         </>
@@ -458,6 +512,8 @@ const MainAppContent = () => {
         <AdminDashboard onBackToStore={() => {
           if (window.location.hash.includes('admin')) {
             window.history.replaceState(null, '', window.location.pathname);
+          } else if (window.location.pathname.startsWith('/admin')) {
+            window.history.replaceState(null, '', '/');
           }
           setIsAdminView(false);
         }} />

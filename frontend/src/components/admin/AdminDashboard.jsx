@@ -12,7 +12,7 @@ import {
   Eye, LogOut, ArrowUpRight, ShieldCheck, Search, Sparkles,
   AlertCircle, Save, X, CreditCard, QrCode, Lock, Copy, RotateCcw,
   SlidersHorizontal, Layout, Check, ChevronDown, MessageSquare,
-  ArrowUp, ArrowDown, Upload, Play, Video, Image as ImageIcon
+  ArrowUp, ArrowDown, Upload, Play, Video, Image as ImageIcon, Menu
 } from 'lucide-react';
 
 export const AdminDashboard = ({ onBackToStore }) => {
@@ -20,6 +20,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
   const { adminUser, logoutAdmin } = useAdminAuth();
 
   const [activeTab, setActiveTab] = useState('overview'); // overview, products, brands, categories, inventory, orders, customers, reviews, cms, settings
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState(null);
   const [productsList, setProductsList] = useState([]);
@@ -479,15 +480,18 @@ export const AdminDashboard = ({ onBackToStore }) => {
   return (
     <div style={{ minHeight: '100vh', background: '#0b0f19', color: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
       {/* Top Admin Navigation Bar */}
-      <header style={{
-        background: '#111827',
-        borderBottom: '1px solid #1f2937',
-        padding: '0.85rem 1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <header className="admin-header">
+        {/* Brand / Logo */}
+        <div className="admin-header-brand">
+          {/* Hamburger — only shows on mobile (CSS controlled) */}
+          <button
+            className="admin-hamburger-btn"
+            onClick={() => setIsMobileSidebarOpen(prev => !prev)}
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={18} />
+          </button>
+
           <div style={{
             width: '36px',
             height: '36px',
@@ -496,31 +500,33 @@ export const AdminDashboard = ({ onBackToStore }) => {
             border: '1px solid #d4af37',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            flexShrink: 0
           }}>
             <ShieldCheck size={20} color="#f3e5ab" />
           </div>
-          <div>
-            <div style={{ fontSize: '0.65rem', letterSpacing: '0.15em', color: '#d4af37', fontWeight: 700, textTransform: 'uppercase' }}>
+          <div className="admin-header-title">
+            <div className="admin-subtitle">
               HAUTE HORLOGERIE MASTER ATELIER
             </div>
-            <h1 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', margin: 0, color: '#ffffff', letterSpacing: '0.04em' }}>
-              LUXURY WATCH ADMIN CONTROL SUITE
+            <h1 style={{ fontFamily: 'var(--font-brand)', fontSize: 'clamp(0.85rem, 2.5vw, 1.1rem)', margin: 0, color: '#ffffff', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              LUXURY WATCH ADMIN
             </h1>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-            Authenticated: <strong style={{ color: '#f3e5ab' }}>{adminUser?.email || 'admin@luxurywatch.com'}</strong>
+        {/* Header Actions */}
+        <div className="admin-header-actions">
+          <div className="admin-email-badge">
+            Auth: <strong style={{ color: '#f3e5ab' }}>{adminUser?.email || 'admin'}</strong>
           </div>
           <button
             onClick={onBackToStore}
             className="btn-outline-gold"
-            style={{ padding: '6px 14px', fontSize: '0.75rem', background: '#1f2937' }}
+            style={{ padding: '6px 12px', fontSize: '0.73rem', background: '#1f2937', whiteSpace: 'nowrap' }}
           >
-            <Eye size={14} />
-            <span>Storefront</span>
+            <Eye size={13} />
+            <span>Store</span>
           </button>
           <button
             onClick={logoutAdmin}
@@ -528,13 +534,14 @@ export const AdminDashboard = ({ onBackToStore }) => {
               background: 'none',
               border: '1px solid #dc2626',
               color: '#f87171',
-              padding: '6px 12px',
+              padding: '6px 10px',
               borderRadius: '4px',
-              fontSize: '0.75rem',
+              fontSize: '0.73rem',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '5px',
+              whiteSpace: 'nowrap'
             }}
           >
             <LogOut size={13} />
@@ -545,8 +552,28 @@ export const AdminDashboard = ({ onBackToStore }) => {
 
       {/* Main Admin Layout */}
       <div className="admin-layout" style={{ display: 'flex', flex: 1 }}>
+        {/* Mobile Sidebar Overlay Backdrop */}
+        <div
+          className={`admin-sidebar-overlay ${isMobileSidebarOpen ? 'admin-sidebar-open' : ''}`}
+          onClick={() => setIsMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+
         {/* Sidebar Navigation */}
-        <aside className="admin-sidebar">
+        <aside className={`admin-sidebar ${isMobileSidebarOpen ? 'admin-sidebar-open' : ''}`}>
+          {/* Close button — mobile only */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: '1px solid #1f2937' }}>
+            <span style={{ fontSize: '0.7rem', color: '#d4af37', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Navigation</span>
+            <button
+              onClick={() => setIsMobileSidebarOpen(false)}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}
+              className="admin-hamburger-btn"
+              aria-label="Close navigation"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
           {[
             { id: 'overview', label: 'Dashboard Overview', icon: BarChart3 },
             { id: 'products', label: 'Products Vault', icon: Package },
@@ -563,7 +590,10 @@ export const AdminDashboard = ({ onBackToStore }) => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setIsMobileSidebarOpen(false); // Close sidebar on mobile after selection
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -577,7 +607,8 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   fontWeight: isSelected ? 700 : 500,
                   cursor: 'pointer',
                   textAlign: 'left',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
+                  width: '100%'
                 }}
               >
                 <Icon size={16} color={isSelected ? '#d4af37' : '#94a3b8'} />
@@ -1102,81 +1133,162 @@ export const AdminDashboard = ({ onBackToStore }) => {
           {/* TAB 5: Consignments & Orders */}
           {activeTab === 'orders' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.3rem', margin: 0, color: '#ffffff' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: 'clamp(1rem, 3vw, 1.3rem)', margin: 0, color: '#ffffff' }}>
                   CONSIGNMENT ORDERS ({ordersList.length})
                 </h2>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <input
-                    type="text"
-                    placeholder="Search order ID / client..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{ background: '#111827', border: '1px solid #374151', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem' }}
-                  />
-                  <select
-                    value={orderStatusFilter}
-                    onChange={(e) => setOrderStatusFilter(e.target.value)}
-                    style={{ background: '#111827', border: '1px solid #374151', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem' }}
-                  >
-                    <option value="All">All Statuses</option>
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="Processing">Processing</option>
-                    <option value="Packed">Packed</option>
-                    <option value="Shipped">Shipped</option>
-                    <option value="Out for Delivery">Out for Delivery</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
+              </div>
+
+              {/* Filter Controls — responsive row */}
+              <div className="admin-orders-filter-row" style={{ display: 'flex', gap: '10px', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  placeholder="Search order ID / client..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ background: '#111827', border: '1px solid #374151', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', flex: '1 1 180px', minWidth: 0 }}
+                />
+                <select
+                  value={orderStatusFilter}
+                  onChange={(e) => setOrderStatusFilter(e.target.value)}
+                  style={{ background: '#111827', border: '1px solid #374151', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', flex: '0 0 auto' }}
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Processing">Processing</option>
+                  <option value="Packed">Packed</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="Out for Delivery">Out for Delivery</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              {/* DESKTOP TABLE VIEW */}
+              <div className="admin-orders-table-view">
+                <div className="admin-table-container" style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ background: '#1f2937', color: '#94a3b8' }}>
+                        <th style={{ padding: '10px 14px' }}>Order ID</th>
+                        <th style={{ padding: '10px 14px' }}>Customer</th>
+                        <th style={{ padding: '10px 14px' }}>Timepieces</th>
+                        <th style={{ padding: '10px 14px' }}>Amount</th>
+                        <th style={{ padding: '10px 14px' }}>Tracking</th>
+                        <th style={{ padding: '10px 14px' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredOrders.map(o => (
+                        <tr key={o.id} style={{ borderBottom: '1px solid #1f2937' }}>
+                          <td style={{ padding: '10px 14px', fontWeight: 700, color: '#f3e5ab', fontSize: '0.75rem' }}>#{o.id}</td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ fontWeight: 600, color: '#ffffff' }}>{o.customer?.fullName}</div>
+                            <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{o.customer?.email} • {o.customer?.city}</div>
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            {(o.items || []).map((it, i) => (
+                              <div key={i} style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>{it.name} (x{it.quantity})</div>
+                            ))}
+                          </td>
+                          <td style={{ padding: '10px 14px', fontWeight: 700, color: '#ffffff' }}>₹{(o.total || 0).toLocaleString('en-IN')}</td>
+                          <td style={{ padding: '10px 14px', color: '#d4af37', fontSize: '0.72rem' }}>{o.trackingNumber}</td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <select
+                              value={o.orderStatus}
+                              onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
+                              style={{ background: '#1f2937', border: '1px solid #374151', color: '#f3e5ab', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem' }}
+                            >
+                              <option value="Confirmed">Confirmed</option>
+                              <option value="Processing">Processing</option>
+                              <option value="Packed">Packed</option>
+                              <option value="Shipped">Shipped</option>
+                              <option value="Out for Delivery">Out for Delivery</option>
+                              <option value="Delivered">Delivered</option>
+                              <option value="Cancelled">Cancelled</option>
+                            </select>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              <div className="admin-table-container" style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ background: '#1f2937', color: '#94a3b8' }}>
-                      <th style={{ padding: '10px 14px' }}>Order ID</th>
-                      <th style={{ padding: '10px 14px' }}>Customer</th>
-                      <th style={{ padding: '10px 14px' }}>Timepieces</th>
-                      <th style={{ padding: '10px 14px' }}>Amount</th>
-                      <th style={{ padding: '10px 14px' }}>Tracking Number</th>
-                      <th style={{ padding: '10px 14px' }}>Status Update</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredOrders.map(o => (
-                      <tr key={o.id} style={{ borderBottom: '1px solid #1f2937' }}>
-                        <td style={{ padding: '10px 14px', fontWeight: 700, color: '#f3e5ab' }}>#{o.id}</td>
-                        <td style={{ padding: '10px 14px' }}>
-                          <div style={{ fontWeight: 600, color: '#ffffff' }}>{o.customer?.fullName}</div>
-                          <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{o.customer?.email} • {o.customer?.city}</div>
-                        </td>
-                        <td style={{ padding: '10px 14px' }}>
-                          {(o.items || []).map((it, i) => (
-                            <div key={i} style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>{it.name} (x{it.quantity})</div>
-                          ))}
-                        </td>
-                        <td style={{ padding: '10px 14px', fontWeight: 700, color: '#ffffff' }}>₹{(o.total || 0).toLocaleString('en-IN')}</td>
-                        <td style={{ padding: '10px 14px', color: '#d4af37', fontSize: '0.72rem' }}>{o.trackingNumber}</td>
-                        <td style={{ padding: '10px 14px' }}>
-                          <select
-                            value={o.orderStatus}
-                            onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
-                            style={{ background: '#1f2937', border: '1px solid #374151', color: '#f3e5ab', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem' }}
-                          >
-                            <option value="Confirmed">Confirmed</option>
-                            <option value="Processing">Processing</option>
-                            <option value="Packed">Packed</option>
-                            <option value="Shipped">Shipped</option>
-                            <option value="Out for Delivery">Out for Delivery</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Cancelled">Cancelled</option>
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* MOBILE CARD VIEW */}
+              <div className="admin-orders-card-view">
+                {filteredOrders.map(o => (
+                  <div
+                    key={o.id}
+                    style={{
+                      background: '#111827',
+                      border: '1px solid #1f2937',
+                      borderRadius: '8px',
+                      padding: '0.9rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.6rem'
+                    }}
+                  >
+                    {/* Order ID + Amount */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                      <div style={{ fontWeight: 700, color: '#f3e5ab', fontSize: '0.82rem', wordBreak: 'break-all', flex: 1 }}>
+                        #{o.id}
+                      </div>
+                      <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.88rem', flexShrink: 0 }}>
+                        ₹{(o.total || 0).toLocaleString('en-IN')}
+                      </div>
+                    </div>
+
+                    {/* Customer */}
+                    <div style={{ fontSize: '0.78rem' }}>
+                      <div style={{ fontWeight: 600, color: '#ffffff' }}>{o.customer?.fullName}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '2px', wordBreak: 'break-all' }}>
+                        {o.customer?.email} • {o.customer?.city}
+                      </div>
+                    </div>
+
+                    {/* Items */}
+                    <div style={{ fontSize: '0.72rem', color: '#cbd5e1', background: '#0b0f19', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid #1f2937' }}>
+                      {(o.items || []).map((it, i) => (
+                        <div key={i}>{it.name} (×{it.quantity})</div>
+                      ))}
+                    </div>
+
+                    {/* Tracking */}
+                    {o.trackingNumber && (
+                      <div style={{ fontSize: '0.7rem', color: '#d4af37' }}>
+                        Tracking: {o.trackingNumber}
+                      </div>
+                    )}
+
+                    {/* Status Update */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>
+                        Status:
+                      </label>
+                      <select
+                        value={o.orderStatus}
+                        onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
+                        style={{ flex: 1, minWidth: 0, background: '#1f2937', border: '1px solid #374151', color: '#f3e5ab', padding: '6px 8px', borderRadius: '4px', fontSize: '0.78rem' }}
+                      >
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Processing">Processing</option>
+                        <option value="Packed">Packed</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Out for Delivery">Out for Delivery</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+
+                {filteredOrders.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b', fontSize: '0.85rem' }}>
+                    No orders match the current filter.
+                  </div>
+                )}
               </div>
             </div>
           )}
