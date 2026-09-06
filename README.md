@@ -158,13 +158,6 @@ npm run test:api
 
 ---
 
-## 🔐 Master Administrator Credentials
-
-* **Portal URL**: Click **Master Admin** in the footer or navigate to `/admin`
-* **Designated Admin Email**: `admin@luxurywatch.com`
-* **Master Password**: `LuxuryWatch2026!`
-* **Security PIN**: `8888`
-
 > ⚠️ **Security Notice**: Only this single seeded master email is authorized to access admin endpoints. Public signup for admin accounts is strictly forbidden and disabled.
 
 ---
