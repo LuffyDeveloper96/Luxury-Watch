@@ -1,8 +1,9 @@
 import express from 'express';
 import multer from 'multer';
-import path from 'path';
 import { requireAdmin, requireAuth, optionalAuth } from '../middleware/auth.js';
-import { apiLimiter, otpLimiter, paymentLimiter } from '../middleware/rateLimiter.js';
+import { apiLimiter, authLimiter, paymentLimiter } from '../middleware/rateLimiter.js';
+import { mediaService } from '../services/mediaService.js';
+import { Image } from '../models/Image.js';
 
 // Setup Multer for media uploads (Memory Storage)
 const storage = multer.memoryStorage();
@@ -10,8 +11,8 @@ const upload = multer({
   storage,
   limits: { fileSize: 30 * 1024 * 1024 }, // 30MB max size for HD product videos and images
   fileFilter: (req, file, cb) => {
-    const isImage = file.mimetype.startsWith('image/');
-    const isVideo = file.mimetype.startsWith('video/') || /\.(mp4|webm|mov|ogg)$/i.test(file.originalname);
+    const isImage = file.mimetype?.startsWith('image/');
+    const isVideo = file.mimetype?.startsWith('video/') || /\.(mp4|webm|mov|ogg)$/i.test(file.originalname || '');
     if (isImage || isVideo) {
       cb(null, true);
     } else {
@@ -20,16 +21,16 @@ const upload = multer({
   }
 });
 
-import { Image } from '../models/Image.js';
-
 // Controllers
 import { adminLogin, adminVerify } from '../controllers/authController.js';
 import {
-  initiateUserSignup, verifyUserSignup,
-  initiateUserLogin, verifyUserLogin,
-  forgotPasswordInit, resetPasswordWithOtp,
-  sendUserOtp, verifyUserOtp, getMe,
-  addAddress, deleteAddress, setDefaultAddress, getAdminCustomers
+  initiateUserSignup,
+  initiateUserLogin,
+  getMe,
+  addAddress,
+  deleteAddress,
+  setDefaultAddress,
+  getAdminCustomers
 } from '../controllers/userAuthController.js';
 import {
   getProducts, getProductByIdOrSlug, getSearchSuggestions,
@@ -79,7 +80,7 @@ const router = express.Router();
 // Apply Global API rate limiter
 router.use(apiLimiter);
 
-// 0. Media Upload Route (Stores in MongoDB for persistence on free tier)
+// 0. Persistent Media Upload Route (Admin only, Persistent Cloudinary Object Storage)
 router.post('/upload', requireAdmin, (req, res, next) => {
   upload.any()(req, res, (err) => {
     if (err) return res.status(400).json({ success: false, message: err.message });
@@ -89,25 +90,22 @@ router.post('/upload', requireAdmin, (req, res, next) => {
   try {
     const file = req.files?.[0] || req.file;
     if (!file) {
-      return res.status(400).json({ success: false, message: 'No file uploaded' });
+      return res.status(400).json({ success: false, message: 'No file uploaded.' });
     }
-    
-    const newImage = new Image({
-      data: file.buffer,
-      contentType: file.mimetype || 'image/jpeg'
-    });
-    await newImage.save();
 
-    const mediaUrl = `/api/images/${newImage._id}`;
-    const mediaType = file.mimetype?.startsWith('video/') ? 'video' : 'image';
-    res.json({ success: true, url: mediaUrl, type: mediaType, contentType: file.mimetype });
+    const result = await mediaService.uploadMedia(file);
+    if (!result.success) {
+      return res.status(result.status || 500).json(result);
+    }
+
+    return res.json(result);
   } catch (err) {
-    console.error('Media upload error:', err);
-    res.status(500).json({ success: false, message: 'Media upload failed' });
+    console.error('Media upload handler error:', err);
+    return res.status(500).json({ success: false, message: 'Media upload processing error.' });
   }
 });
 
-// 0.1 Media / Image Fetch Route with HTTP Range Request Support for Video Streaming
+// 0.1 Legacy Media / Image Fetch Route with HTTP Range Request Support for Video Streaming
 router.get('/images/:id', async (req, res) => {
   try {
     const image = await Image.findById(req.params.id);
@@ -172,16 +170,14 @@ router.get('/health', (req, res) => {
 });
 
 // 2. Administrator Authentication (Strictly Single Seeded Admin Account)
-router.post('/auth/admin/login', adminLogin);
+router.post('/auth/admin/login', authLimiter, adminLogin);
 router.get('/auth/admin/verify', requireAdmin, adminVerify);
 
 // 3. User Authentication & Profile (Direct Email + Password Authentication)
-router.post('/auth/user/signup', initiateUserSignup);
-router.post('/auth/user/signup/init', initiateUserSignup);
-router.post('/auth/user/login', initiateUserLogin);
-router.post('/auth/user/login/init', initiateUserLogin);
-router.post('/auth/user/forgot-password', otpLimiter, forgotPasswordInit);
-router.post('/auth/user/reset-password', resetPasswordWithOtp);
+router.post('/auth/user/signup', authLimiter, initiateUserSignup);
+router.post('/auth/user/signup/init', authLimiter, initiateUserSignup);
+router.post('/auth/user/login', authLimiter, initiateUserLogin);
+router.post('/auth/user/login/init', authLimiter, initiateUserLogin);
 
 // Patron Profile & Address Management
 router.get('/auth/user/me', requireAuth, getMe);

@@ -1,7 +1,7 @@
 import rateLimit from 'express-rate-limit';
 
 /**
- * Standard API rate limiter (150 requests per 15 minutes per IP)
+ * Standard API rate limiter (200 requests per 15 minutes per IP)
  */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -15,16 +15,17 @@ export const apiLimiter = rateLimit({
 });
 
 /**
- * Strict OTP request rate limiter (10 OTP requests per 10 minutes per IP)
+ * Authentication rate limiter for login and registration brute-force protection
+ * (20 attempts per 15 minutes per IP)
  */
-export const otpLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 15,
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    message: 'OTP dispatch limit reached. Please wait before requesting another verification code.'
+    message: 'Too many authentication attempts. Please wait a few minutes before trying again.'
   }
 });
 
@@ -34,6 +35,8 @@ export const otpLimiter = rateLimit({
 export const paymentLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: {
     success: false,
     message: 'Too many checkout requests. Please wait a moment.'
@@ -42,6 +45,6 @@ export const paymentLimiter = rateLimit({
 
 export default {
   apiLimiter,
-  otpLimiter,
+  authLimiter,
   paymentLimiter
 };

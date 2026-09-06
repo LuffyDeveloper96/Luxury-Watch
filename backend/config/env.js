@@ -13,12 +13,16 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProduction = NODE_ENV === 'production';
 const isDevelopment = NODE_ENV === 'development';
 
-// Fail fast in production if mandatory security variables are missing
+// Fail fast in production if mandatory variables are missing
 if (isProduction) {
   const missing = [];
-  if (!process.env.JWT_SECRET) missing.push('JWT_SECRET');
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) missing.push('JWT_SECRET (min 32 chars)');
   if (!process.env.ADMIN_EMAIL && !process.env.AUTHORIZED_ADMIN_GMAIL) missing.push('ADMIN_EMAIL');
   if (!process.env.ADMIN_PASSWORD_HASH) missing.push('ADMIN_PASSWORD_HASH');
+  if (!process.env.MONGODB_URI) missing.push('MONGODB_URI');
+  if (!process.env.RAZORPAY_KEY_ID) missing.push('RAZORPAY_KEY_ID');
+  if (!process.env.RAZORPAY_KEY_SECRET) missing.push('RAZORPAY_KEY_SECRET');
+  if (!process.env.FRONTEND_URL && !process.env.FRONTEND_URLS) missing.push('FRONTEND_URL');
 
   if (missing.length > 0) {
     throw new Error(
@@ -47,7 +51,8 @@ export const env = {
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || '',
-  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173'
+  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
+  FRONTEND_URLS: process.env.FRONTEND_URLS || ''
 };
 
 export default env;

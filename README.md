@@ -2,32 +2,33 @@
 
 > **TIMELESS WATCHES. EXCEPTIONAL VALUE.**
 
-LUXURY WATCH is an industrial-level, full-stack branded watch e-commerce platform architected for production deployment on **Netlify** (Frontend), **Render** (Backend), **MongoDB Atlas** (Database), and **Razorpay** (Payments).
+LUXURY WATCH is a full-stack horology e-commerce platform built with React/Vite, Node.js/Express, MongoDB/Mongoose, Cloudinary persistent media storage, and Razorpay payment gateway integration.
 
 ---
 
-## 🌟 Key Architecture & Features
+## 🌟 Architecture & Features
 
 ### 👤 Customer Experience
-* **Prestige Brand Showcase**: Continuous, auto-scrolling circular brand showcase featuring Rolex, Omega, Patek Philippe, Audemars Piguet, Cartier, TAG Heuer, Tissot, Breitling, Seiko, and Casio.
-* **Masterpiece Catalog & PDP**: High-resolution image galleries, watch specifications (movement, case diameter, water resistance, crystal, power reserve), customer reviews, stock indicators, and custom engraving options.
-* **Real Backend Search & Multi-Filters**: Instant filter by brand, category, gender, price range, movement, dial color, strap material, and ratings.
-* **Email OTP Authentication**: Passwordless Gmail/Email 6-digit OTP verification with short-lived tokens, resend cooldowns, and brute-force protection.
+* **Prestige Brand Showcase**: Continuous, circular brand showcase featuring Rolex, Omega, Patek Philippe, Audemars Piguet, Cartier, TAG Heuer, Tissot, Breitling, Seiko, and Casio.
+* **Masterpiece Catalog & PDP**: High-resolution image galleries, video playback, watch specifications (movement, case diameter, water resistance, crystal, power reserve), customer reviews, and stock indicators.
+* **Backend Search & Multi-Filters**: Instant filter by brand, category, gender, price range, movement, dial color, strap material, and ratings.
+* **Customer Authentication**: Secure direct email & password registration and login with bcrypt password hashing and JWT sessions.
 * **Multi-Address Management**: Save, edit, delete, and set default shipping addresses.
-* **Full Cart & Wishlist**: Real-time server-side stock validation, price calculations, and item persistence.
+* **Cart & Wishlist**: Server-side stock validation, price calculations, and item persistence.
 * **VIP Promotions Engine**: Percentage and fixed discount codes with minimum order spend limits.
 * **Razorpay Payment Integration**: Integrated checkout modal supporting UPI, Cards, Netbanking, with server-side HMAC-SHA256 signature verification.
 * **Consignment Tracking**: Dedicated order timeline (`/track-order`) from confirmation through armoured courier transit to delivery.
 * **Customer Returns & Exchanges**: Structured return workflow with reason tracking and courier pickup scheduling.
 
 ### 🛡️ Master Administrator Suite (`/admin`)
-* **Strict Single Admin Account**: Zero public admin registration. Locked exclusively to the designated master account (`admin@luxurywatch.com`).
+* **Strict Single Admin Account**: Zero public admin registration. Locked exclusively to the designated master account configured via environment variables.
 * **Real-Time Financial Metrics**: Total revenue, today's revenue, monthly totals, order fulfillment status, customer counts, and low-stock alerts.
-* **Product Catalog CRUD**: Add, edit, and delete timepieces with multiple image URLs, specifications, pricing, compare MRP, and feature badges.
-* **Dynamic Brand Manager**: Add and manage prestige brands, logo URLs, hallmarks, display orders, and featured statuses (live updates to the brand showcase).
+* **Product Catalog CRUD**: Add, edit, and delete timepieces with up to 5 media items (images and HD MP4/WebM videos), specifications, pricing, compare MRP, and feature badges.
+* **Persistent Media Upload**: Cloudinary object storage integration for images and videos with CDN delivery.
+* **Dynamic Brand Manager**: Add and manage prestige brands, logo URLs, hallmarks, display orders, and featured statuses.
 * **Inventory Control**: Live stock adjustments (+1, +5, -1 or direct values) with low-stock warnings.
-* **Order Fulfilment**: Update order statuses (`Confirmed`, `Processing`, `Packed`, `Shipped`, `Out for Delivery`, `Delivered`, `Cancelled`), manage waybill tracking numbers, and process refunds.
-* **Homepage CMS**: Modify announcement bar text, cinematic hero headlines, subheadings, and CTA buttons directly from the admin panel without modifying React code.
+* **Order Fulfilment**: Update order statuses across 11 lifecycle states, manage waybill tracking numbers, and process refunds.
+* **Homepage CMS**: Modify announcement bar text, cinematic hero headlines, subheadings, and CTA buttons directly from the admin panel.
 * **Payment & Store Settings**: Toggle between Test and Live Razorpay gateway modes with masked secret storage and custom shipping thresholds.
 
 ---
@@ -36,91 +37,113 @@ LUXURY WATCH is an industrial-level, full-stack branded watch e-commerce platfor
 
 | Layer | Technologies |
 |---|---|
-| **Frontend** | React 19, Vite, Tailwind CSS / Vanilla CSS Tokens, Lucide Icons, Canvas Confetti |
+| **Frontend** | React 19, Vite, Vanilla CSS Tokens, Lucide Icons, Canvas Confetti |
 | **Backend** | Node.js, Express 5, Mongoose, JWT, bcryptjs, Helmet, CORS, Express Rate Limit |
-| **Database** | MongoDB Atlas with high-performance persistent local JSON fallback & auto-sync |
-| **Payment Gateway** | Razorpay SDK + Cryptographic Signature Verification Abstraction Layer |
-| **Email & OTP** | Nodemailer SMTP with branded luxury HTML templates + Simulated preview fallback |
-| **Deployment** | Netlify (Frontend) • Render (Backend) • MongoDB Atlas (Database) |
+| **Database** | MongoDB Atlas with Mongoose schema validation & indexes |
+| **Media Storage** | Cloudinary (Persistent images & video CDN hosting) |
+| **Payment Gateway** | Razorpay SDK + Server-Side Cryptographic Signature Verification |
+| **Email Service** | Nodemailer SMTP (Order Confirmations) |
+| **Deployment** | Vercel / Netlify (Frontend) • Render (Backend) • MongoDB Atlas (Database) |
 
 ---
 
-## 📁 Repository Directory Structure
+## 📁 Directory Structure
 
 ```text
 LuxuryWatch/
 ├── backend/
 │   ├── config/
-│   │   └── db.js                 # Dual Engine (MongoDB Atlas + Local JSON DB with instant sync)
-│   ├── models/
-│   │   ├── User.js               # Customer profile and multi-address schema
-│   │   ├── Product.js            # Timepiece specifications schema
-│   │   ├── Brand.js              # Brand showcase schema
-│   │   ├── Category.js           # Category schema
-│   │   ├── Order.js              # Consignment and tracking schema
-│   │   ├── Review.js             # Customer review schema
-│   │   ├── Coupon.js             # VIP promo code schema
-│   │   ├── Payment.js            # Transaction ledger schema
-│   │   ├── StoreSettings.js      # Store configuration schema
-│   │   └── HomepageContent.js    # CMS editable hero and announcement schema
+│   │   ├── env.js                # Environment loading & fail-fast validation
+│   │   └── db.js                 # MongoDB Atlas connection manager
+│   ├── models/                   # Mongoose schemas (User, Product, Order, Brand, etc.)
 │   ├── middleware/
 │   │   ├── auth.js               # JWT & single master admin authorization guard
-│   │   ├── rateLimiter.js        # API & OTP rate limiting
+│   │   ├── rateLimiter.js        # API & authentication rate limiting
 │   │   └── errorHandler.js       # Centralized sanitized error handler
 │   ├── services/
+│   │   ├── mediaService.js       # Cloudinary persistent image/video streaming storage
 │   │   ├── paymentService.js     # Razorpay order generation & HMAC-SHA256 verification
-│   │   ├── emailService.js       # Nodemailer transporter & luxury HTML email templates
-│   │   └── otpService.js         # 6-digit OTP engine with rate limits & cooldowns
-│   ├── controllers/              # REST endpoint business logic
+│   │   ├── paymentFinalizationService.js # Idempotent order finalization engine
+│   │   └── emailService.js       # Order confirmation email dispatcher
+│   ├── controllers/              # Modular REST endpoint controllers
 │   ├── routes/
-│   │   └── api.js                # Consolidated modular API router
-│   ├── data/
-│   │   └── store.json            # Seed catalog & persistent storage
-│   ├── index.js                  # Express server, Helmet, CORS, static hosting
-│   ├── test-api.js               # Automated API verification test suite
-│   ├── package.json
-│   └── .env.example
+│   │   └── api.js                # Consolidated REST router
+│   ├── index.js                  # Express server, Helmet, strict CORS, health check
+│   └── package.json
 │
 ├── frontend/
-│   ├── public/
-│   │   └── _redirects            # Netlify Single Page Application routing rules
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── layout/           # Navbar, AnnouncementBar, Footer
-│   │   │   ├── home/             # HeroSection, LuxuryBrandsOrbital, Collections
-│   │   │   ├── product/          # ProductCard, ProductDetailsPage, QuickView
-│   │   │   ├── cart/             # CartDrawer
-│   │   │   ├── checkout/         # Multi-Step CheckoutModal & Razorpay trigger
-│   │   │   ├── auth/             # UserAuthModal with 6-digit OTP inputs
-│   │   │   └── admin/            # AdminDashboard & AdminLogin
+│   │   ├── components/           # UI Components, Modals, and Admin Dashboard
 │   │   ├── context/              # StoreContext, UserAuthContext, AdminAuthContext
-│   │   ├── services/             # api.js REST client
-│   │   ├── utils/                # Currency formatter, Razorpay loader
-│   │   ├── index.css             # Luxury Horology design tokens & typography
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── package.json
-│   └── vite.config.js
+│   │   ├── services/             # api.js REST client & image URL resolver
+│   │   ├── utils/                # Razorpay checkout & currency helpers
+│   │   ├── App.jsx               # Main SPA router & navigation handler
+│   │   └── index.css             # Horology design system tokens & responsive CSS
+│   ├── netlify.toml              # Netlify SPA routing rules & build config
+│   ├── vercel.json               # Vercel SPA routing rules & proxy
+│   ├── vite.config.js
+│   └── package.json
 │
-├── README.md
-├── .env.example
-└── package.json
+├── netlify.toml                  # Monorepo root Netlify configuration
+├── vercel.json                   # Monorepo root Vercel configuration
+├── .env.example                  # Environment configuration template
+└── README.md
 ```
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## 🔐 Master Administrator Configuration
+
+The application implements a strict single-administrator access model. Public admin signup is strictly prohibited.
+
+Admin credentials are configured **ONLY** through environment variables:
+
+1. **`ADMIN_EMAIL`**: The exact email address authorized for Master Administrator access (e.g. `admin@yourdomain.com`).
+2. **`ADMIN_PASSWORD_HASH`**: The bcrypt hash of the Master Administrator password.
+
+To generate a secure bcrypt password hash for your chosen admin password:
+```bash
+node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('YOUR_SECRET_PASSWORD', 10).then(console.log);"
+```
+Copy the generated hash string into `ADMIN_PASSWORD_HASH`.
+
+---
+
+## ⚙️ Environment Variables Reference
+
+| Variable Name | Required in Prod | Description | Example / Format |
+|---|---|---|---|
+| `NODE_ENV` | Yes | Environment mode | `production` or `development` |
+| `PORT` | Yes (Render provides) | Port for backend server | `5000` |
+| `MONGODB_URI` | Yes | MongoDB Atlas connection string | `mongodb+srv://<user>:<pwd>@cluster.mongodb.net/dbname` |
+| `JWT_SECRET` | Yes | Secret key for signing JWTs (min 32 chars) | Random 64-character hex/string |
+| `ADMIN_EMAIL` | Yes | Designated Master Admin email | `admin@yourdomain.com` |
+| `ADMIN_PASSWORD_HASH` | Yes | Bcrypt hash of Master Admin password | `$2b$10$...` |
+| `RAZORPAY_KEY_ID` | Yes | Razorpay API Key ID | `rzp_live_...` or `rzp_test_...` |
+| `RAZORPAY_KEY_SECRET` | Yes | Razorpay API Secret Key | Private string |
+| `RAZORPAY_WEBHOOK_SECRET` | Optional | Webhook secret for payment events | String |
+| `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary account cloud name | String |
+| `CLOUDINARY_API_KEY` | Yes | Cloudinary API Key | String |
+| `CLOUDINARY_API_SECRET` | Yes | Cloudinary API Secret | String |
+| `FRONTEND_URL` | Yes | Allowed frontend origin for CORS | `https://your-frontend.vercel.app` |
+| `FRONTEND_URLS` | Optional | Comma-separated list of allowed origins | `https://site1.vercel.app,https://site2.netlify.app` |
+| `EMAIL_HOST` | Optional | SMTP server host (e.g. `smtp.gmail.com`) | `smtp.gmail.com` |
+| `EMAIL_PORT` | Optional | SMTP port | `587` or `465` |
+| `EMAIL_USER` | Optional | SMTP username / email address | `concierge@yourdomain.com` |
+| `EMAIL_PASSWORD` | Optional | SMTP password or app-specific password | String |
+| `EMAIL_FROM` | Optional | Sender display name and email address | `"LUXURY WATCH" <concierge@yourdomain.com>` |
+
+---
+
+## 🚀 Local Development Setup
 
 ### 1. Prerequisites
 * **Node.js**: v18+ or v20+
 * **npm**: v9+
+* **MongoDB**: Local MongoDB instance or free MongoDB Atlas cluster
 
-### 2. Clone & Install Dependencies
+### 2. Install Dependencies
 ```bash
-# Clone the repository
-git clone https://github.com/LuffyDeveloper96/Luxury-Watch.git
-cd Luxury-Watch
-
 # Install root dependencies
 npm install
 
@@ -131,88 +154,81 @@ cd backend && npm install && cd ..
 cd frontend && npm install && cd ..
 ```
 
-### 3. Configure Environment Variables
-Copy the template files:
+### 3. Setup Environment Variables
+Create `.env` files in the root and backend folders based on `.env.example`:
 ```bash
 cp .env.example .env
-cp backend/.env.example backend/.env
+cp .env.example backend/.env
 ```
 
-### 4. Run Both Backend & Frontend Concurrently
+### 4. Run Concurrently
 ```bash
 npm run dev:all
 ```
-* **Frontend Application**: `http://localhost:5173`
-* **Haute Horlogerie REST API**: `http://localhost:5000/api`
-* **API Health Check**: `http://localhost:5000/api/health`
-
----
-
-## 🧪 Automated API Verification Test Suite
-
-Run the end-to-end backend test suite to verify all REST endpoints, OTP auth, Razorpay order creation, payment signature verification, inventory stock decrement, and admin metrics:
-```bash
-# Run automated API tests (ensure server is running on port 5000)
-npm run test:api
-```
-
----
-
-> ⚠️ **Security Notice**: Only this single seeded master email is authorized to access admin endpoints. Public signup for admin accounts is strictly forbidden and disabled.
+* **Frontend**: `http://localhost:5173`
+* **Backend API**: `http://localhost:5000/api`
+* **Health Check**: `http://localhost:5000/health`
 
 ---
 
 ## 🌐 Production Deployment Guide
 
-### A. Database Deployment (MongoDB Atlas)
-1. Create a free/production cluster at [cloud.mongodb.com](https://cloud.mongodb.com).
-2. Create a Database User (e.g. `luxury_admin`) with read/write permissions.
-3. In **Network Access**, add IP `0.0.0.0/0` (Allow access from anywhere).
-4. Copy the connection string and set `MONGODB_URI` in Render environment variables.
+### A. Database (MongoDB Atlas)
+1. Log in to [MongoDB Atlas](https://cloud.mongodb.com).
+2. Create a production cluster.
+3. Under **Database Access**, create a user with read and write privileges.
+4. Under **Network Access**, allow access from the backend's IP or `0.0.0.0/0` with strong user authentication.
+5. Retrieve your connection string (SRV URI) and configure `MONGODB_URI` in your backend deployment platform.
 
-### B. Backend Deployment (Render)
-1. Go to [dashboard.render.com](https://dashboard.render.com) → **New Web Service**.
+### B. Persistent Media Storage (Cloudinary)
+1. Create an account at [Cloudinary](https://cloudinary.com).
+2. Retrieve your **Cloud Name**, **API Key**, and **API Secret** from the Cloudinary Dashboard.
+3. Configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` on your backend hosting provider.
+
+### C. Backend Deployment (Render)
+1. Go to [Render Dashboard](https://dashboard.render.com) → **New Web Service**.
 2. Connect your Git repository.
-3. Configure settings:
+3. Settings:
    * **Root Directory**: `backend`
    * **Build Command**: `npm install`
-   * **Start Command**: `npm start`
-4. Add Environment Variables:
-   * `NODE_ENV`: `production`
-   * `PORT`: `5000`
-   * `MONGODB_URI`: `<Your MongoDB Atlas connection string>`
-   * `JWT_SECRET`: `<A strong random 64-character secret>`
-   * `AUTHORIZED_ADMIN_GMAIL`: `admin@luxurywatch.com`
-   * `RAZORPAY_KEY_ID`: `<Your Razorpay Key ID>`
-   * `RAZORPAY_KEY_SECRET`: `<Your Razorpay Secret Key>`
-   * `FRONTEND_URL`: `https://luxury-watch.netlify.app`
+   * **Start Command**: `node index.js`
+4. Configure all required Environment Variables listed in the table above.
+5. Set **Health Check Path**: `/health`.
 
-### C. Frontend Deployment (Netlify)
-1. Go to [app.netlify.com](https://app.netlify.com) → **Add new site** → **Import an existing project**.
-2. Select your Git repository.
-3. Configure settings:
+> 💡 **Production Tier Note**: Render Free instances spin down after inactivity. For production with continuous availability and immediate payment webhook handling, a paid Render Web Service tier is recommended.
+
+### D. Frontend Deployment (Vercel or Netlify)
+
+#### Option 1: Vercel
+1. Connect repository on [Vercel](https://vercel.com).
+2. Set **Root Directory**: `frontend`.
+3. Set **Framework Preset**: `Vite`.
+4. Environment Variables:
+   * `VITE_API_URL`: `https://your-backend.onrender.com/api`
+   * `VITE_RAZORPAY_KEY_ID`: `<Your Public Razorpay Key ID>`
+
+#### Option 2: Netlify
+1. Connect repository on [Netlify](https://app.netlify.com).
+2. Build Settings:
    * **Base directory**: `frontend`
    * **Build command**: `npm run build`
-   * **Publish directory**: `dist` (or leave as configured by `netlify.toml`)
-4. Add Environment Variables:
-   * `VITE_API_URL`: `https://luxury-watch-vibr.onrender.com/api`
-   * `VITE_RAZORPAY_KEY_ID`: `rzp_test_TWgXC7muCJnuci`
-
-> ℹ️ **SPA Redirection**: `frontend/public/_redirects` is pre-configured with `/* /index.html 200` to ensure direct link navigation works flawlessly on Netlify.
-
-### D. Connecting a Custom Domain (e.g., `luxurywatch.in`)
-* **Frontend**: In Netlify, go to **Domain management** → **Add custom domain** (e.g., `luxurywatch.in`). Point your registrar DNS A/CNAME records to Netlify.
-* **Backend**: In Render, add custom domain `api.luxurywatch.in` and update `FRONTEND_URL` and `VITE_API_URL` accordingly.
+   * **Publish directory**: `dist`
+3. Environment Variables:
+   * `VITE_API_URL`: `https://your-backend.onrender.com/api`
+   * `VITE_RAZORPAY_KEY_ID`: `<Your Public Razorpay Key ID>`
 
 ---
 
-## 🛡️ Payment Security Standard
+## 🛡️ Security & Payment Standards
 
-* **Zero Card/UPI PIN Storage**: Sensitive card credentials, CVVs, and UPI PINs are processed directly by Razorpay's PCI-DSS compliant iframe modal.
-* **Server-Side Verification**: Orders are confirmed **ONLY** after HMAC-SHA256 signature verification matches `crypto.createHmac('sha256', secret).update(orderId + "|" + paymentId).digest('hex')`.
-* **Atomic Inventory Decrement**: Stock decreases strictly after verified payment. Failed or aborted transactions do not alter stock balances.
+* **No Hardcoded Secrets**: Secrets and credentials exist solely in platform environment variables.
+* **Server-Side Price Calculation**: Order pricing is recalculated directly from database records during checkout.
+* **HMAC-SHA256 Signature Verification**: Payment confirmations require cryptographic HMAC verification using `crypto.timingSafeEqual`.
+* **CORS Allowlist**: CORS accepts requests strictly from configured production frontend origins.
+* **Persistent Media**: Images and videos persist to object storage and do not rely on ephemeral server filesystems.
+* **Helmet Headers & Rate Limiting**: Security headers and brute-force protection guard all API routes.
 
 ---
 
 ## 📜 License
-Copyright © 2026 LUXURY WATCH (India) Private Limited. All rights reserved.
+Copyright © 2026 LUXURY WATCH. All rights reserved.

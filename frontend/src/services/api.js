@@ -104,7 +104,7 @@ export const authAPI = {
 export const userAuthAPI = {
   // Direct Sign Up Flow
   initiateSignup: async ({ name, email, password, phone }) => {
-    return request('/auth/user/signup/init', {
+    return request('/auth/user/signup', {
       method: 'POST',
       body: JSON.stringify({ name, email, password, phone })
     });
@@ -112,25 +112,12 @@ export const userAuthAPI = {
 
   // Direct Sign In Flow (Email + Password)
   initiateLogin: async ({ email, password }) => {
-    return request('/auth/user/login/init', {
+    return request('/auth/user/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
     });
   },
 
-  // Password Reset Flow
-  forgotPassword: async (email) => {
-    return request('/auth/user/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email })
-    });
-  },
-  resetPassword: async ({ email, otp, newPassword }) => {
-    return request('/auth/user/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ email, otp, newPassword })
-    });
-  },
   getMe: async (token) => {
     return request('/auth/user/me', {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -151,6 +138,11 @@ export const userAuthAPI = {
   deleteAddress: async (addressId) => {
     return request(`/auth/user/addresses/${addressId}`, {
       method: 'DELETE'
+    });
+  },
+  setDefaultAddress: async (addressId) => {
+    return request(`/auth/user/addresses/${addressId}/default`, {
+      method: 'PUT'
     });
   },
   getCustomers: async () => {

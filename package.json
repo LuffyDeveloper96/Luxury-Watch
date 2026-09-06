@@ -11,7 +11,7 @@
     "client": "npm --prefix frontend run dev",
     "frontend": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
-    "test:api": "node backend/test-api.js"
+    "test:api": "node backend/test-suite.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

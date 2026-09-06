@@ -26,32 +26,46 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// CORS Configuration
-const allowedOrigins = [
-  env.FRONTEND_URL,
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  'https://luxurywatch.in',
-  'https://luxury-watch.netlify.app',
-  'https://luxurywatch08.netlify.app',
-  'https://luxury-watch-henna.vercel.app'
-].filter(Boolean);
+// Explicit CORS Configuration
+const parseAllowedOrigins = () => {
+  const origins = [];
+  if (env.FRONTEND_URL) {
+    origins.push(env.FRONTEND_URL.trim().replace(/\/$/, ''));
+  }
+  if (env.FRONTEND_URLS) {
+    env.FRONTEND_URLS.split(',').forEach(u => {
+      if (u.trim()) origins.push(u.trim().replace(/\/$/, ''));
+    });
+  }
+
+  // Allow local development ports only in development mode
+  if (env.NODE_ENV !== 'production') {
+    origins.push(
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000'
+    );
+  }
+
+  return [...new Set(origins.filter(Boolean))];
+};
+
+const allowedOrigins = parseAllowedOrigins();
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow non-browser requests or matching origins
-    if (
-      !origin ||
-      allowedOrigins.includes(origin) ||
-      allowedOrigins.includes('*') ||
-      env.NODE_ENV !== 'production' ||
-      /\.vercel\.app$/.test(origin) ||
-      /\.netlify\.app$/.test(origin)
-    ) {
+    // Allow non-browser requests (e.g. mobile apps, server-to-server, curl, tests)
+    if (!origin) {
       return callback(null, true);
     }
-    return callback(new Error(`Origin '${origin}' not allowed by CORS policy.`));
+
+    const cleanOrigin = origin.replace(/\/$/, '');
+    if (allowedOrigins.includes(cleanOrigin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin '${origin}' not permitted by CORS policy.`));
   },
   credentials: true
 }));
@@ -68,7 +82,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
-    service: 'Luxury Watch API'
+    service: 'Luxury Watch API',
+    uptime: Math.round(process.uptime()),
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -81,7 +97,7 @@ const localDistPath = path.join(__dirname, 'dist');
 const distPath = fs.existsSync(frontendDistPath) ? frontendDistPath : localDistPath;
 app.use(express.static(distPath));
 
-// Serve uploaded images
+// Backward-compatible static uploads directory
 const uploadsPath = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, { recursive: true });
@@ -106,7 +122,7 @@ app.use((req, res, next) => {
 // Centralized Error Handling Middleware
 app.use(errorHandler);
 
-// Process-level safety handlers to prevent server termination
+// Process-level safety handlers
 process.on('uncaughtException', (err) => {
   console.error('⚠️ [Process Uncaught Exception]:', err.message);
 });
@@ -121,9 +137,9 @@ app.listen(PORT, () => {
   ║   LUXURY WATCH | HAUTE HORLOGERIE PRODUCTION ENGINE           ║
   ║   Port: ${PORT}                                                ║
   ║   API Root: http://localhost:${PORT}/api                         ║
-  ║   Health: http://localhost:${PORT}/api/health                    ║
+  ║   Health: http://localhost:${PORT}/health                        ║
   ║   Razorpay Integration: Active                                ║
-  ║   Email OTP System: Ready                                     ║
+  ║   Media Storage: Persistent Object Storage                    ║
   ╚═══════════════════════════════════════════════════════════════╝
   `);
 });

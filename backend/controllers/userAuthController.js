@@ -1,23 +1,21 @@
 import bcrypt from 'bcryptjs';
 import { User, ActivityLog } from '../models/index.js';
 import { generateToken } from '../middleware/auth.js';
-import { createOtpSession, verifyOtpSession } from '../services/otpService.js';
-import { emailService } from '../services/emailService.js';
 
 /**
- * 1. Patron Sign Up (Email + Password only)
- * POST /api/auth/user/signup/init
+ * 1. Patron Registration (Direct Email + Password)
+ * POST /api/auth/user/signup
  */
 export const initiateUserSignup = async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
 
     if (typeof email !== 'string' || !email.trim() || !email.includes('@')) {
-      return res.status(400).json({ success: false, message: 'A valid email address string is required.' });
+      return res.status(400).json({ success: false, message: 'A valid email address is required.' });
     }
 
     if (typeof password !== 'string' || password.length < 6) {
-      return res.status(400).json({ success: false, message: 'Password must be a string with at least 6 characters.' });
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters in length.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -38,7 +36,7 @@ export const initiateUserSignup = async (req, res) => {
       email: cleanEmail,
       password: passwordHash,
       name: typeof name === 'string' && name.trim() ? name.trim() : cleanEmail.split('@')[0],
-      phone: typeof phone === 'string' ? phone : '',
+      phone: typeof phone === 'string' ? phone.trim() : '',
       role: 'customer',
       verified: true,
       addresses: [],
@@ -47,12 +45,14 @@ export const initiateUserSignup = async (req, res) => {
       createdAt: new Date()
     });
 
-    await ActivityLog.create({
-      id: `act-${Date.now()}`,
-      text: `✨ New patron ${user.name} created an account with verified email & password`,
-      time: 'Just now',
-      type: 'user'
-    });
+    try {
+      await ActivityLog.create({
+        id: `act-${Date.now()}`,
+        text: `✨ New patron "${user.name}" created an account`,
+        time: 'Just now',
+        type: 'user'
+      });
+    } catch (logErr) {}
 
     const token = generateToken({
       id: user.id || user._id.toString(),
@@ -64,7 +64,7 @@ export const initiateUserSignup = async (req, res) => {
     const sanitizedUser = user.toObject ? user.toObject() : { ...user };
     delete sanitizedUser.password;
 
-    return res.json({
+    return res.status(201).json({
       success: true,
       message: 'Registration successful.',
       token,
@@ -76,88 +76,8 @@ export const initiateUserSignup = async (req, res) => {
 };
 
 /**
- * 2. Patron Sign Up OTP Verification
- * POST /api/auth/user/signup/verify
- */
-export const verifyUserSignup = async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-
-    if (typeof email !== 'string' || typeof otp !== 'string' || !email.trim() || !otp.trim()) {
-      return res.status(400).json({ success: false, message: 'Email and verification code must be valid strings.' });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanOtp = otp.trim();
-    const verification = verifyOtpSession(cleanEmail, cleanOtp);
-
-    if (!verification.success) {
-      return res.status(400).json({ success: false, message: verification.message });
-    }
-
-    const { name, metadata } = verification.data;
-    let user = await User.findOne({ email: cleanEmail });
-
-    if (!user) {
-      user = await User.create({
-        id: `usr-${Date.now()}`,
-        email: cleanEmail,
-        password: metadata?.passwordHash || '',
-        name: metadata?.name || name || cleanEmail.split('@')[0],
-        phone: metadata?.phone || '',
-        role: 'customer',
-        verified: true,
-        addresses: [],
-        totalSpent: 0,
-        ordersCount: 0,
-        createdAt: new Date()
-      });
-
-      await ActivityLog.create({
-        id: `act-${Date.now()}`,
-        text: `✨ New patron ${user.name} created an account with verified email & password`,
-        time: 'Just now',
-        type: 'user'
-      });
-    } else {
-      user = await User.findOneAndUpdate(
-        { email: cleanEmail },
-        {
-          $set: {
-            password: metadata?.passwordHash || user.password,
-            verified: true,
-            lastLogin: new Date()
-          }
-        },
-        { returnDocument: 'after' }
-      );
-    }
-
-    // Generate JWT token
-    const token = generateToken({
-      id: user.id || user._id.toString(),
-      email: user.email,
-      name: user.name,
-      role: 'customer'
-    });
-
-    const sanitizedUser = user.toObject ? user.toObject() : { ...user };
-    delete sanitizedUser.password;
-
-    return res.json({
-      success: true,
-      message: 'Patron registration verified successfully.',
-      token,
-      user: sanitizedUser
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-/**
- * 3. Patron Sign In (Email + Password only)
- * POST /api/auth/user/login/init
+ * 2. Patron Sign In (Direct Email + Password)
+ * POST /api/auth/user/login
  */
 export const initiateUserLogin = async (req, res) => {
   try {
@@ -171,12 +91,12 @@ export const initiateUserLogin = async (req, res) => {
     const user = await User.findOne({ email: cleanEmail });
 
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials. User not found.' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your email and password.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials. Incorrect password.' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your email and password.' });
     }
 
     // Update last login
@@ -195,7 +115,7 @@ export const initiateUserLogin = async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Login successful.',
+      message: 'Authentication successful.',
       token,
       user: sanitizedUser
     });
@@ -205,194 +125,7 @@ export const initiateUserLogin = async (req, res) => {
 };
 
 /**
- * 4. Patron Sign In OTP Verification
- * POST /api/auth/user/login/verify
- */
-export const verifyUserLogin = async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-
-    if (typeof email !== 'string' || typeof otp !== 'string' || !email.trim() || !otp.trim()) {
-      return res.status(400).json({ success: false, message: 'Email and verification code must be valid strings.' });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanOtp = otp.trim();
-    const verification = verifyOtpSession(cleanEmail, cleanOtp);
-
-    if (!verification.success) {
-      return res.status(400).json({ success: false, message: verification.message });
-    }
-
-    const user = await User.findOneAndUpdate(
-      { email: cleanEmail },
-      {
-        $set: {
-          verified: true,
-          lastLogin: new Date()
-        }
-      },
-      { returnDocument: 'after' }
-    );
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Patron record not found.' });
-    }
-
-    const token = generateToken({
-      id: user.id || user._id.toString(),
-      email: user.email,
-      name: user.name,
-      role: 'customer'
-    });
-
-    const sanitizedUser = user.toObject ? user.toObject() : { ...user };
-    delete sanitizedUser.password;
-
-    return res.json({
-      success: true,
-      message: 'Sign In verified successfully.',
-      token,
-      user: sanitizedUser
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-/**
- * 5. Forgot Password Initiation
- * POST /api/auth/user/forgot-password
- */
-export const forgotPasswordInit = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (typeof email !== 'string' || !email.trim() || !email.includes('@')) {
-      return res.status(400).json({ success: false, message: 'A valid email address string is required.' });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const user = await User.findOne({ email: cleanEmail }).lean();
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'No patron account found with this email.' });
-    }
-
-    const otpResult = createOtpSession(cleanEmail, user.name, 'reset-password');
-    if (!otpResult.success) {
-      return res.status(429).json({
-        success: false,
-        cooldown: true,
-        remainingSeconds: otpResult.remainingSeconds,
-        message: otpResult.message
-      });
-    }
-
-    await emailService.sendOtpEmail(cleanEmail, otpResult.rawOtp, user.name);
-
-    return res.json({
-      success: true,
-      message: `Password reset verification code dispatched to ${cleanEmail}.`,
-      step: 'otp',
-      expiresInSeconds: 300
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-/**
- * 6. Reset Password with OTP Verification
- * POST /api/auth/user/reset-password
- */
-export const resetPasswordWithOtp = async (req, res) => {
-  try {
-    const { email, otp, newPassword } = req.body;
-
-    if (
-      typeof email !== 'string' ||
-      typeof otp !== 'string' ||
-      typeof newPassword !== 'string' ||
-      !email.trim() ||
-      !otp.trim() ||
-      !newPassword.trim()
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email, verification code, and new password must be valid strings.'
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password must be at least 6 characters.'
-      });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanOtp = otp.trim();
-    const verification = verifyOtpSession(cleanEmail, cleanOtp);
-
-    if (!verification.success) {
-      return res.status(400).json({ success: false, message: verification.message });
-    }
-
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    const user = await User.findOneAndUpdate(
-      { email: cleanEmail },
-      {
-        $set: {
-          password: passwordHash,
-          updatedAt: new Date()
-        }
-      },
-      { returnDocument: 'after' }
-    );
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Patron record not found.' });
-    }
-
-    const token = generateToken({
-      id: user.id || user._id.toString(),
-      email: user.email,
-      name: user.name,
-      role: 'customer'
-    });
-
-    const sanitizedUser = user.toObject ? user.toObject() : { ...user };
-    delete sanitizedUser.password;
-
-    return res.json({
-      success: true,
-      message: 'Password reset and patron account authenticated successfully.',
-      token,
-      user: sanitizedUser
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-/**
- * Legacy Support: Send OTP
- * POST /api/auth/user/send-otp
- */
-export const sendUserOtp = async (req, res) => {
-  return initiateUserSignup(req, res);
-};
-
-/**
- * Legacy Support: Verify OTP
- * POST /api/auth/user/verify-otp
- */
-export const verifyUserOtp = (req, res) => {
-  return verifyUserSignup(req, res);
-};
-
-/**
- * Get Authenticated Customer Profile
+ * 3. Get Authenticated Customer Profile
  * GET /api/auth/user/me
  */
 export const getMe = async (req, res) => {
@@ -421,7 +154,7 @@ export const getMe = async (req, res) => {
 };
 
 /**
- * Add Shipping Address
+ * 4. Add Shipping Address
  * POST /api/auth/user/addresses
  */
 export const addAddress = async (req, res) => {
@@ -476,7 +209,7 @@ export const addAddress = async (req, res) => {
 };
 
 /**
- * Delete Shipping Address
+ * 5. Delete Shipping Address
  * DELETE /api/auth/user/addresses/:id
  */
 export const deleteAddress = async (req, res) => {
@@ -506,7 +239,7 @@ export const deleteAddress = async (req, res) => {
 };
 
 /**
- * Set Default Address
+ * 6. Set Default Address
  * PUT /api/auth/user/addresses/:id/default
  */
 export const setDefaultAddress = async (req, res) => {
@@ -539,7 +272,7 @@ export const setDefaultAddress = async (req, res) => {
 };
 
 /**
- * Admin: List all registered customers (Paginated)
+ * 7. Admin: List all registered customers (Paginated)
  * GET /api/admin/customers
  */
 export const getAdminCustomers = async (req, res) => {
@@ -574,13 +307,7 @@ export const getAdminCustomers = async (req, res) => {
 
 export default {
   initiateUserSignup,
-  verifyUserSignup,
   initiateUserLogin,
-  verifyUserLogin,
-  forgotPasswordInit,
-  resetPasswordWithOtp,
-  sendUserOtp,
-  verifyUserOtp,
   getMe,
   addAddress,
   deleteAddress,

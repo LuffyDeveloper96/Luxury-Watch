@@ -18,10 +18,11 @@ export const UserAuthProvider = ({ children }) => {
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState('signin'); // 'signin' | 'signup' | 'forgot'
+  const [authModalTab, setAuthModalTab] = useState('signin'); // 'signin' | 'signup'
   const [userOrders, setUserOrders] = useState([]);
   const [userReturns, setUserReturns] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [authSuccessCallback, setAuthSuccessCallback] = useState(null);
 
   // Sync profile on token change
   const refreshUserProfile = useCallback(async () => {
@@ -47,8 +48,6 @@ export const UserAuthProvider = ({ children }) => {
       refreshUserProfile();
     }
   }, [token, refreshUserProfile]);
-
-  const [authSuccessCallback, setAuthSuccessCallback] = useState(null);
 
   const openAuthModal = (tab = 'signin', onSuccess = null) => {
     setAuthModalTab(tab);
@@ -91,31 +90,6 @@ export const UserAuthProvider = ({ children }) => {
     }
   };
 
-  const verifySignup = async ({ email, otp }) => {
-    setLoading(true);
-    try {
-      const res = await userAuthAPI.verifySignup({ email, otp });
-      if (res.success && res.user && res.token) {
-        setUser(res.user);
-        setToken(res.token);
-        localStorage.setItem('luxury_user', JSON.stringify(res.user));
-        localStorage.setItem('luxury_user_token', res.token);
-        setIsAuthModalOpen(false);
-
-        if (typeof authSuccessCallback === 'function') {
-          const cb = authSuccessCallback;
-          setAuthSuccessCallback(null);
-          setTimeout(() => cb(res.user), 150);
-        }
-      }
-      return res;
-    } catch (err) {
-      return { success: false, message: err.message || 'Verification failed.' };
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Sign In Flow (Email + Password)
   const initiateLogin = async ({ email, password }) => {
     setLoading(true);
@@ -137,78 +111,6 @@ export const UserAuthProvider = ({ children }) => {
       return res;
     } catch (err) {
       return { success: false, message: err.message || 'Invalid credentials.' };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifyLogin = async ({ email, otp }) => {
-    setLoading(true);
-    try {
-      const res = await userAuthAPI.verifyLogin({ email, otp });
-      if (res.success && res.user && res.token) {
-        setUser(res.user);
-        setToken(res.token);
-        localStorage.setItem('luxury_user', JSON.stringify(res.user));
-        localStorage.setItem('luxury_user_token', res.token);
-        closeAuthModal();
-      }
-      return res;
-    } catch (err) {
-      return { success: false, message: err.message || '2FA Verification failed.' };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Forgot / Reset Password Flow
-  const forgotPassword = async (email) => {
-    setLoading(true);
-    try {
-      return await userAuthAPI.forgotPassword(email);
-    } catch (err) {
-      return { success: false, message: err.message || 'Failed to dispatch reset code.' };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resetPassword = async ({ email, otp, newPassword }) => {
-    setLoading(true);
-    try {
-      const res = await userAuthAPI.resetPassword({ email, otp, newPassword });
-      if (res.success && res.user && res.token) {
-        setUser(res.user);
-        setToken(res.token);
-        localStorage.setItem('luxury_user', JSON.stringify(res.user));
-        localStorage.setItem('luxury_user_token', res.token);
-        closeAuthModal();
-      }
-      return res;
-    } catch (err) {
-      return { success: false, message: err.message || 'Password reset failed.' };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Legacy & direct OTP helpers
-  const sendOtp = async (email, name, purpose = 'login') => {
-    return await userAuthAPI.sendOtp(email, name, purpose);
-  };
-
-  const verifyOtp = async (email, otp, name, phone) => {
-    setLoading(true);
-    try {
-      const res = await userAuthAPI.verifyOtp(email, otp, name, phone);
-      if (res.success && res.user && res.token) {
-        setUser(res.user);
-        setToken(res.token);
-        localStorage.setItem('luxury_user', JSON.stringify(res.user));
-        localStorage.setItem('luxury_user_token', res.token);
-        closeAuthModal();
-      }
-      return res;
     } finally {
       setLoading(false);
     }
@@ -280,13 +182,7 @@ export const UserAuthProvider = ({ children }) => {
         closeAuthModal,
         setAuthModalTab,
         initiateSignup,
-        verifySignup,
         initiateLogin,
-        verifyLogin,
-        forgotPassword,
-        resetPassword,
-        sendOtp,
-        verifyOtp,
         updateProfile,
         addAddress,
         deleteAddress,

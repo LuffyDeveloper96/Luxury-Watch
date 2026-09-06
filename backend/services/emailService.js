@@ -37,8 +37,6 @@ const renderLuxuryEmail = ({ title, preheader, contentHtml }) => `
     .brand-title { color: #f3e5ab; font-size: 24px; font-weight: bold; letter-spacing: 4px; margin: 0; text-transform: uppercase; }
     .brand-tagline { color: #94a3b8; font-size: 11px; letter-spacing: 2px; margin-top: 6px; text-transform: uppercase; }
     .body-content { padding: 35px 30px; color: #e2e8f0; line-height: 1.6; font-size: 15px; }
-    .gold-box { background: rgba(212, 175, 55, 0.08); border: 1px solid #d4af37; padding: 20px; border-radius: 6px; margin: 25px 0; text-align: center; }
-    .otp-code { font-size: 34px; font-weight: bold; letter-spacing: 8px; color: #f3e5ab; margin: 10px 0; font-family: monospace; }
     .footer { background-color: #0b0f19; padding: 25px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #1f2937; }
   </style>
 </head>
@@ -53,7 +51,7 @@ const renderLuxuryEmail = ({ title, preheader, contentHtml }) => `
     </div>
     <div class="footer">
       <p>Luxury Watch Haute Horlogerie Atelier • Pan-India Insured Armoured Transit</p>
-      <p style="margin-top: 8px;">If you did not initiate this request, please contact our 24/7 Concierge at concierge@luxurywatch.com</p>
+      <p style="margin-top: 8px;">For inquiries, please contact our 24/7 Concierge at concierge@luxurywatch.com</p>
     </div>
   </div>
 </body>
@@ -61,62 +59,6 @@ const renderLuxuryEmail = ({ title, preheader, contentHtml }) => `
 `;
 
 export const emailService = {
-  /**
-   * Send 6-Digit Email OTP
-   */
-  sendOtpEmail: async (email, otp, name = '') => {
-    const cleanEmail = email.trim().toLowerCase();
-    const recipientName = name ? name : 'Distinguished Patron';
-
-    const contentHtml = `
-      <h2 style="color: #f8fafc; font-size: 18px; margin-top: 0;">Verification Code</h2>
-      <p>Dear ${recipientName},</p>
-      <p>Please use the one-time verification code below to authenticate your Luxury Watch session:</p>
-      <div class="gold-box">
-        <div style="font-size: 12px; letter-spacing: 2px; color: #94a3b8; text-transform: uppercase;">One-Time Password</div>
-        <div class="otp-code">${otp}</div>
-        <div style="font-size: 12px; color: #94a3b8;">Valid for 5 minutes • Single-use security code</div>
-      </div>
-      <p style="font-size: 13px; color: #94a3b8;"><strong>Security Notice:</strong> Never share this code with anyone. Luxury Watch Concierge staff will never request your code.</p>
-      <p style="font-size: 13px; color: #64748b;">If you did not request this verification code, please disregard this email.</p>
-    `;
-
-    const plainText = `LUXURY WATCH — Verification Code\n\nDear ${recipientName},\n\nYour one-time verification code is: ${otp}\n\nThis code is valid for 5 minutes. Never share this code with anyone.\n\nLuxury Watch Concierge`;
-
-    const html = renderLuxuryEmail({
-      title: 'Luxury Watch — Your Verification Code',
-      preheader: `Your verification code is ${otp}`,
-      contentHtml
-    });
-
-    const transporter = createTransporter();
-    if (transporter) {
-      try {
-        await transporter.sendMail({
-          from: env.EMAIL_FROM || process.env.EMAIL_FROM || '"LUXURY WATCH Concierge" <concierge@luxurywatch.com>',
-          to: cleanEmail,
-          subject: `[LUXURY WATCH] Your Verification Code: ${otp}`,
-          text: plainText,
-          html
-        });
-        return { success: true, method: 'smtp' };
-      } catch (err) {
-        console.warn('⚠️ [EmailService] SMTP Dispatch note: Unable to deliver email via SMTP.');
-        if (process.env.NODE_ENV !== 'production') {
-          return { success: true, method: 'dev_mock', note: err.message };
-        }
-        return { success: false, method: 'smtp_failed', error: 'Email dispatch failed' };
-      }
-    }
-
-    // In development mode only when SMTP credentials are not configured
-    if (process.env.NODE_ENV !== 'production') {
-      return { success: true, method: 'dev_mock' };
-    }
-
-    return { success: false, method: 'smtp_unconfigured', error: 'SMTP is not configured' };
-  },
-
   /**
    * Send Order Confirmation Email
    */
@@ -164,10 +106,13 @@ export const emailService = {
           subject: `[LUXURY WATCH] Allocation Confirmed: Order #${order.id}`,
           html
         });
+        return { success: true };
       } catch (err) {
         console.warn('[EmailService] Order confirmation email note:', err.message);
+        return { success: false, error: err.message };
       }
     }
+    return { success: false, note: 'Transporter or recipient unconfigured' };
   }
 };
 
