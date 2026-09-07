@@ -440,7 +440,7 @@ export const ProductQuickView = () => {
               <input
                 type="text"
                 maxLength={24}
-                placeholder="e.g., A. STERLING • 2026 or INITALS"
+                placeholder="ENTER ENGRAVING (UP TO 24 CHARACTERS)"
                 value={engravingText}
                 onChange={(e) => setEngravingText(e.target.value.toUpperCase())}
                 className="lux-input"

@@ -44,27 +44,27 @@ export const AdminDashboard = ({ onBackToStore }) => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({
     name: '',
-    brand: 'Rolex',
+    brand: '',
     category: 'Dive & Sport',
     gender: 'Men',
-    price: 5499,
-    comparePrice: 6499,
-    stock: 10,
-    sku: `LW-${Date.now().toString().slice(-4)}`,
-    badge: 'NEW ARRIVAL',
+    price: '',
+    comparePrice: '',
+    stock: 1,
+    sku: '',
+    badge: '',
     badgeType: 'gold',
-    images: ['/images/watches/rolex_submariner.jpg'],
-    description: 'Masterfully crafted in 904L steel with sapphire crystal and Swiss automatic calibre.',
+    images: [],
+    description: '',
     specs: {
-      movement: 'Swiss Automatic Calibre',
-      powerReserve: '70 Hours',
-      caseDiameter: '41 mm',
-      caseMaterial: '904L Oystersteel',
-      dialColor: 'Black',
-      strapMaterial: 'Stainless Steel',
-      waterResistance: '300 Meters / 30 ATM',
-      crystal: 'Scratch-Resistant Sapphire',
-      origin: 'Geneva, Switzerland'
+      movement: '',
+      powerReserve: '',
+      caseDiameter: '',
+      caseMaterial: '',
+      dialColor: '',
+      strapMaterial: '',
+      waterResistance: '',
+      crystal: '',
+      origin: ''
     }
   });
 
@@ -77,12 +77,12 @@ export const AdminDashboard = ({ onBackToStore }) => {
   const [brandForm, setBrandForm] = useState({
     name: '',
     slug: '',
-    badge: 'OFFICIAL ICON',
-    location: 'Geneva, Switzerland',
-    established: '1905',
+    badge: '',
+    location: '',
+    established: '',
     featuredCollection: '',
     description: '',
-    image: '/images/watches/rolex_submariner.jpg',
+    image: '',
     imageAlt: '',
     filterTarget: '',
     displayOrder: 1,
@@ -94,7 +94,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
   const [couponForm, setCouponForm] = useState({
     code: '',
     discountPercent: 10,
-    minSpend: 4000,
+    minSpend: 0,
     description: ''
   });
 
@@ -278,12 +278,12 @@ export const AdminDashboard = ({ onBackToStore }) => {
     setBrandForm({
       name: '',
       slug: '',
-      badge: 'OFFICIAL ICON',
-      location: 'Geneva, Switzerland',
-      established: '1905',
+      badge: '',
+      location: '',
+      established: '',
       featuredCollection: '',
       description: '',
-      image: '/images/watches/rolex_submariner.jpg',
+      image: '',
       imageAlt: '',
       filterTarget: '',
       displayOrder: brandsList.length + 1,
@@ -721,16 +721,16 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     setEditingProduct(null);
                     setProductForm({
                       name: '',
-                      brand: 'Rolex',
+                      brand: '',
                       category: 'Dive & Sport',
                       gender: 'Men',
-                      price: 4999,
-                      comparePrice: 5999,
-                      stock: 5,
-                      sku: `LW-${Date.now().toString().slice(-4)}`,
-                      media: [{ type: 'image', url: '/images/watches/rolex_submariner.jpg' }],
-                      images: ['/images/watches/rolex_submariner.jpg'],
-                      description: 'Swiss certified automatic chronometer.'
+                      price: '',
+                      comparePrice: '',
+                      stock: 1,
+                      sku: '',
+                      media: [],
+                      images: [],
+                      description: ''
                     });
                     setIsProductModalOpen(true);
                   }}
@@ -1518,7 +1518,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })}
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
-                    placeholder="e.g. Rolex"
+                    placeholder="Select or enter brand"
                   />
                   <datalist id="brands-datalist">
                     {brandsList.map(b => (
@@ -1535,7 +1535,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
-                    placeholder="e.g. Dive & Sport"
+                    placeholder="Select or enter category"
                   />
                   <datalist id="category-datalist">
                     <option value="Dive & Sport" />
@@ -1906,7 +1906,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     required
                     value={brandForm.name}
                     onChange={(e) => setBrandForm({ ...brandForm, name: e.target.value })}
-                    placeholder="e.g. Rolex, Titan, Casio"
+                    placeholder="Enter brand name"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
@@ -1918,7 +1918,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     type="text"
                     value={brandForm.slug}
                     onChange={(e) => setBrandForm({ ...brandForm, slug: e.target.value })}
-                    placeholder="e.g. rolex, titan"
+                    placeholder="Enter URL slug (e.g. brand-name)"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
@@ -1932,7 +1932,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     type="text"
                     value={brandForm.badge}
                     onChange={(e) => setBrandForm({ ...brandForm, badge: e.target.value })}
-                    placeholder="e.g. OFFICIAL ICON, INDIAN ICON"
+                    placeholder="Enter badge or tag"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
@@ -1944,7 +1944,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     type="text"
                     value={brandForm.location}
                     onChange={(e) => setBrandForm({ ...brandForm, location: e.target.value })}
-                    placeholder="e.g. Geneva, Switzerland"
+                    placeholder="Enter location or headquarters"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
@@ -1956,7 +1956,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     type="text"
                     value={brandForm.established}
                     onChange={(e) => setBrandForm({ ...brandForm, established: e.target.value })}
-                    placeholder="e.g. 1905, 1984"
+                    placeholder="Enter established year"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
@@ -1974,7 +1974,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   type="text"
                   value={brandForm.featuredCollection}
                   onChange={(e) => setBrandForm({ ...brandForm, featuredCollection: e.target.value })}
-                  placeholder="e.g. Submariner & Daytona Panda"
+                  placeholder="Enter featured collection title"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                 />
@@ -1986,7 +1986,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   rows={2}
                   value={brandForm.description}
                   onChange={(e) => setBrandForm({ ...brandForm, description: e.target.value })}
-                  placeholder="e.g. Legendary 904L Oystersteel architecture with Cerachrom ceramic bezel..."
+                  placeholder="Enter collection description"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', resize: 'vertical' }}
                 />
@@ -1998,7 +1998,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   type="text"
                   value={brandForm.filterTarget}
                   onChange={(e) => setBrandForm({ ...brandForm, filterTarget: e.target.value })}
-                  placeholder="Defaults to Brand Name (e.g. Rolex, Titan)"
+                  placeholder="Defaults to Brand Name"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                 />
@@ -2053,7 +2053,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   type="text"
                   value={brandForm.image}
                   onChange={(e) => setBrandForm({ ...brandForm, image: e.target.value })}
-                  placeholder="Or paste image URL (e.g. /images/watches/rolex_submariner.jpg)"
+                  placeholder="Paste image URL (or upload above)"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', fontSize: '0.75rem' }}
                 />
@@ -2065,7 +2065,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   type="text"
                   value={brandForm.imageAlt || ''}
                   onChange={(e) => setBrandForm({ ...brandForm, imageAlt: e.target.value })}
-                  placeholder="e.g. Rolex Submariner & Daytona Panda Luxury Watch"
+                  placeholder="Enter image description"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                 />
@@ -2237,7 +2237,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   required
                   value={couponForm.code}
                   onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
-                  placeholder="e.g. ROYAL25"
+                  placeholder="Enter coupon code (e.g. PROMO20)"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                 />
@@ -2273,7 +2273,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   type="text"
                   value={couponForm.description}
                   onChange={(e) => setCouponForm({ ...couponForm, description: e.target.value })}
-                  placeholder="e.g. VIP Connoisseur Discount"
+                  placeholder="Enter promotion description"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                 />

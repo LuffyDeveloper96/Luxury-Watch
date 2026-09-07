@@ -242,7 +242,7 @@ export const UserAuthModal = () => {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Lord Alexander"
+                      placeholder="Enter your full name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       style={{
@@ -266,7 +266,7 @@ export const UserAuthModal = () => {
                     <Phone size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                     <input
                       type="tel"
-                      placeholder="+91 98765 43210"
+                      placeholder="Enter phone number"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       style={{
@@ -293,7 +293,7 @@ export const UserAuthModal = () => {
                 <input
                   type="email"
                   required
-                  placeholder="patron@luxurywatch.com"
+                  placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
@@ -318,7 +318,7 @@ export const UserAuthModal = () => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
@@ -360,7 +360,7 @@ export const UserAuthModal = () => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    placeholder="••••••••"
+                    placeholder="Confirm your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     style={{

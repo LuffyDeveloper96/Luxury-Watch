@@ -375,7 +375,7 @@ const ReturnRequestModal = ({ isOpen, onClose, initialOrderId = '' }) => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. ORD-AK-98421 or ORD-LW-..."
+                    placeholder="Enter Order ID or Tracking Number"
                     value={orderInput}
                     onChange={(e) => setOrderInput(e.target.value)}
                     className="lux-input"
@@ -388,7 +388,7 @@ const ReturnRequestModal = ({ isOpen, onClose, initialOrderId = '' }) => {
                   </label>
                   <input
                     type="email"
-                    placeholder="patron@gmail.com"
+                    placeholder="Enter your registered email address"
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
                     className="lux-input"
@@ -612,7 +612,7 @@ const ReturnRequestModal = ({ isOpen, onClose, initialOrderId = '' }) => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Titan Grandmaster Automatic or Rolex Submariner"
+                    placeholder="Enter preferred replacement timepiece or calibre"
                     value={exchangeModelPreference}
                     onChange={(e) => setExchangeModelPreference(e.target.value)}
                     className="lux-input"
@@ -681,7 +681,7 @@ const ReturnRequestModal = ({ isOpen, onClose, initialOrderId = '' }) => {
                 <input
                   type="text"
                   required
-                  placeholder="Residence / Office address"
+                  placeholder="Enter pickup address"
                   value={pickupForm.address}
                   onChange={(e) => setPickupForm({ ...pickupForm, address: e.target.value })}
                   className="lux-input"

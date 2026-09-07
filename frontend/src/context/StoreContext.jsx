@@ -21,13 +21,13 @@ export const StoreProvider = ({ children }) => {
   const [brands, setBrands] = useState(INITIAL_BRANDS);
   // Categories
   const [categories, setCategories] = useState([]);
-  // Orders (Combined local storage & mock fallback)
+  // Orders (From local storage, updated when user authenticates or fetches orders)
   const [orders, setOrders] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('luxury_user_orders') || '[]');
-      return Array.isArray(saved) && saved.length > 0 ? [...saved, ...INITIAL_ORDERS] : INITIAL_ORDERS;
+      return Array.isArray(saved) ? saved : [];
     } catch {
-      return INITIAL_ORDERS;
+      return [];
     }
   });
   const [completedOrder, setCompletedOrder] = useState(null);
@@ -63,11 +63,7 @@ export const StoreProvider = ({ children }) => {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
   // Live Activity Log
-  const [activityLog, setActivityLog] = useState([
-    { id: 'act-1', text: 'Collector in Mumbai viewed Rolex Submariner Date 41mm', time: 'Just now', type: 'view' },
-    { id: 'act-2', text: 'New consignment ORD-LW-98421 placed for ₹5,499', time: '12m ago', type: 'order' },
-    { id: 'act-3', text: '5-star review posted by Vikramaditya S. (Mumbai)', time: '45m ago', type: 'review' }
-  ]);
+  const [activityLog, setActivityLog] = useState([]);
 
   // Store Settings & Homepage CMS
   const [storeSettings, setStoreSettings] = useState({

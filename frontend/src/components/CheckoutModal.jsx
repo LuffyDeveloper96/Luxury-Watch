@@ -40,7 +40,7 @@ export const CheckoutModal = () => {
     phone: '',
     address: '',
     city: '',
-    state: 'Maharashtra',
+    state: '',
     postalCode: '',
     country: 'India',
     deliverySpeed: 'BlueDart Insured Air Express (Pan-India 24-48 Hours)',
@@ -419,7 +419,7 @@ export const CheckoutModal = () => {
   const handleVpaPay = async (e) => {
     e?.preventDefault();
     if (!vpaId.trim() || !vpaId.includes('@')) {
-      alert('Please enter a valid UPI ID (e.g. yourname@okhdfcbank, 9876543210@ybl).');
+      alert('Please enter a valid UPI ID (format: username@bank).');
       return;
     }
 
@@ -635,7 +635,7 @@ export const CheckoutModal = () => {
                     required
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    placeholder="e.g. Lord Vikramaditya"
+                    placeholder="Enter your full name"
                     className="lux-input"
                   />
                 </div>
@@ -646,7 +646,7 @@ export const CheckoutModal = () => {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="patron@luxurywatch.com"
+                    placeholder="Enter your email address"
                     className="lux-input"
                   />
                 </div>
@@ -660,7 +660,7 @@ export const CheckoutModal = () => {
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+91 98200 98200"
+                    placeholder="Enter 10-digit phone number"
                     className="lux-input"
                   />
                 </div>
@@ -671,7 +671,7 @@ export const CheckoutModal = () => {
                     required
                     value={formData.postalCode}
                     onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                    placeholder="400051"
+                    placeholder="Enter 6-digit PIN code"
                     className="lux-input"
                   />
                 </div>
@@ -684,7 +684,7 @@ export const CheckoutModal = () => {
                   required
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Penthouse 4B, The Capital, BKC"
+                  placeholder="House/Flat No., Building, Street, Landmark"
                   className="lux-input"
                 />
               </div>
@@ -697,7 +697,7 @@ export const CheckoutModal = () => {
                     required
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Mumbai"
+                    placeholder="Enter city"
                     className="lux-input"
                   />
                 </div>
@@ -708,7 +708,7 @@ export const CheckoutModal = () => {
                     required
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    placeholder="Maharashtra"
+                    placeholder="Enter state"
                     className="lux-input"
                   />
                 </div>

@@ -798,7 +798,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Lord Harrison Thorne"
+                        placeholder="Enter your name"
                         value={newReviewerName}
                         onChange={e => setNewReviewerName(e.target.value)}
                         className="lux-input"
@@ -809,7 +809,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                       <label style={{ display: 'block', fontSize: '0.75rem', color: '#475569', marginBottom: '0.3rem', fontWeight: 600 }}>City, Country</label>
                       <input
                         type="text"
-                        placeholder="e.g. Mayfair, London"
+                        placeholder="Enter your city and country"
                         value={newReviewLocation}
                         onChange={e => setNewReviewLocation(e.target.value)}
                         className="lux-input"
@@ -842,7 +842,7 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                     <label style={{ display: 'block', fontSize: '0.75rem', color: '#475569', marginBottom: '0.3rem', fontWeight: 600 }}>Review Headline</label>
                     <input
                       type="text"
-                      placeholder="e.g. Pure horological perfection"
+                      placeholder="Enter a headline for your review"
                       value={newReviewTitle}
                       onChange={e => setNewReviewTitle(e.target.value)}
                       className="lux-input"
