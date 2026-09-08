@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { useUserAuth } from '../context/UserAuthContext';
-import { ordersAPI, getImageUrl } from '../services/api';
+import { ordersAPI, returnsAPI, getImageUrl } from '../services/api';
 import { formatCurrency } from '../utils/currency';
 import {
   Search, Package, CheckCircle2, Clock, Truck, ShieldCheck,
   AlertCircle, Sparkles, MapPin, ExternalLink, RotateCcw, ArrowLeft, Watch,
-  ChevronDown, ChevronUp, ShoppingBag, UserCheck, Calendar, CreditCard, XCircle
+  ChevronDown, ChevronUp, ShoppingBag, UserCheck, Calendar, CreditCard, XCircle,
+  FileCheck
 } from 'lucide-react';
 
 export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
@@ -15,12 +16,14 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
 
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'search'
   const [userOrders, setUserOrders] = useState([]);
+  const [orderReturnsMap, setOrderReturnsMap] = useState({});
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
   // Manual Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchedOrder, setSearchedOrder] = useState(null);
+  const [searchedReturn, setSearchedReturn] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -65,6 +68,20 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
       setUserOrders(combined);
       setLoadingOrders(false);
 
+      // Lookup returns for user orders
+      if (combined.length > 0) {
+        const returnsMap = {};
+        for (const ord of combined.slice(0, 10)) {
+          try {
+            const retRes = await returnsAPI.lookup(ord.id);
+            if (retRes?.success && Array.isArray(retRes.returns) && retRes.returns.length > 0) {
+              returnsMap[ord.id] = retRes.returns[0];
+            }
+          } catch (e) {}
+        }
+        setOrderReturnsMap(returnsMap);
+      }
+
       // Default active tab
       if (combined.length === 0 && !isAuthenticated) {
         setActiveTab('search');
@@ -83,6 +100,7 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
     e.preventDefault();
     setErrorMessage('');
     setSearchedOrder(null);
+    setSearchedReturn(null);
     const clean = searchQuery.trim();
     if (!clean) return;
 
@@ -107,6 +125,15 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
       } catch {
         setSearchedOrder(foundLocal);
       }
+
+      // Lookup return status
+      try {
+        const retRes = await returnsAPI.lookup(foundLocal.id);
+        if (retRes?.success && Array.isArray(retRes.returns) && retRes.returns.length > 0) {
+          setSearchedReturn(retRes.returns[0]);
+        }
+      } catch (e) {}
+
       setSearchLoading(false);
       return;
     }
@@ -116,6 +143,12 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
       const res = await ordersAPI.getById(clean);
       if (res?.success && res.order) {
         setSearchedOrder(res.order);
+        try {
+          const retRes = await returnsAPI.lookup(res.order.id || clean);
+          if (retRes?.success && Array.isArray(retRes.returns) && retRes.returns.length > 0) {
+            setSearchedReturn(retRes.returns[0]);
+          }
+        } catch (e) {}
       } else {
         setErrorMessage(`No consignment record found for "${clean}". Please verify your Order ID or registered email.`);
       }
@@ -444,6 +477,82 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
     }
   };
 
+  const renderReturnStatusCard = (returnRecord) => {
+    if (!returnRecord) return null;
+    const status = returnRecord.status || 'Pending';
+    const isApproved = status === 'Approved';
+    const isRejected = status === 'Rejected';
+
+    const statusBadge = isApproved
+      ? { bg: '#dcfce7', text: '#166534', border: '#86efac', label: 'Return Approved', icon: CheckCircle2 }
+      : isRejected
+      ? { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5', label: 'Return Rejected', icon: XCircle }
+      : { bg: '#fef9c3', text: '#854d0e', border: '#fde047', label: 'Return Requested (Pending Review)', icon: Clock };
+
+    const StatusIcon = statusBadge.icon;
+
+    return (
+      <div
+        style={{
+          marginTop: '1.25rem',
+          marginBottom: '1.25rem',
+          padding: '1rem 1.25rem',
+          borderRadius: '8px',
+          backgroundColor: isApproved ? '#f0fdf4' : isRejected ? '#fef2f2' : '#fefce8',
+          border: `1px solid ${statusBadge.border}`,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <RotateCcw size={16} color={statusBadge.text} />
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Return Request Status
+            </span>
+            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+              (Ref #{returnRecord.id?.slice(-8) || returnRecord.id})
+            </span>
+          </div>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              backgroundColor: statusBadge.bg,
+              color: statusBadge.text,
+              border: `1px solid ${statusBadge.border}`,
+              padding: '3px 10px',
+              borderRadius: '20px',
+              fontSize: '0.72rem',
+              fontWeight: 700
+            }}
+          >
+            <StatusIcon size={13} />
+            {statusBadge.label}
+          </span>
+        </div>
+
+        <div style={{ fontSize: '0.78rem', color: '#334155', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div>
+            <strong style={{ color: '#0f172a' }}>Reason:</strong> {returnRecord.reason || 'General Return'}
+          </div>
+          {returnRecord.notes && (
+            <div>
+              <strong style={{ color: '#0f172a' }}>Customer Notes:</strong> {returnRecord.notes}
+            </div>
+          )}
+          {returnRecord.adminNotes && (
+            <div style={{ marginTop: '4px', padding: '6px 10px', backgroundColor: '#ffffff', borderRadius: '4px', border: '1px solid rgba(0,0,0,0.06)' }}>
+              <strong style={{ color: '#0f172a' }}>Admin Notes:</strong> {returnRecord.adminNotes}
+            </div>
+          )}
+          <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+            Requested on: {new Date(returnRecord.createdAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={{ backgroundColor: '#fbfbf9', minHeight: '100vh', padding: '6rem 1rem 4rem 1rem' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -755,6 +864,9 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
                               </div>
                             </div>
 
+                            {/* Return Request Status (If any) */}
+                            {orderReturnsMap[ord.id] && renderReturnStatusCard(orderReturnsMap[ord.id])}
+
                             {/* Shipping Destination & Action Buttons */}
                             <div style={{ paddingTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                               <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.75rem', lineHeight: 1.5 }}>
@@ -905,6 +1017,9 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
                       ))}
                     </div>
                   )}
+
+                  {/* Return Request Status (If any) */}
+                  {(searchedReturn || orderReturnsMap[searchedOrder.id]) && renderReturnStatusCard(searchedReturn || orderReturnsMap[searchedOrder.id])}
 
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
                     <button

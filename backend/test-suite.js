@@ -7,7 +7,7 @@ import http from 'http';
 import crypto from 'crypto';
 import app from './index.js';
 import { env } from './config/env.js';
-import { User, Product, Order } from './models/index.js';
+import { User, Product, Order, Return } from './models/index.js';
 import { generateToken } from './middleware/auth.js';
 
 let server;
@@ -310,6 +310,122 @@ const runTests = async () => {
     // Clean up test patron record if created
     try {
       await User.deleteOne({ email: testEmail });
+    } catch (e) {}
+
+    // 9. Return Request Lifecycle Verification (Pending, Approved, Rejected)
+    console.log('\n[Phase 9: Return Request Lifecycle Verification]');
+    
+    // Create temporary order for return testing
+    const returnTestOrderId = `RET-ORD-${Date.now()}`;
+    await Order.create({
+      id: returnTestOrderId,
+      orderNumber: returnTestOrderId,
+      customer: {
+        fullName: 'Return Tester',
+        email: 'return_tester@luxurywatch.test',
+        phone: '+919988776655',
+        address: '200 Horology Road',
+        city: 'New Delhi',
+        state: 'Delhi',
+        postalCode: '110001'
+      },
+      items: [{
+        id: 'watch-ret-1',
+        name: 'Oyster Perpetual 41',
+        brand: 'Rolex',
+        sku: 'RLX-OP-41',
+        price: 650000,
+        quantity: 1,
+        image: '/images/watches/rolex_submariner.jpg'
+      }],
+      subtotal: 650000,
+      total: 650000,
+      orderStatus: 'Delivered',
+      paymentStatus: 'Paid',
+      createdAt: new Date()
+    });
+
+    // Step 1: Submit Return Request (Customer)
+    const createReturnRes = await apiFetch('/api/returns', {
+      method: 'POST',
+      body: JSON.stringify({
+        orderId: returnTestOrderId,
+        customerName: 'Return Tester',
+        customerEmail: 'return_tester@luxurywatch.test',
+        customerPhone: '+919988776655',
+        reason: 'Wrist Fit & Bracelet Dimension Adjustment',
+        resolutionType: 'Refund',
+        pickupAddress: '200 Horology Road, New Delhi - 110001',
+        notes: 'Needs official link sizing / return for refund'
+      })
+    });
+    assert(
+      createReturnRes.status === 201 &&
+      createReturnRes.data.success &&
+      createReturnRes.data.returnRequest?.status === 'Pending',
+      'Step 1: Return request created with initial status "Pending"'
+    );
+    const createdReturnId = createReturnRes.data.returnRequest?.id;
+
+    // Step 2: Admin lists all return requests (GET /api/returns)
+    const listReturnsRes = await apiFetch('/api/returns', {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert(
+      listReturnsRes.status === 200 &&
+      listReturnsRes.data.success &&
+      Array.isArray(listReturnsRes.data.returns) &&
+      listReturnsRes.data.returns.some(r => r.id === createdReturnId),
+      'Step 2: Admin successfully retrieves returns list including the new pending return'
+    );
+
+    // Step 3: Admin Approves Return (PATCH /api/returns/:id/status -> Approved)
+    const approveReturnRes = await apiFetch(`/api/returns/${createdReturnId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        status: 'Approved',
+        adminNotes: 'Return approved. Complimentary courier pickup arranged.'
+      })
+    });
+    assert(
+      approveReturnRes.status === 200 &&
+      approveReturnRes.data.success &&
+      approveReturnRes.data.returnRequest?.status === 'Approved',
+      'Step 3: Admin approves return request -> Status becomes "Approved"'
+    );
+
+    // Step 4: Admin Rejects Return (PATCH /api/returns/:id/status -> Rejected)
+    const rejectReturnRes = await apiFetch(`/api/returns/${createdReturnId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        status: 'Rejected',
+        adminNotes: 'Timeframe expired beyond standard policy.'
+      })
+    });
+    assert(
+      rejectReturnRes.status === 200 &&
+      rejectReturnRes.data.success &&
+      rejectReturnRes.data.returnRequest?.status === 'Rejected',
+      'Step 4: Admin rejects return request -> Status becomes "Rejected"'
+    );
+
+    // Step 5: User lookup return endpoint (GET /api/returns/lookup?orderId=...)
+    const lookupReturnRes = await apiFetch(`/api/returns/lookup?orderId=${returnTestOrderId}`);
+    assert(
+      lookupReturnRes.status === 200 &&
+      lookupReturnRes.data.success &&
+      Array.isArray(lookupReturnRes.data.returns) &&
+      lookupReturnRes.data.returns.length > 0 &&
+      lookupReturnRes.data.returns[0].status === 'Rejected',
+      'Step 5: User can lookup return status for their order and receives updated status'
+    );
+
+    // Cleanup return test data
+    try {
+      await Return.deleteOne({ id: createdReturnId });
+      await Order.deleteOne({ id: returnTestOrderId });
     } catch (e) {}
 
   } catch (err) {

@@ -31,7 +31,25 @@ export const createReturn = async (req, res) => {
       const order = await Order.findOne({
         $or: [{ id: orderId }, { orderNumber: orderId }]
       }).lean();
-      items = order?.items || [{ name: 'Horology Timepiece Consignment', quantity: 1 }];
+      items = order?.items?.map(it => ({
+        id: it.id,
+        name: it.name,
+        image: it.image || '',
+        brand: it.brand || '',
+        sku: it.sku || '',
+        price: it.price,
+        quantity: it.quantity || 1
+      })) || [{ name: 'Horology Timepiece Consignment', quantity: 1 }];
+    } else {
+      items = items.map(it => ({
+        id: it.id || it.productId,
+        name: it.name || 'Horology Timepiece',
+        image: it.image || '',
+        brand: it.brand || '',
+        sku: it.sku || '',
+        price: it.price,
+        quantity: it.quantity || 1
+      }));
     }
 
     const returnId = `RET-LW-${Math.floor(10000 + Math.random() * 90000)}`;
@@ -49,7 +67,7 @@ export const createReturn = async (req, res) => {
       exchangeModelPreference: exchangeModelPreference || null,
       pickupAddress: pickupAddress || 'Client Registered Address',
       notes: notes || '',
-      status: 'Requested',
+      status: 'Pending',
       waybillNumber: returnWaybill,
       courierTier: 'Securitas Armoured Return Transit (Insured)',
       createdAt: new Date(),
@@ -57,6 +75,14 @@ export const createReturn = async (req, res) => {
     };
 
     const saved = await Return.create(newReturn);
+
+    // Activity log
+    await ActivityLog.create({
+      id: `act-${Date.now()}`,
+      text: `Return request #${returnId} submitted for Order #${orderId} by ${newReturn.customerName}`,
+      time: 'Just now',
+      type: 'return'
+    });
 
     return res.status(201).json({
       success: true,
@@ -189,11 +215,21 @@ export const updateReturnStatus = async (req, res) => {
     const { id } = req.params;
     const { status, resolutionNotes } = req.body;
 
-    const allowed = ['Requested', 'Pickup Scheduled', 'Inspected & Approved', 'Refund Issued', 'Exchange Dispatched', 'Rejected', 'Closed'];
+    const allowed = [
+      'Pending',
+      'Approved',
+      'Rejected',
+      'Requested',
+      'Pickup Scheduled',
+      'Inspected & Approved',
+      'Refund Issued',
+      'Exchange Dispatched',
+      'Closed'
+    ];
     if (!allowed.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid status. Allowed values: ${allowed.join(', ')}`
+        message: `Invalid status "${status}". Allowed values: Pending, Approved, Rejected.`
       });
     }
 

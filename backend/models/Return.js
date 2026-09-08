@@ -3,6 +3,9 @@ import mongoose from 'mongoose';
 const returnItemSchema = new mongoose.Schema({
   id: { type: String },
   name: { type: String, required: true },
+  image: { type: String, default: '' },
+  brand: { type: String, default: '' },
+  sku: { type: String, default: '' },
   price: { type: Number },
   quantity: { type: Number, default: 1 }
 }, { _id: false });
@@ -15,14 +18,24 @@ const returnSchema = new mongoose.Schema({
   customerPhone: { type: String, default: '' },
   items: [returnItemSchema],
   returnReason: { type: String, required: true },
-  resolutionType: { type: String, enum: ['Refund', 'Exchange'], default: 'Refund' },
+  resolutionType: { type: String, enum: ['Refund', 'Exchange', 'StoreCredit'], default: 'Refund' },
   exchangeModelPreference: { type: String, default: null },
   pickupAddress: { type: String, default: 'Client Registered Address' },
   notes: { type: String, default: '' },
   status: {
     type: String,
-    enum: ['Requested', 'Pickup Scheduled', 'Inspected & Approved', 'Refund Issued', 'Exchange Dispatched', 'Rejected', 'Closed'],
-    default: 'Requested',
+    enum: [
+      'Pending',
+      'Approved',
+      'Rejected',
+      'Requested',
+      'Pickup Scheduled',
+      'Inspected & Approved',
+      'Refund Issued',
+      'Exchange Dispatched',
+      'Closed'
+    ],
+    default: 'Pending',
     index: true
   },
   waybillNumber: { type: String, index: true },

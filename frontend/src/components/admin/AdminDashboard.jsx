@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import {
-  productsAPI, brandsAPI, categoriesAPI, ordersAPI,
+  productsAPI, brandsAPI, categoriesAPI, ordersAPI, returnsAPI,
   couponsAPI, reviewsAPI, analyticsAPI, homepageAPI, settingsAPI, getImageUrl
 } from '../../services/api';
 import { normalizeProductMedia } from '../../utils/media';
@@ -12,14 +12,15 @@ import {
   Eye, LogOut, ArrowUpRight, ShieldCheck, Search, Sparkles,
   AlertCircle, Save, X, CreditCard, QrCode, Lock, Copy, RotateCcw,
   SlidersHorizontal, Layout, Check, ChevronDown, MessageSquare,
-  ArrowUp, ArrowDown, Upload, Play, Video, Image as ImageIcon, Menu
+  ArrowUp, ArrowDown, Upload, Play, Video, Image as ImageIcon, Menu,
+  Clock, XCircle, FileText, CheckCircle
 } from 'lucide-react';
 
 export const AdminDashboard = ({ onBackToStore }) => {
   const { refreshStoreData } = useStore();
   const { adminUser, logoutAdmin } = useAdminAuth();
 
-  const [activeTab, setActiveTab] = useState('overview'); // overview, products, brands, categories, inventory, orders, customers, reviews, cms, settings
+  const [activeTab, setActiveTab] = useState('overview'); // overview, products, brands, categories, inventory, orders, returns, coupons, reviews, cms, settings
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState(null);
@@ -27,6 +28,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
   const [brandsList, setBrandsList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
   const [ordersList, setOrdersList] = useState([]);
+  const [returnsList, setReturnsList] = useState([]);
   const [customersList, setCustomersList] = useState([]);
   const [couponsList, setCouponsList] = useState([]);
   const [reviewsList, setReviewsList] = useState([]);
@@ -35,9 +37,20 @@ export const AdminDashboard = ({ onBackToStore }) => {
   const [paymentConfig, setPaymentConfig] = useState(null);
   const [storeConfig, setStoreConfig] = useState(null);
 
-  // Search & Filters in Admin
+  // Search & Filters in Admin Orders
   const [searchTerm, setSearchTerm] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
+
+  // Search & Filters in Admin Returns
+  const [returnSearchTerm, setReturnSearchTerm] = useState('');
+  const [returnStatusFilter, setReturnStatusFilter] = useState('All');
+  const [returnActionModal, setReturnActionModal] = useState({
+    isOpen: false,
+    action: '', // 'approve' | 'reject'
+    returnRequest: null,
+    notes: ''
+  });
+  const [isProcessingReturnAction, setIsProcessingReturnAction] = useState(false);
 
   // Product Modal State
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -108,6 +121,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
         brandsAPI.getAll({ all: 'true' }),
         categoriesAPI.getAll(),
         ordersAPI.getAll(),
+        returnsAPI.getAll(),
         couponsAPI.getAll(),
         reviewsAPI.getAll(),
         analyticsAPI.getActivity(),
@@ -117,13 +131,14 @@ export const AdminDashboard = ({ onBackToStore }) => {
         settingsAPI.getAdminSecurity()
       ]);
 
-      const [mRes, pRes, bRes, cRes, oRes, cpnRes, rRes, aRes, hpRes, payRes, setRes] = results;
+      const [mRes, pRes, bRes, cRes, oRes, retRes, cpnRes, rRes, aRes, hpRes, payRes, setRes] = results;
 
       if (mRes.status === 'fulfilled' && mRes.value?.metrics) setMetrics(mRes.value);
       if (pRes.status === 'fulfilled' && pRes.value?.products) setProductsList(pRes.value.products);
       if (bRes.status === 'fulfilled' && bRes.value?.brands) setBrandsList(bRes.value.brands);
       if (cRes.status === 'fulfilled' && cRes.value?.categories) setCategoriesList(cRes.value.categories);
       if (oRes.status === 'fulfilled' && oRes.value?.orders) setOrdersList(oRes.value.orders);
+      if (retRes.status === 'fulfilled' && retRes.value?.returns) setReturnsList(retRes.value.returns);
       if (cpnRes.status === 'fulfilled' && cpnRes.value?.coupons) setCouponsList(cpnRes.value.coupons);
       if (rRes.status === 'fulfilled' && rRes.value?.reviews) setReviewsList(rRes.value.reviews);
       if (aRes.status === 'fulfilled' && aRes.value?.activities) setActivityList(aRes.value.activities);
@@ -480,6 +495,66 @@ export const AdminDashboard = ({ onBackToStore }) => {
     return true;
   });
 
+  // Return Action Handlers
+  const openReturnActionModal = (returnReq, action) => {
+    setReturnActionModal({
+      isOpen: true,
+      action,
+      returnRequest: returnReq,
+      notes: action === 'approve'
+        ? 'Approved for concierge return & quality inspection.'
+        : 'Return request rejected per luxury atelier return guidelines.'
+    });
+  };
+
+  const handleConfirmReturnAction = async () => {
+    if (!returnActionModal.returnRequest) return;
+    setIsProcessingReturnAction(true);
+    try {
+      const statusToSet = returnActionModal.action === 'approve' ? 'Approved' : 'Rejected';
+      await returnsAPI.updateStatus(returnActionModal.returnRequest.id, statusToSet, returnActionModal.notes);
+      setReturnActionModal({ isOpen: false, action: '', returnRequest: null, notes: '' });
+      await loadAdminData();
+      refreshStoreData();
+    } catch (err) {
+      alert(err.message || 'Failed to update return request status');
+    } finally {
+      setIsProcessingReturnAction(false);
+    }
+  };
+
+  const filteredReturns = returnsList.filter(r => {
+    const status = r.status || 'Pending';
+    if (returnStatusFilter !== 'All') {
+      if (returnStatusFilter === 'Pending') {
+        if (status !== 'Pending' && status !== 'Requested') return false;
+      } else if (returnStatusFilter === 'Approved') {
+        if (status !== 'Approved' && status !== 'Inspected & Approved') return false;
+      } else if (returnStatusFilter === 'Rejected') {
+        if (status !== 'Rejected') return false;
+      } else if (status !== returnStatusFilter) {
+        return false;
+      }
+    }
+    if (returnSearchTerm) {
+      const q = returnSearchTerm.toLowerCase();
+      const idMatch = r.id?.toLowerCase().includes(q);
+      const orderMatch = r.orderId?.toLowerCase().includes(q);
+      const nameMatch = r.customerName?.toLowerCase().includes(q);
+      const emailMatch = r.customerEmail?.toLowerCase().includes(q);
+      const phoneMatch = r.customerPhone?.toLowerCase().includes(q);
+      const itemMatch = (r.items || []).some(it => it.name?.toLowerCase().includes(q));
+      const reasonMatch = r.returnReason?.toLowerCase().includes(q);
+      return idMatch || orderMatch || nameMatch || emailMatch || phoneMatch || itemMatch || reasonMatch;
+    }
+    return true;
+  });
+
+  const pendingReturnsCount = returnsList.filter(r => {
+    const s = r.status || 'Pending';
+    return s === 'Pending' || s === 'Requested';
+  }).length;
+
   return (
     <div style={{ minHeight: '100vh', background: '#0b0f19', color: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
       {/* Top Admin Navigation Bar */}
@@ -583,6 +658,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
             { id: 'brands', label: 'Brands & Collections', icon: Sparkles },
             { id: 'inventory', label: 'Stock & Inventory', icon: SlidersHorizontal },
             { id: 'orders', label: 'Consignments & Orders', icon: ShoppingBag },
+            { id: 'returns', label: 'Return Requests', icon: RotateCcw, badge: pendingReturnsCount },
             { id: 'coupons', label: 'VIP Promotion Codes', icon: Tag },
             { id: 'reviews', label: 'Review Moderation', icon: MessageSquare },
             { id: 'cms', label: 'Homepage CMS', icon: Layout },
@@ -600,6 +676,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'space-between',
                   gap: '10px',
                   padding: '9px 12px',
                   borderRadius: '6px',
@@ -614,8 +691,25 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   width: '100%'
                 }}
               >
-                <Icon size={16} color={isSelected ? '#d4af37' : '#94a3b8'} />
-                <span>{tab.label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                  <Icon size={16} color={isSelected ? '#d4af37' : '#94a3b8'} style={{ flexShrink: 0 }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tab.label}</span>
+                </div>
+                {tab.badge > 0 && (
+                  <span
+                    style={{
+                      backgroundColor: '#f59e0b',
+                      color: '#0b0f19',
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      flexShrink: 0
+                    }}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -1283,6 +1377,357 @@ export const AdminDashboard = ({ onBackToStore }) => {
                 {filteredOrders.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b', fontSize: '0.85rem' }}>
                     No orders match the current filter.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: Return Requests Management */}
+          {activeTab === 'returns' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div>
+                  <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: 'clamp(1rem, 3vw, 1.3rem)', margin: 0, color: '#ffffff' }}>
+                    CUSTOMER RETURN & EXCHANGE REQUESTS ({filteredReturns.length})
+                  </h2>
+                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '4px 0 0 0' }}>
+                    Review, approve, or reject customer product return requests with full order & product context.
+                  </p>
+                </div>
+                <button onClick={loadAdminData} className="btn-outline-gold" style={{ padding: '6px 14px', fontSize: '0.75rem' }}>
+                  <RotateCcw size={13} />
+                  <span>Refresh Requests</span>
+                </button>
+              </div>
+
+              {/* Stat Cards Summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', padding: '0.85rem 1rem' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Requests</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#ffffff', marginTop: '2px' }}>{returnsList.length}</div>
+                </div>
+                <div style={{ background: '#111827', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '8px', padding: '0.85rem 1rem' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Pending Review</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fbbf24', marginTop: '2px' }}>{pendingReturnsCount}</div>
+                </div>
+                <div style={{ background: '#111827', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '0.85rem 1rem' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Approved</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#34d399', marginTop: '2px' }}>
+                    {returnsList.filter(r => r.status === 'Approved' || r.status === 'Inspected & Approved').length}
+                  </div>
+                </div>
+                <div style={{ background: '#111827', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '0.85rem 1rem' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rejected</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#f87171', marginTop: '2px' }}>
+                    {returnsList.filter(r => r.status === 'Rejected').length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter Controls — responsive row */}
+              <div className="admin-orders-filter-row" style={{ display: 'flex', gap: '10px', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  value={returnSearchTerm}
+                  onChange={(e) => setReturnSearchTerm(e.target.value)}
+                  placeholder="Search by Return ID, Order ID, Customer, or Product..."
+                  style={{ background: '#111827', border: '1px solid #374151', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', flex: '1 1 200px', minWidth: 0 }}
+                />
+                <select
+                  value={returnStatusFilter}
+                  onChange={(e) => setReturnStatusFilter(e.target.value)}
+                  style={{ background: '#111827', border: '1px solid #374151', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', flex: '0 0 auto' }}
+                >
+                  <option value="All">All Statuses ({returnsList.length})</option>
+                  <option value="Pending">Pending ({pendingReturnsCount})</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+
+              {/* DESKTOP TABLE VIEW */}
+              <div className="admin-orders-table-view">
+                <div className="admin-table-container" style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '8px', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ background: '#1f2937', color: '#94a3b8' }}>
+                        <th style={{ padding: '10px 14px' }}>Return ID & Date</th>
+                        <th style={{ padding: '10px 14px' }}>Order Ref</th>
+                        <th style={{ padding: '10px 14px' }}>Customer</th>
+                        <th style={{ padding: '10px 14px' }}>Timepiece / Items</th>
+                        <th style={{ padding: '10px 14px' }}>Reason & Details</th>
+                        <th style={{ padding: '10px 14px' }}>Status</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'right' }}>Admin Decision</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredReturns.map(r => {
+                        const status = r.status || 'Pending';
+                        const isPending = status === 'Pending' || status === 'Requested';
+                        const isApproved = status === 'Approved' || status === 'Inspected & Approved';
+                        const isRejected = status === 'Rejected';
+
+                        return (
+                          <tr key={r.id} style={{ borderBottom: '1px solid #1f2937' }}>
+                            <td style={{ padding: '10px 14px' }}>
+                              <div style={{ fontWeight: 700, color: '#f3e5ab', fontSize: '0.75rem' }}>#{r.id}</div>
+                              <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '2px' }}>
+                                {new Date(r.createdAt || Date.now()).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </div>
+                            </td>
+                            <td style={{ padding: '10px 14px' }}>
+                              <span style={{ fontWeight: 600, color: '#38bdf8', fontSize: '0.75rem' }}>#{r.orderId}</span>
+                              {r.waybillNumber && (
+                                <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>Waybill: {r.waybillNumber}</div>
+                              )}
+                            </td>
+                            <td style={{ padding: '10px 14px' }}>
+                              <div style={{ fontWeight: 600, color: '#ffffff' }}>{r.customerName}</div>
+                              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{r.customerEmail}</div>
+                              {r.customerPhone && (
+                                <div style={{ fontSize: '0.68rem', color: '#64748b' }}>{r.customerPhone}</div>
+                              )}
+                            </td>
+                            <td style={{ padding: '10px 14px', maxWidth: '240px' }}>
+                              {(r.items || []).map((it, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: i < r.items.length - 1 ? '4px' : 0 }}>
+                                  {it.image && (
+                                    <img
+                                      src={getImageUrl(it.image)}
+                                      alt={it.name}
+                                      style={{ width: '28px', height: '28px', borderRadius: '4px', objectFit: 'cover', background: '#1e293b' }}
+                                    />
+                                  )}
+                                  <div style={{ fontSize: '0.72rem', color: '#cbd5e1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {it.name} (×{it.quantity || 1})
+                                    {it.price ? ` • ₹${Number(it.price).toLocaleString('en-IN')}` : ''}
+                                  </div>
+                                </div>
+                              ))}
+                            </td>
+                            <td style={{ padding: '10px 14px', maxWidth: '220px' }}>
+                              <div style={{ fontSize: '0.74rem', color: '#f3e5ab', fontWeight: 600 }}>{r.returnReason}</div>
+                              <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '2px' }}>
+                                Type: <strong style={{ color: '#cbd5e1' }}>{r.resolutionType || 'Refund'}</strong>
+                                {r.exchangeModelPreference ? ` • Pref: ${r.exchangeModelPreference}` : ''}
+                              </div>
+                              {r.notes && (
+                                <div style={{ fontSize: '0.66rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '2px', wordBreak: 'break-word' }}>
+                                  "{r.notes}"
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '10px 14px' }}>
+                              {isPending && (
+                                <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <Clock size={12} /> PENDING
+                                </span>
+                              )}
+                              {isApproved && (
+                                <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.35)', padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <CheckCircle size={12} /> APPROVED
+                                </span>
+                              )}
+                              {isRejected && (
+                                <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.35)', padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <XCircle size={12} /> REJECTED
+                                </span>
+                              )}
+                              {!isPending && !isApproved && !isRejected && (
+                                <span style={{ background: 'rgba(148, 163, 184, 0.15)', color: '#cbd5e1', padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>
+                                  {status.toUpperCase()}
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                              {isPending ? (
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                                  <button
+                                    onClick={() => openReturnActionModal(r, 'approve')}
+                                    style={{
+                                      background: '#059669',
+                                      border: 'none',
+                                      color: '#ffffff',
+                                      padding: '5px 10px',
+                                      borderRadius: '4px',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <Check size={12} /> Approve
+                                  </button>
+                                  <button
+                                    onClick={() => openReturnActionModal(r, 'reject')}
+                                    style={{
+                                      background: '#dc2626',
+                                      border: 'none',
+                                      color: '#ffffff',
+                                      padding: '5px 10px',
+                                      borderRadius: '4px',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <X size={12} /> Reject
+                                  </button>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: '0.7rem', color: isApproved ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                                  {isApproved ? 'Approved' : 'Rejected'}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* MOBILE CARD VIEW */}
+              <div className="admin-orders-card-view">
+                {filteredReturns.map(r => {
+                  const status = r.status || 'Pending';
+                  const isPending = status === 'Pending' || status === 'Requested';
+                  const isApproved = status === 'Approved' || status === 'Inspected & Approved';
+                  const isRejected = status === 'Rejected';
+
+                  return (
+                    <div
+                      key={r.id}
+                      style={{
+                        background: '#111827',
+                        border: isPending ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid #1f2937',
+                        borderRadius: '8px',
+                        padding: '0.9rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.6rem'
+                      }}
+                    >
+                      {/* Top Row: Return ID + Status Badge */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                        <div>
+                          <span style={{ fontWeight: 700, color: '#f3e5ab', fontSize: '0.82rem' }}>#{r.id}</span>
+                          <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '6px' }}>
+                            Order: <strong style={{ color: '#38bdf8' }}>#{r.orderId}</strong>
+                          </span>
+                        </div>
+                        <div>
+                          {isPending && (
+                            <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '2px 7px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 }}>
+                              PENDING
+                            </span>
+                          )}
+                          {isApproved && (
+                            <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.35)', padding: '2px 7px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 }}>
+                              APPROVED
+                            </span>
+                          )}
+                          {isRejected && (
+                            <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.35)', padding: '2px 7px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 }}>
+                              REJECTED
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Customer Info */}
+                      <div style={{ fontSize: '0.78rem' }}>
+                        <div style={{ fontWeight: 600, color: '#ffffff' }}>{r.customerName}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '2px' }}>
+                          {r.customerEmail} {r.customerPhone ? `• ${r.customerPhone}` : ''}
+                        </div>
+                      </div>
+
+                      {/* Products */}
+                      <div style={{ fontSize: '0.72rem', color: '#cbd5e1', background: '#0b0f19', padding: '0.5rem 0.7rem', borderRadius: '4px', border: '1px solid #1f2937' }}>
+                        <div style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>Items to Return</div>
+                        {(r.items || []).map((it, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
+                            {it.image && (
+                              <img src={getImageUrl(it.image)} alt={it.name} style={{ width: '24px', height: '24px', borderRadius: '3px', objectFit: 'cover' }} />
+                            )}
+                            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {it.name} (×{it.quantity || 1})
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Reason & Resolution */}
+                      <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+                        <div><strong style={{ color: '#f3e5ab' }}>Reason:</strong> {r.returnReason}</div>
+                        <div style={{ marginTop: '2px' }}><strong style={{ color: '#94a3b8' }}>Resolution:</strong> {r.resolutionType || 'Refund'}</div>
+                        {r.notes && (
+                          <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '2px' }}>
+                            Notes: "{r.notes}"
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action buttons if Pending */}
+                      {isPending && (
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px', paddingTop: '6px', borderTop: '1px solid #1f2937' }}>
+                          <button
+                            onClick={() => openReturnActionModal(r, 'approve')}
+                            style={{
+                              flex: 1,
+                              background: '#059669',
+                              border: 'none',
+                              color: '#ffffff',
+                              padding: '8px',
+                              borderRadius: '4px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <Check size={14} /> Approve Return
+                          </button>
+                          <button
+                            onClick={() => openReturnActionModal(r, 'reject')}
+                            style={{
+                              flex: 1,
+                              background: '#dc2626',
+                              border: 'none',
+                              color: '#ffffff',
+                              padding: '8px',
+                              borderRadius: '4px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <X size={14} /> Reject Return
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {filteredReturns.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#64748b', fontSize: '0.85rem' }}>
+                    No return requests match the selected criteria.
                   </div>
                 )}
               </div>
@@ -2268,6 +2713,154 @@ export const AdminDashboard = ({ onBackToStore }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Return Action Confirmation Modal */}
+      {returnActionModal.isOpen && returnActionModal.returnRequest && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1300,
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#111827',
+            border: returnActionModal.action === 'approve' ? '1px solid #10b981' : '1px solid #ef4444',
+            borderRadius: '8px',
+            padding: '1.5rem',
+            width: '100%',
+            maxWidth: '500px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.7)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #1f2937', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {returnActionModal.action === 'approve' ? (
+                  <CheckCircle2 size={20} color="#10b981" />
+                ) : (
+                  <AlertCircle size={20} color="#ef4444" />
+                )}
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#ffffff' }}>
+                  {returnActionModal.action === 'approve' ? 'Approve Return Request' : 'Reject Return Request'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setReturnActionModal({ isOpen: false, action: '', returnRequest: null, notes: '' })}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.84rem', color: '#cbd5e1', lineHeight: 1.5, marginBottom: '1rem' }}>
+              {returnActionModal.action === 'approve'
+                ? 'Are you sure you want to approve this customer return request? This will mark the return as Approved.'
+                : 'Are you sure you want to reject this return request? The rejection decision will be logged and visible.'}
+            </p>
+
+            {/* Return Request Context Details */}
+            <div style={{ background: '#0b0f19', border: '1px solid #1f2937', borderRadius: '6px', padding: '0.9rem', marginBottom: '1rem', fontSize: '0.78rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ color: '#94a3b8' }}>Return ID:</span>
+                <strong style={{ color: '#f3e5ab' }}>#{returnActionModal.returnRequest.id}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ color: '#94a3b8' }}>Order Ref:</span>
+                <strong style={{ color: '#38bdf8' }}>#{returnActionModal.returnRequest.orderId}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ color: '#94a3b8' }}>Customer:</span>
+                <span style={{ color: '#ffffff' }}>{returnActionModal.returnRequest.customerName} ({returnActionModal.returnRequest.customerEmail})</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ color: '#94a3b8' }}>Reason:</span>
+                <span style={{ color: '#fcd34d' }}>{returnActionModal.returnRequest.returnReason}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Requested Resolution:</span>
+                <span style={{ color: '#ffffff' }}>{returnActionModal.returnRequest.resolutionType || 'Refund'}</span>
+              </div>
+            </div>
+
+            {/* Resolution Notes Input */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label className="lux-label" style={{ color: '#94a3b8' }}>
+                Admin Decision Notes / Resolution Details
+              </label>
+              <textarea
+                rows={2}
+                value={returnActionModal.notes}
+                onChange={(e) => setReturnActionModal({ ...returnActionModal, notes: e.target.value })}
+                style={{
+                  width: '100%',
+                  background: '#0b0f19',
+                  border: '1px solid #374151',
+                  borderRadius: '4px',
+                  color: '#ffffff',
+                  padding: '8px 10px',
+                  fontSize: '0.78rem',
+                  resize: 'vertical',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setReturnActionModal({ isOpen: false, action: '', returnRequest: null, notes: '' })}
+                style={{
+                  background: '#1f2937',
+                  border: '1px solid #374151',
+                  color: '#ffffff',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isProcessingReturnAction}
+                onClick={handleConfirmReturnAction}
+                style={{
+                  background: returnActionModal.action === 'approve' ? '#059669' : '#dc2626',
+                  border: 'none',
+                  color: '#ffffff',
+                  padding: '8px 20px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  opacity: isProcessingReturnAction ? 0.7 : 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                {isProcessingReturnAction ? (
+                  <span>Processing...</span>
+                ) : returnActionModal.action === 'approve' ? (
+                  <>
+                    <Check size={14} />
+                    <span>Confirm Approval</span>
+                  </>
+                ) : (
+                  <>
+                    <X size={14} />
+                    <span>Confirm Rejection</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
