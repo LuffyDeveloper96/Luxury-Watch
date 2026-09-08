@@ -45,8 +45,8 @@ export const AdminDashboard = ({ onBackToStore }) => {
   const [productForm, setProductForm] = useState({
     name: '',
     brand: '',
-    category: 'Dive & Sport',
-    gender: 'Men',
+    category: '',
+    gender: '',
     price: '',
     comparePrice: '',
     stock: 1,
@@ -722,8 +722,8 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     setProductForm({
                       name: '',
                       brand: '',
-                      category: 'Dive & Sport',
-                      gender: 'Men',
+                      category: '',
+                      gender: '',
                       price: '',
                       comparePrice: '',
                       stock: 1,
@@ -1143,7 +1143,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
               <div className="admin-orders-filter-row" style={{ display: 'flex', gap: '10px', marginBottom: '1rem', flexWrap: 'wrap' }}>
                 <input
                   type="text"
-                  placeholder="Search order ID / client..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   style={{ background: '#111827', border: '1px solid #374151', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', flex: '1 1 180px', minWidth: 0 }}
@@ -1455,7 +1454,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   <label className="lux-label" style={{ color: '#94a3b8' }}>Razorpay Secret Key (Encrypted at rest)</label>
                   <input
                     type="password"
-                    placeholder="••••••••••••••••"
                     value={paymentConfig.razorpayKeySecret || ''}
                     onChange={(e) => setPaymentConfig({ ...paymentConfig, razorpayKeySecret: e.target.value })}
                     className="lux-input"
@@ -1518,7 +1516,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })}
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
-                    placeholder="Select or enter brand"
                   />
                   <datalist id="brands-datalist">
                     {brandsList.map(b => (
@@ -1535,7 +1532,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
-                    placeholder="Select or enter category"
                   />
                   <datalist id="category-datalist">
                     <option value="Dive & Sport" />
@@ -1694,7 +1690,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                           </div>
                           <input
                             type="text"
-                            placeholder="URL or path (/images/watches/... or https://...)"
                             value={mediaItem.url || ''}
                             onChange={(e) => handleUpdateMediaUrl(idx, e.target.value)}
                             className="lux-input"
@@ -1906,7 +1901,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     required
                     value={brandForm.name}
                     onChange={(e) => setBrandForm({ ...brandForm, name: e.target.value })}
-                    placeholder="Enter brand name"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
@@ -1918,7 +1912,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     type="text"
                     value={brandForm.slug}
                     onChange={(e) => setBrandForm({ ...brandForm, slug: e.target.value })}
-                    placeholder="Enter URL slug (e.g. brand-name)"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
@@ -1932,7 +1925,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     type="text"
                     value={brandForm.badge}
                     onChange={(e) => setBrandForm({ ...brandForm, badge: e.target.value })}
-                    placeholder="Enter badge or tag"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
@@ -1944,7 +1936,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     type="text"
                     value={brandForm.location}
                     onChange={(e) => setBrandForm({ ...brandForm, location: e.target.value })}
-                    placeholder="Enter location or headquarters"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
@@ -1956,7 +1947,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     type="text"
                     value={brandForm.established}
                     onChange={(e) => setBrandForm({ ...brandForm, established: e.target.value })}
-                    placeholder="Enter established year"
                     className="lux-input"
                     style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                   />
@@ -1974,7 +1964,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   type="text"
                   value={brandForm.featuredCollection}
                   onChange={(e) => setBrandForm({ ...brandForm, featuredCollection: e.target.value })}
-                  placeholder="Enter featured collection title"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                 />
@@ -1986,7 +1975,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   rows={2}
                   value={brandForm.description}
                   onChange={(e) => setBrandForm({ ...brandForm, description: e.target.value })}
-                  placeholder="Enter collection description"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', resize: 'vertical' }}
                 />
@@ -1998,7 +1986,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   type="text"
                   value={brandForm.filterTarget}
                   onChange={(e) => setBrandForm({ ...brandForm, filterTarget: e.target.value })}
-                  placeholder="Defaults to Brand Name"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                 />
@@ -2053,7 +2040,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   type="text"
                   value={brandForm.image}
                   onChange={(e) => setBrandForm({ ...brandForm, image: e.target.value })}
-                  placeholder="Paste image URL (or upload above)"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', fontSize: '0.75rem' }}
                 />
@@ -2065,7 +2051,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   type="text"
                   value={brandForm.imageAlt || ''}
                   onChange={(e) => setBrandForm({ ...brandForm, imageAlt: e.target.value })}
-                  placeholder="Enter image description"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                 />
@@ -2237,7 +2222,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   required
                   value={couponForm.code}
                   onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
-                  placeholder="Enter coupon code (e.g. PROMO20)"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                 />
@@ -2273,7 +2257,6 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   type="text"
                   value={couponForm.description}
                   onChange={(e) => setCouponForm({ ...couponForm, description: e.target.value })}
-                  placeholder="Enter promotion description"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
                 />

@@ -242,7 +242,6 @@ export const UserAuthModal = () => {
                     <input
                       type="text"
                       required
-                      placeholder="Enter your full name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       style={{
@@ -266,7 +265,6 @@ export const UserAuthModal = () => {
                     <Phone size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                     <input
                       type="tel"
-                      placeholder="Enter phone number"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       style={{
@@ -293,7 +291,6 @@ export const UserAuthModal = () => {
                 <input
                   type="email"
                   required
-                  placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
@@ -318,7 +315,6 @@ export const UserAuthModal = () => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
@@ -360,7 +356,6 @@ export const UserAuthModal = () => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    placeholder="Confirm your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     style={{

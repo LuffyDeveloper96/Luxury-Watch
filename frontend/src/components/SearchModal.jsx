@@ -74,7 +74,6 @@ export const SearchModal = () => {
           <Search size={20} color="#8a6709" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
             type="text"
-            placeholder="Search by model name, movement calibre, complication or metal..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus

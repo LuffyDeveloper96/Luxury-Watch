@@ -142,7 +142,6 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter administrator email"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', paddingLeft: '34px' }}
                 />
@@ -158,7 +157,6 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter master password"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', paddingLeft: '34px' }}
                 />
@@ -174,7 +172,6 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
                   maxLength={6}
                   value={passcodePin}
                   onChange={(e) => setPasscodePin(e.target.value)}
-                  placeholder="Enter security PIN"
                   className="lux-input"
                   style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151', paddingLeft: '34px' }}
                 />

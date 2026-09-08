@@ -275,14 +275,14 @@ export const createOrder = async (req, res) => {
 
     const rawCustomer = orderData.customer || {};
     const sanitizedCustomer = {
-      fullName: rawCustomer.fullName || 'Distinguished Patron',
+      fullName: rawCustomer.fullName || '',
       email: (rawCustomer.email || '').trim().toLowerCase(),
-      phone: rawCustomer.phone || '+91 98200 98200',
-      address: rawCustomer.address || 'The Capital, BKC',
-      city: rawCustomer.city || 'Mumbai',
-      state: rawCustomer.state || 'Maharashtra',
-      postalCode: rawCustomer.postalCode || '400051',
-      country: rawCustomer.country || 'India',
+      phone: rawCustomer.phone || '',
+      address: rawCustomer.address || '',
+      city: rawCustomer.city || '',
+      state: rawCustomer.state || '',
+      postalCode: rawCustomer.postalCode || '',
+      country: rawCustomer.country || '',
       deliverySpeed: rawCustomer.deliverySpeed || (shippingFee > 0 ? 'Securitas Armoured Express (Insured)' : 'BlueDart Insured Air Express'),
       specialInstructions: rawCustomer.specialInstructions || ''
     };
@@ -309,7 +309,7 @@ export const createOrder = async (req, res) => {
 
     emailService.sendOrderConfirmationEmail(savedOrder);
 
-    const custName = savedOrder.customer?.fullName || 'Distinguished Patron';
+    const custName = savedOrder.customer?.fullName || savedOrder.customer?.email || 'Customer';
     await ActivityLog.create({
       id: `act-${Date.now()}`,
       text: `🎉 Consignment #${savedOrder.id} placed by ${custName} (₹${finalTotal.toLocaleString('en-IN')})`,

@@ -827,7 +827,6 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
                   <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                   <input
                     type="text"
-                    placeholder="Enter Order Reference ID or Email"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{

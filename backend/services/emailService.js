@@ -73,7 +73,7 @@ export const emailService = {
 
     const contentHtml = `
       <h2 style="color: #f8fafc; font-size: 18px; margin-top: 0;">Consignment Confirmation #${order.id}</h2>
-      <p>Dear ${customer.fullName || 'Distinguished Collector'},</p>
+      <p>Dear ${customer.fullName || customer.email || 'Customer'},</p>
       <p>Thank you for your order with Luxury Watch. Your timepiece allocation has been confirmed and registered for insured express transit.</p>
       
       <div style="background: #1f2937; padding: 20px; border-radius: 6px; margin: 20px 0;">

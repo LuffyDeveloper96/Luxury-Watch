@@ -198,14 +198,14 @@ export const paymentFinalizationService = {
     // =========================================================================
     const rawCustomer = lockedPayment.customer || customer || orderData?.customer || {};
     const sanitizedCustomer = {
-      fullName: rawCustomer.fullName || 'Distinguished Patron',
-      email: (rawCustomer.email || lockedPayment.customerEmail || 'client@luxurywatch.com').trim().toLowerCase(),
-      phone: rawCustomer.phone || lockedPayment.customerPhone || '+91 98200 98200',
-      address: rawCustomer.address || 'The Capital, BKC',
-      city: rawCustomer.city || 'Mumbai',
-      state: rawCustomer.state || 'Maharashtra',
-      postalCode: rawCustomer.postalCode || '400051',
-      country: rawCustomer.country || 'India',
+      fullName: rawCustomer.fullName || '',
+      email: (rawCustomer.email || lockedPayment.customerEmail || '').trim().toLowerCase(),
+      phone: rawCustomer.phone || lockedPayment.customerPhone || '',
+      address: rawCustomer.address || '',
+      city: rawCustomer.city || '',
+      state: rawCustomer.state || '',
+      postalCode: rawCustomer.postalCode || '',
+      country: rawCustomer.country || '',
       deliverySpeed: rawCustomer.deliverySpeed || (lockedPayment.shippingFee > 0 ? 'Securitas Armoured Express (Insured)' : 'BlueDart Insured Air Express'),
       specialInstructions: rawCustomer.specialInstructions || ''
     };
@@ -570,7 +570,7 @@ export const paymentFinalizationService = {
     } catch (e) {}
 
     try {
-      const patronName = sanitizedCustomer.fullName || 'Distinguished Patron';
+      const patronName = sanitizedCustomer.fullName || sanitizedCustomer.email || 'Customer';
       await ActivityLog.create({
         id: `act-${Date.now()}`,
         text: `💳 Payment verified via ${source}! Consignment #${finalOrder.id} confirmed for ${patronName} (₹${(finalOrder.total || 0).toLocaleString('en-IN')})`,

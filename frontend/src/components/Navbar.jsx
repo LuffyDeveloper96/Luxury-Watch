@@ -341,7 +341,6 @@ export const Navbar = ({
                 <input
                   type="text"
                   autoFocus
-                  placeholder="Search by brand, model or keyword..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="lux-input"

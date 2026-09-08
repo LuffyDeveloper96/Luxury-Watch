@@ -312,7 +312,6 @@ export const CartDrawer = () => {
                 type="text"
                 value={couponCodeInput}
                 onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
-                placeholder="ENTER PROMO CODE"
                 className="lux-input"
                 style={{ fontSize: '0.78rem', padding: '0.5rem 0.8rem', background: '#ffffff' }}
               />

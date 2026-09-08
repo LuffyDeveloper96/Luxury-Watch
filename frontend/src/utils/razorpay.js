@@ -57,11 +57,6 @@ export const openRazorpayCheckout = async ({
         description,
         ...(orderId ? { order_id: orderId } : {}),
         image: image || undefined,
-        prefill: {
-          name: prefill.name || '',
-          email: prefill.email || '',
-          contact: prefill.contact || ''
-        },
         theme: {
           color: theme.color || '#0f172a'
         },

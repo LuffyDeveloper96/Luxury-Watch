@@ -103,7 +103,6 @@ export const OrderTrackingModal = ({ onOpenReturnForOrder }) => {
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.75rem' }}>
           <input
             type="text"
-            placeholder="Enter Order Reference ID or Email..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="lux-input"

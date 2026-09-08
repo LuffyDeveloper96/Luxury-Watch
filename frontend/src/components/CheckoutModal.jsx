@@ -42,7 +42,7 @@ export const CheckoutModal = () => {
     city: '',
     state: '',
     postalCode: '',
-    country: 'India',
+    country: '',
     deliverySpeed: 'BlueDart Insured Air Express (Pan-India 24-48 Hours)',
     specialInstructions: ''
   });
@@ -78,6 +78,9 @@ export const CheckoutModal = () => {
   const [showSimulator, setShowSimulator] = useState(false);
   const [simulatorData, setSimulatorData] = useState(null);
   const [simulatorTab, setSimulatorTab] = useState('upi'); // 'upi' | 'card' | 'netbanking'
+  const [simCardNumber, setSimCardNumber] = useState('');
+  const [simExpiry, setSimExpiry] = useState('');
+  const [simCvv, setSimCvv] = useState('');
 
   // Live Payment Settings
   const [paymentSettings, setPaymentSettings] = useState({
@@ -270,11 +273,6 @@ export const CheckoutModal = () => {
         orderId: orderId,
         name: 'LUXURY WATCH',
         description: `Haute Horlogerie Consignment (${effectiveItems.length} item(s))`,
-        prefill: {
-          name: formData.fullName,
-          email: formData.email,
-          contact: formData.phone
-        },
         onOpenFallbackSimulator: (simParams) => {
           setIsProcessing(false);
           setSimulatorData({
@@ -635,7 +633,6 @@ export const CheckoutModal = () => {
                     required
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    placeholder="Enter your full name"
                     className="lux-input"
                   />
                 </div>
@@ -646,7 +643,6 @@ export const CheckoutModal = () => {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Enter your email address"
                     className="lux-input"
                   />
                 </div>
@@ -660,7 +656,6 @@ export const CheckoutModal = () => {
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="Enter 10-digit phone number"
                     className="lux-input"
                   />
                 </div>
@@ -671,7 +666,6 @@ export const CheckoutModal = () => {
                     required
                     value={formData.postalCode}
                     onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                    placeholder="Enter 6-digit PIN code"
                     className="lux-input"
                   />
                 </div>
@@ -684,7 +678,6 @@ export const CheckoutModal = () => {
                   required
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="House/Flat No., Building, Street, Landmark"
                   className="lux-input"
                 />
               </div>
@@ -697,7 +690,6 @@ export const CheckoutModal = () => {
                     required
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Enter city"
                     className="lux-input"
                   />
                 </div>
@@ -708,7 +700,6 @@ export const CheckoutModal = () => {
                     required
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    placeholder="Enter state"
                     className="lux-input"
                   />
                 </div>
@@ -716,10 +707,9 @@ export const CheckoutModal = () => {
                   <label className="lux-label">Country</label>
                   <input
                     type="text"
-                    disabled
-                    value="India"
+                    value={formData.country}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                     className="lux-input"
-                    style={{ background: '#f8fafc' }}
                   />
                 </div>
               </div>
@@ -1106,16 +1096,34 @@ export const CheckoutModal = () => {
                 <div>
                   <div style={{ marginBottom: '8px' }}>
                     <label className="lux-label" style={{ fontSize: '0.68rem' }}>Card Number</label>
-                    <input type="text" readOnly value="4242 •••• •••• 4242" className="lux-input" style={{ fontSize: '0.78rem', background: '#f8fafc' }} />
+                    <input
+                      type="text"
+                      value={simCardNumber}
+                      onChange={(e) => setSimCardNumber(e.target.value)}
+                      className="lux-input"
+                      style={{ fontSize: '0.78rem' }}
+                    />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '1rem' }}>
                     <div>
                       <label className="lux-label" style={{ fontSize: '0.68rem' }}>Expiry</label>
-                      <input type="text" readOnly value="12/28" className="lux-input" style={{ fontSize: '0.78rem', background: '#f8fafc' }} />
+                      <input
+                        type="text"
+                        value={simExpiry}
+                        onChange={(e) => setSimExpiry(e.target.value)}
+                        className="lux-input"
+                        style={{ fontSize: '0.78rem' }}
+                      />
                     </div>
                     <div>
                       <label className="lux-label" style={{ fontSize: '0.68rem' }}>CVV</label>
-                      <input type="password" readOnly value="888" className="lux-input" style={{ fontSize: '0.78rem', background: '#f8fafc' }} />
+                      <input
+                        type="password"
+                        value={simCvv}
+                        onChange={(e) => setSimCvv(e.target.value)}
+                        className="lux-input"
+                        style={{ fontSize: '0.78rem' }}
+                      />
                     </div>
                   </div>
                 </div>

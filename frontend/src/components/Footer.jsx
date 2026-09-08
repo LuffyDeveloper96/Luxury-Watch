@@ -152,7 +152,6 @@ export const Footer = ({
             <div style={{ display: 'flex', gap: '6px' }}>
               <input
                 type="email"
-                placeholder="Enter your email address"
                 className="lux-input"
                 style={{ background: '#111827', border: '1px solid #374151', color: '#ffffff', fontSize: '0.75rem', padding: '8px 12px' }}
               />

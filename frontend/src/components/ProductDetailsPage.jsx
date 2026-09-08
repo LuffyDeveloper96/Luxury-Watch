@@ -541,7 +541,6 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
               <input
                 type="text"
                 maxLength={24}
-                placeholder="ENTER ENGRAVING (UP TO 24 CHARS)"
                 value={engravingText}
                 onChange={(e) => setEngravingText(e.target.value.toUpperCase())}
                 className="lux-input"
@@ -798,7 +797,6 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                       <input
                         type="text"
                         required
-                        placeholder="Enter your name"
                         value={newReviewerName}
                         onChange={e => setNewReviewerName(e.target.value)}
                         className="lux-input"
@@ -809,7 +807,6 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                       <label style={{ display: 'block', fontSize: '0.75rem', color: '#475569', marginBottom: '0.3rem', fontWeight: 600 }}>City, Country</label>
                       <input
                         type="text"
-                        placeholder="Enter your city and country"
                         value={newReviewLocation}
                         onChange={e => setNewReviewLocation(e.target.value)}
                         className="lux-input"
@@ -842,7 +839,6 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                     <label style={{ display: 'block', fontSize: '0.75rem', color: '#475569', marginBottom: '0.3rem', fontWeight: 600 }}>Review Headline</label>
                     <input
                       type="text"
-                      placeholder="Enter a headline for your review"
                       value={newReviewTitle}
                       onChange={e => setNewReviewTitle(e.target.value)}
                       className="lux-input"
@@ -854,7 +850,6 @@ export const ProductDetailsPage = ({ product: propProduct, onBack, onSelectOther
                     <textarea
                       required
                       rows={4}
-                      placeholder="Describe the finishing, wrist presence, movement accuracy..."
                       value={newReviewComment}
                       onChange={e => setNewReviewComment(e.target.value)}
                       className="lux-input"
