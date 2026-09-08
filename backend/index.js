@@ -28,7 +28,9 @@ app.use(helmet({
 
 // Explicit CORS Configuration
 const parseAllowedOrigins = () => {
-  const origins = [];
+  const origins = [
+    'https://luxurywatch2020.netlify.app'
+  ];
   if (env.FRONTEND_URL) {
     origins.push(env.FRONTEND_URL.trim().replace(/\/$/, ''));
   }
@@ -53,7 +55,7 @@ const parseAllowedOrigins = () => {
 
 const allowedOrigins = parseAllowedOrigins();
 
-app.use(cors({
+const corsOptions = {
   origin: (origin, callback) => {
     // Allow non-browser requests (e.g. mobile apps, server-to-server, curl, tests)
     if (!origin) {
@@ -67,8 +69,13 @@ app.use(cors({
 
     return callback(new Error(`Origin '${origin}' not permitted by CORS policy.`));
   },
-  credentials: true
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json({
   limit: '10mb',

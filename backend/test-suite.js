@@ -164,14 +164,33 @@ const runTests = async () => {
     });
     assert(tamperedVerification.status === 400, 'Tampered / invalid Razorpay payment signature rejected (HTTP 400)');
 
-    // 7. CORS Protection Check
+    // 7. CORS Protection & Allowed Origin Check
     console.log('\n[Phase 4: CORS Configuration Check]');
+    const allowedOriginRes = await fetch(`${baseUrl}/api/products`, {
+      headers: {
+        Origin: 'https://luxurywatch2020.netlify.app'
+      }
+    });
+    const allowedAcao = allowedOriginRes.headers.get('access-control-allow-origin');
+    assert(allowedAcao === 'https://luxurywatch2020.netlify.app', 'Production origin https://luxurywatch2020.netlify.app is permitted in CORS headers');
+
+    // Preflight OPTIONS request check
+    const preflightRes = await fetch(`${baseUrl}/api/auth/admin/login`, {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://luxurywatch2020.netlify.app',
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'Content-Type'
+      }
+    });
+    const preflightAcao = preflightRes.headers.get('access-control-allow-origin');
+    assert(preflightAcao === 'https://luxurywatch2020.netlify.app', 'Preflight OPTIONS returns Access-Control-Allow-Origin for production frontend');
+
     const disallowedOriginRes = await fetch(`${baseUrl}/api/products`, {
       headers: {
         Origin: 'https://malicious-random-site.com'
       }
     });
-    // Disallowed origin should not have Access-Control-Allow-Origin matching malicious origin
     const acaoHeader = disallowedOriginRes.headers.get('access-control-allow-origin');
     assert(!acaoHeader || acaoHeader !== 'https://malicious-random-site.com', 'Unconfigured origin is not allowed in CORS response headers');
 

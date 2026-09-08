@@ -140,6 +140,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
                 <input
                   type="email"
                   required
+                  autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="lux-input"
@@ -155,6 +156,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
                 <input
                   type="password"
                   required
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="lux-input"
@@ -170,6 +172,7 @@ export const AdminLogin = ({ onClose, onSuccess }) => {
                 <input
                   type="password"
                   maxLength={6}
+                  autoComplete="one-time-code"
                   value={passcodePin}
                   onChange={(e) => setPasscodePin(e.target.value)}
                   className="lux-input"
