@@ -367,6 +367,27 @@ const runTests = async () => {
     );
     const createdReturnId = createReturnRes.data.returnRequest?.id;
 
+    // Step 1b: Duplicate return request creation attempt is rejected (HTTP 400)
+    const duplicateReturnRes = await apiFetch('/api/returns', {
+      method: 'POST',
+      body: JSON.stringify({
+        orderId: returnTestOrderId,
+        customerName: 'Return Tester',
+        customerEmail: 'return_tester@luxurywatch.test',
+        customerPhone: '+919988776655',
+        reason: 'Duplicate attempt test',
+        resolutionType: 'Refund',
+        pickupAddress: '200 Horology Road, New Delhi - 110001',
+        notes: 'Trying to submit duplicate return'
+      })
+    });
+    assert(
+      duplicateReturnRes.status === 400 &&
+      !duplicateReturnRes.data.success &&
+      duplicateReturnRes.data.message?.includes('already exists'),
+      'Step 1b: Duplicate return request creation attempt is strictly rejected with HTTP 400'
+    );
+
     // Step 2: Admin lists all return requests (GET /api/returns)
     const listReturnsRes = await apiFetch('/api/returns', {
       headers: { Authorization: `Bearer ${adminToken}` }

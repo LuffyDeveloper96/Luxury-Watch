@@ -40,7 +40,7 @@ const RESOLUTION_OPTIONS = [
   }
 ];
 
-const ReturnRequestModal = ({ isOpen, onClose, initialOrderId = '' }) => {
+const ReturnRequestModal = ({ isOpen, onClose, initialOrderId = '', onSuccess }) => {
   const { user, userOrders, refreshUserProfile } = useUserAuth();
   const { orders: storeOrders, showToast } = useStore();
 
@@ -118,6 +118,19 @@ const ReturnRequestModal = ({ isOpen, onClose, initialOrderId = '' }) => {
         return;
       }
 
+      // Check if a return request already exists for this order
+      try {
+        const retRes = await returnsAPI.lookup(match.id);
+        if (retRes?.success && Array.isArray(retRes.returns) && retRes.returns.length > 0) {
+          const existing = retRes.returns[0];
+          setSelectedOrder(match);
+          setCreatedReturn(existing);
+          setStep(5);
+          setIsLoading(false);
+          return;
+        }
+      } catch (e) {}
+
       setSelectedOrder(match);
       // Preselect first item
       if (match.items && match.items.length > 0) {
@@ -184,11 +197,19 @@ const ReturnRequestModal = ({ isOpen, onClose, initialOrderId = '' }) => {
 
       const res = await returnsAPI.create(payload);
 
-      if (res.success && res.returnRequest) {
-        setCreatedReturn(res.returnRequest);
+      if (res.success && (res.returnRequest || res.request || res.return)) {
+        const retObj = res.returnRequest || res.request || res.return;
+        setCreatedReturn(retObj);
         setStep(5);
         if (refreshUserProfile) refreshUserProfile();
         if (showToast) showToast('Return request logged. Armoured pickup scheduled.', 'success');
+
+        // Broadcast custom event so active pages update immediately
+        try {
+          window.dispatchEvent(new CustomEvent('luxury:return-created', { detail: retObj }));
+        } catch (e) {}
+
+        if (onSuccess) onSuccess(retObj);
       } else {
         setErrorMsg(res.message || 'Failed to submit return request.');
       }

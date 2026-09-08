@@ -96,6 +96,26 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
     loadPurchasedOrders();
   }, [isAuthenticated]);
 
+  // Live listener for return request creation to update UI state immediately
+  useEffect(() => {
+    const handleReturnCreated = (e) => {
+      const createdReturn = e.detail;
+      if (createdReturn && createdReturn.orderId) {
+        setOrderReturnsMap(prev => ({
+          ...prev,
+          [createdReturn.orderId]: createdReturn,
+          ...(createdReturn.orderId.toUpperCase() !== createdReturn.orderId ? { [createdReturn.orderId.toUpperCase()]: createdReturn } : {})
+        }));
+        if (searchedOrder && (searchedOrder.id?.toUpperCase() === createdReturn.orderId.toUpperCase() || searchedOrder.orderNumber?.toUpperCase() === createdReturn.orderId.toUpperCase())) {
+          setSearchedReturn(createdReturn);
+        }
+      }
+    };
+
+    window.addEventListener('luxury:return-created', handleReturnCreated);
+    return () => window.removeEventListener('luxury:return-created', handleReturnCreated);
+  }, [searchedOrder]);
+
   const handleSearch = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -879,27 +899,26 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
                               </div>
 
                               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                <button
-                                  onClick={() => {
-                                    onBack();
-                                    setTimeout(() => onOpenReturnForOrder(ord.id), 100);
-                                  }}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    padding: '8px 14px',
-                                    backgroundColor: '#ffffff',
-                                    border: '1px solid #cbd5e1',
-                                    color: '#475569',
-                                    borderRadius: '4px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer'
-                                  }}
-                                >
-                                  <RotateCcw size={14} /> Request Concierge Return
-                                </button>
+                                {!orderReturnsMap[ord.id] && ord.orderStatus !== 'Cancelled' && (
+                                  <button
+                                    onClick={() => onOpenReturnForOrder(ord.id)}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      padding: '8px 14px',
+                                      backgroundColor: '#ffffff',
+                                      border: '1px solid #cbd5e1',
+                                      color: '#475569',
+                                      borderRadius: '4px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600,
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    <RotateCcw size={14} /> Request Concierge Return
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => window.print()}
                                   style={{
@@ -1022,15 +1041,14 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
                   {(searchedReturn || orderReturnsMap[searchedOrder.id]) && renderReturnStatusCard(searchedReturn || orderReturnsMap[searchedOrder.id])}
 
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
-                    <button
-                      onClick={() => {
-                        onBack();
-                        setTimeout(() => onOpenReturnForOrder(searchedOrder.id), 100);
-                      }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', color: '#475569', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      <RotateCcw size={14} /> Request Concierge Return
-                    </button>
+                    {!(searchedReturn || orderReturnsMap[searchedOrder.id]) && searchedOrder.orderStatus !== 'Cancelled' && (
+                      <button
+                        onClick={() => onOpenReturnForOrder(searchedOrder.id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', color: '#475569', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        <RotateCcw size={14} /> Request Concierge Return
+                      </button>
+                    )}
                     <button
                       onClick={() => window.print()}
                       style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#f8fafc', border: '1px solid #d4af37', color: '#8a6709', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}

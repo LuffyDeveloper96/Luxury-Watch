@@ -27,10 +27,22 @@ export const createReturn = async (req, res) => {
       });
     }
 
+    const cleanOrderId = orderId.trim().toUpperCase();
+    const cleanCustomerEmail = customerEmail.trim().toLowerCase();
+
+    // Verify order exists
+    const order = await Order.findOne({
+      $or: [{ id: cleanOrderId }, { orderNumber: cleanOrderId }]
+    }).lean();
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: `Order #${orderId} was not found.`
+      });
+    }
+
     if (!items || !items.length) {
-      const order = await Order.findOne({
-        $or: [{ id: orderId }, { orderNumber: orderId }]
-      }).lean();
       items = order?.items?.map(it => ({
         id: it.id,
         name: it.name,
@@ -52,20 +64,56 @@ export const createReturn = async (req, res) => {
       }));
     }
 
+    // Check for existing return requests for this order / item
+    const existingReturns = await Return.find({
+      orderId: cleanOrderId
+    }).lean();
+
+    if (existingReturns.length > 0) {
+      const requestedItemIds = new Set(
+        (items || []).map(it => (it.id || it.sku || it.name || '').toLowerCase()).filter(Boolean)
+      );
+
+      for (const ex of existingReturns) {
+        const isBlockedStatus = ['Pending', 'Approved', 'Rejected', 'Requested', 'Pickup Scheduled', 'Inspected & Approved'].includes(ex.status);
+        if (isBlockedStatus) {
+          const exItemIds = new Set(
+            (ex.items || []).map(it => (it.id || it.sku || it.name || '').toLowerCase()).filter(Boolean)
+          );
+
+          const hasOverlap = requestedItemIds.size === 0 || exItemIds.size === 0 ||
+            Array.from(requestedItemIds).some(id => exItemIds.has(id));
+
+          if (hasOverlap) {
+            return res.status(400).json({
+              success: false,
+              message: `Return request already exists for this order item. Current status: ${ex.status}`,
+              existingReturn: {
+                id: ex.id,
+                status: ex.status,
+                reason: ex.returnReason,
+                createdAt: ex.createdAt
+              }
+            });
+          }
+        }
+      }
+    }
+
     const returnId = `RET-LW-${Math.floor(10000 + Math.random() * 90000)}`;
     const returnWaybill = `LW-RET-IND-${Math.floor(10000000 + Math.random() * 90000000)}`;
 
     const newReturn = {
       id: returnId,
-      orderId: orderId.trim().toUpperCase(),
-      customerName: customerName || 'Valued Patron',
-      customerEmail: customerEmail.trim().toLowerCase(),
-      customerPhone: customerPhone || '',
+      orderId: cleanOrderId,
+      customerName: customerName || order.customer?.fullName || order.customer?.name || 'Valued Patron',
+      customerEmail: cleanCustomerEmail,
+      customerPhone: customerPhone || order.customer?.phone || '',
       items,
       returnReason,
       resolutionType,
       exchangeModelPreference: exchangeModelPreference || null,
-      pickupAddress: pickupAddress || 'Client Registered Address',
+      pickupAddress: pickupAddress || (order.customer?.address ? `${order.customer.address}, ${order.customer.city || ''} ${order.customer.postalCode || ''}` : 'Client Registered Address'),
       notes: notes || '',
       status: 'Pending',
       waybillNumber: returnWaybill,
@@ -79,7 +127,7 @@ export const createReturn = async (req, res) => {
     // Activity log
     await ActivityLog.create({
       id: `act-${Date.now()}`,
-      text: `Return request #${returnId} submitted for Order #${orderId} by ${newReturn.customerName}`,
+      text: `Return request #${returnId} submitted for Order #${cleanOrderId} by ${newReturn.customerName}`,
       time: 'Just now',
       type: 'return'
     });
@@ -171,7 +219,11 @@ export const lookupReturn = async (req, res) => {
       const isOwner = userEmail && r.customerEmail && r.customerEmail.toLowerCase() === userEmail;
 
       if (isAdmin || isOwner) {
-        return r; // Full authorized return details
+        return {
+          ...r,
+          reason: r.returnReason,
+          adminNotes: r.resolutionNotes
+        };
       }
 
       // Public / Unauthenticated sanitized return summary
@@ -182,6 +234,10 @@ export const lookupReturn = async (req, res) => {
         status: r.status,
         resolutionType: r.resolutionType,
         returnReason: r.returnReason,
+        reason: r.returnReason,
+        notes: r.notes || '',
+        adminNotes: r.resolutionNotes || '',
+        resolutionNotes: r.resolutionNotes || '',
         courierTier: r.courierTier,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,

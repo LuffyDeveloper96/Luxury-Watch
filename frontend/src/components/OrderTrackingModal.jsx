@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { formatCurrency } from '../utils/currency';
+import { returnsAPI } from '../services/api';
 import {
   X, Search, Package, CheckCircle2, Clock, Truck, ShieldCheck,
   AlertCircle, Sparkles, MapPin, PhoneCall, ExternalLink, RotateCcw
@@ -9,9 +10,24 @@ import {
 export const OrderTrackingModal = ({ onOpenReturnForOrder }) => {
   const { isOrderTrackingOpen, setIsOrderTrackingOpen, orders, currency } = useStore();
 
-  const [searchQuery, setSearchQuery] = useState('ORD-AK-98421');
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchedOrder, setSearchedOrder] = useState(() => orders[0] || null);
+  const [existingReturn, setExistingReturn] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (searchedOrder?.id) {
+      returnsAPI.lookup(searchedOrder.id).then(res => {
+        if (res?.success && Array.isArray(res.returns) && res.returns.length > 0) {
+          setExistingReturn(res.returns[0]);
+        } else {
+          setExistingReturn(null);
+        }
+      }).catch(() => setExistingReturn(null));
+    } else {
+      setExistingReturn(null);
+    }
+  }, [searchedOrder]);
 
   if (!isOrderTrackingOpen) return null;
 
@@ -21,7 +37,7 @@ export const OrderTrackingModal = ({ onOpenReturnForOrder }) => {
     const clean = searchQuery.trim().toUpperCase();
 
     const found = orders.find(
-      o => o.id.toUpperCase() === clean || o.customer?.email?.toLowerCase() === searchQuery.trim().toLowerCase()
+      o => o.id?.toUpperCase() === clean || o.orderNumber?.toUpperCase() === clean || o.customer?.email?.toLowerCase() === searchQuery.trim().toLowerCase()
     );
 
     if (found) {
@@ -238,40 +254,80 @@ export const OrderTrackingModal = ({ onOpenReturnForOrder }) => {
               ))}
             </div>
 
-            {/* Return / Exchange Privilege Banner & Action */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '1rem 1.25rem',
-              background: '#ffffff',
-              border: '1.5px dashed rgba(180, 140, 30, 0.5)',
-              borderRadius: '6px',
-              flexWrap: 'wrap',
-              gap: '1rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(180, 140, 30, 0.1)', color: '#8a6709', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <RotateCcw size={18} />
-                </div>
+            {/* Return / Exchange Status or Privilege Banner */}
+            {existingReturn ? (
+              <div style={{
+                padding: '1rem 1.25rem',
+                backgroundColor: existingReturn.status === 'Approved' ? '#f0fdf4' : existingReturn.status === 'Rejected' ? '#fef2f2' : '#fefce8',
+                border: `1px solid ${existingReturn.status === 'Approved' ? '#86efac' : existingReturn.status === 'Rejected' ? '#fca5a5' : '#fde047'}`,
+                borderRadius: '6px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
                 <div>
-                  <h5 style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: 700, margin: 0 }}>7-Day Complimentary Return Privilege</h5>
-                  <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '2px 0 0 0' }}>Exchange for another timepiece model or receive a 100% full refund.</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>
+                    <RotateCcw size={14} color="#8a6709" />
+                    <span>Return Request Status: <strong style={{ color: existingReturn.status === 'Approved' ? '#166534' : existingReturn.status === 'Rejected' ? '#991b1b' : '#854d0e' }}>{existingReturn.status}</strong></span>
+                    <span style={{ fontSize: '0.7rem', color: '#64748b' }}>(Ref #{existingReturn.id?.slice(-8) || existingReturn.id})</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: '3px' }}>
+                    Reason: {existingReturn.reason || existingReturn.returnReason || 'General Return'}
+                  </div>
+                  {existingReturn.adminNotes && (
+                    <div style={{ fontSize: '0.72rem', color: '#1e293b', marginTop: '3px' }}>
+                      Admin Notes: {existingReturn.adminNotes}
+                    </div>
+                  )}
                 </div>
+                <span style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  backgroundColor: existingReturn.status === 'Approved' ? '#dcfce7' : existingReturn.status === 'Rejected' ? '#fee2e2' : '#fef9c3',
+                  color: existingReturn.status === 'Approved' ? '#166534' : existingReturn.status === 'Rejected' ? '#991b1b' : '#854d0e'
+                }}>
+                  {existingReturn.status === 'Pending' ? 'Under Review' : existingReturn.status}
+                </span>
               </div>
+            ) : searchedOrder.orderStatus !== 'Cancelled' ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1rem 1.25rem',
+                background: '#ffffff',
+                border: '1.5px dashed rgba(180, 140, 30, 0.5)',
+                borderRadius: '6px',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(180, 140, 30, 0.1)', color: '#8a6709', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <RotateCcw size={18} />
+                  </div>
+                  <div>
+                    <h5 style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: 700, margin: 0 }}>7-Day Complimentary Return Privilege</h5>
+                    <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '2px 0 0 0' }}>Exchange for another timepiece model or receive a 100% full refund.</p>
+                  </div>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOrderTrackingOpen(false);
-                  if (onOpenReturnForOrder) onOpenReturnForOrder(searchedOrder.id);
-                }}
-                className="btn-outline-gold"
-                style={{ padding: '0.5rem 1.2rem', fontSize: '0.75rem' }}
-              >
-                <span>Initiate Return / Exchange</span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOrderTrackingOpen(false);
+                    if (onOpenReturnForOrder) onOpenReturnForOrder(searchedOrder.id);
+                  }}
+                  className="btn-outline-gold"
+                  style={{ padding: '0.5rem 1.2rem', fontSize: '0.75rem' }}
+                >
+                  <span>Initiate Return / Exchange</span>
+                </button>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
