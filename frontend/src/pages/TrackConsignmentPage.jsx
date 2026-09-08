@@ -130,24 +130,24 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
   // ORDER STATUS MAPPING
   // Maps real MongoDB orderStatus values → 4 customer-facing delivery stages.
   //
-  // DB values:  Pending | Confirmed | Processing | Packed | Shipped |
-  //             Out for Delivery | Delivered | Cancelled | Return Requested |
-  //             Returned | Refunded
-  //
-  // Customer stages:
-  //   1 = ORDER CONFIRMED
-  //   2 = SHIPPED
-  //   3 = OUT FOR DELIVERY
-  //   4 = DELIVERED
+  // Allowed customer/order statuses:
+  //   1 = Order Confirmed (Confirmed)
+  //   2 = Shipped
+  //   3 = Out for Delivery
+  //   4 = Delivered
+  //   (Cancelled = terminal cancellation state)
   // ─────────────────────────────────────────────────────────────────────────────
   const getDeliveryStageIndex = (status) => {
     switch (status) {
-      case 'Confirmed':   return 1; // Order Confirmed
-      case 'Processing':  return 2; // Treated as in-transit / Shipped stage
-      case 'Packed':      return 2; // Treated as in-transit / Shipped stage
-      case 'Shipped':     return 2; // Shipped
-      case 'Out for Delivery': return 3; // Out for Delivery
-      case 'Delivered':   return 4; // Delivered
+      case 'Confirmed':
+      case 'Order Confirmed':
+        return 1; // Order Confirmed
+      case 'Shipped':
+        return 2; // Shipped
+      case 'Out for Delivery':
+        return 3; // Out for Delivery
+      case 'Delivered':
+        return 4; // Delivered
       // Special statuses — do NOT map these into the 4-stage flow
       case 'Cancelled':
       case 'Return Requested':

@@ -7,7 +7,8 @@ import http from 'http';
 import crypto from 'crypto';
 import app from './index.js';
 import { env } from './config/env.js';
-import { User, Product } from './models/index.js';
+import { User, Product, Order } from './models/index.js';
+import { generateToken } from './middleware/auth.js';
 
 let server;
 let baseUrl;
@@ -193,6 +194,118 @@ const runTests = async () => {
     });
     const acaoHeader = disallowedOriginRes.headers.get('access-control-allow-origin');
     assert(!acaoHeader || acaoHeader !== 'https://malicious-random-site.com', 'Unconfigured origin is not allowed in CORS response headers');
+
+    // 8. Order Status Flow & 5 Canonical Statuses Test
+    console.log('\n[Phase 8: Order Status 5-Stage Lifecycle Verification]');
+    
+    // Generate valid Admin Token for testing order status endpoints
+    const adminEmail = (env.ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@luxurywatch.com').trim().toLowerCase();
+    const adminToken = generateToken({
+      email: adminEmail,
+      role: 'Grand Horologist / Master Administrator',
+      sessionId: `TEST-ADMIN-${Date.now()}`
+    });
+    assert(Boolean(adminToken), 'Master Admin JWT generated for authorized admin operations');
+
+    // Create a temporary test order
+    const testOrderId = `TEST-ORD-${Date.now()}`;
+    await Order.create({
+      id: testOrderId,
+      orderNumber: testOrderId,
+      customer: {
+        fullName: 'Status Flow Patron',
+        email: 'status_test@luxurywatch.test',
+        phone: '+919999988888',
+        address: '100 Haute Avenue',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        postalCode: '400001',
+        country: 'India'
+      },
+      items: [{
+        id: 'test-watch-1',
+        name: 'Royal Chronograph',
+        brand: 'Rolex',
+        price: 850000,
+        quantity: 1
+      }],
+      subtotal: 850000,
+      total: 850000,
+      orderStatus: 'Confirmed',
+      paymentStatus: 'Paid',
+      createdAt: new Date()
+    });
+
+    // Test A: Confirmed (or Order Confirmed)
+    const setConfirmedRes = await apiFetch(`/api/orders/${testOrderId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ orderStatus: 'Order Confirmed' })
+    });
+    assert(
+      setConfirmedRes.status === 200 && setConfirmedRes.data.order?.orderStatus === 'Confirmed',
+      'A: Admin sets "Order Confirmed" → Stored as "Confirmed"'
+    );
+
+    // Test B: Shipped
+    const setShippedRes = await apiFetch(`/api/orders/${testOrderId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ orderStatus: 'Shipped', trackingNumber: 'LW-TRK-1001' })
+    });
+    assert(
+      setShippedRes.status === 200 && setShippedRes.data.order?.orderStatus === 'Shipped',
+      'B: Admin sets "Shipped" → Stored as "Shipped"'
+    );
+
+    // Test C: Out for Delivery
+    const setOFDRes = await apiFetch(`/api/orders/${testOrderId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ orderStatus: 'Out for Delivery' })
+    });
+    assert(
+      setOFDRes.status === 200 && setOFDRes.data.order?.orderStatus === 'Out for Delivery',
+      'C: Admin sets "Out for Delivery" → Stored as "Out for Delivery"'
+    );
+
+    // Test D: Delivered (MUST NOT BE DOWNGRADED OR NORMALIZED TO SHIPPED)
+    const setDeliveredRes = await apiFetch(`/api/orders/${testOrderId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ orderStatus: 'Delivered' })
+    });
+    assert(
+      setDeliveredRes.status === 200 &&
+      setDeliveredRes.data.order?.orderStatus === 'Delivered' &&
+      setDeliveredRes.data.order?.orderStatus !== 'Shipped',
+      'D: Admin sets "Delivered" → Stored as "Delivered" (NOT Shipped)'
+    );
+
+    // Public / User Tracking API Check for Delivered
+    const trackingRes = await apiFetch(`/api/orders/${testOrderId}`);
+    assert(
+      trackingRes.status === 200 &&
+      trackingRes.data.order?.orderStatus === 'Delivered' &&
+      trackingRes.data.order?.orderStatus !== 'Shipped',
+      'D2: User Order Tracking retrieves "Delivered" strictly without downgrade to Shipped'
+    );
+
+    // Test E: Cancelled
+    const setCancelledRes = await apiFetch(`/api/orders/${testOrderId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ orderStatus: 'Cancelled' })
+    });
+    assert(
+      setCancelledRes.status === 200 && setCancelledRes.data.order?.orderStatus === 'Cancelled',
+      'E: Admin sets "Cancelled" → Stored as "Cancelled"'
+    );
+
+    // Cleanup test order
+    try {
+      await Order.deleteOne({ id: testOrderId });
+    } catch (e) {}
 
     // Clean up test patron record if created
     try {

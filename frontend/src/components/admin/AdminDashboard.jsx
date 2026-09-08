@@ -464,7 +464,10 @@ export const AdminDashboard = ({ onBackToStore }) => {
   };
 
   const filteredOrders = ordersList.filter(o => {
-    if (orderStatusFilter !== 'All' && o.orderStatus !== orderStatusFilter) return false;
+    if (orderStatusFilter !== 'All') {
+      const isConfirmedMatch = orderStatusFilter === 'Confirmed' && (o.orderStatus === 'Confirmed' || o.orderStatus === 'Order Confirmed');
+      if (!isConfirmedMatch && o.orderStatus !== orderStatusFilter) return false;
+    }
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       return (
@@ -1153,9 +1156,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                   style={{ background: '#111827', border: '1px solid #374151', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', flex: '0 0 auto' }}
                 >
                   <option value="All">All Statuses</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Processing">Processing</option>
-                  <option value="Packed">Packed</option>
+                  <option value="Confirmed">Order Confirmed</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Out for Delivery">Out for Delivery</option>
                   <option value="Delivered">Delivered</option>
@@ -1194,13 +1195,11 @@ export const AdminDashboard = ({ onBackToStore }) => {
                           <td style={{ padding: '10px 14px', color: '#d4af37', fontSize: '0.72rem' }}>{o.trackingNumber}</td>
                           <td style={{ padding: '10px 14px' }}>
                             <select
-                              value={o.orderStatus}
+                              value={o.orderStatus === 'Order Confirmed' ? 'Confirmed' : o.orderStatus}
                               onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
                               style={{ background: '#1f2937', border: '1px solid #374151', color: '#f3e5ab', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem' }}
                             >
-                              <option value="Confirmed">Confirmed</option>
-                              <option value="Processing">Processing</option>
-                              <option value="Packed">Packed</option>
+                              <option value="Confirmed">Order Confirmed</option>
                               <option value="Shipped">Shipped</option>
                               <option value="Out for Delivery">Out for Delivery</option>
                               <option value="Delivered">Delivered</option>
@@ -1267,13 +1266,11 @@ export const AdminDashboard = ({ onBackToStore }) => {
                         Status:
                       </label>
                       <select
-                        value={o.orderStatus}
+                        value={o.orderStatus === 'Order Confirmed' ? 'Confirmed' : o.orderStatus}
                         onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
                         style={{ flex: 1, minWidth: 0, background: '#1f2937', border: '1px solid #374151', color: '#f3e5ab', padding: '6px 8px', borderRadius: '4px', fontSize: '0.78rem' }}
                       >
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Processing">Processing</option>
-                        <option value="Packed">Packed</option>
+                        <option value="Confirmed">Order Confirmed</option>
                         <option value="Shipped">Shipped</option>
                         <option value="Out for Delivery">Out for Delivery</option>
                         <option value="Delivered">Delivered</option>

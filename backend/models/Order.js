@@ -43,7 +43,20 @@ const orderSchema = new mongoose.Schema({
   currency: { type: String, default: 'INR' },
   orderStatus: {
     type: String,
-    enum: ['Pending', 'Confirmed', 'Processing', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Return Requested', 'Returned', 'Refunded'],
+    enum: [
+      'Pending',
+      'Confirmed',
+      'Order Confirmed',
+      'Processing',
+      'Packed',
+      'Shipped',
+      'Out for Delivery',
+      'Delivered',
+      'Cancelled',
+      'Return Requested',
+      'Returned',
+      'Refunded'
+    ],
     default: 'Confirmed',
     index: true
   },
@@ -75,29 +88,49 @@ orderSchema.index({ 'customer.email': 1, createdAt: -1 });
 orderSchema.index({ 'paymentDetails.paymentId': 1 }, { unique: true, sparse: true });
 
 /**
- * Order State Transition Matrix
+ * 5 Canonical Order Statuses:
+ * 1. Confirmed / Order Confirmed
+ * 2. Shipped
+ * 3. Out for Delivery
+ * 4. Delivered
+ * 5. Cancelled
  */
-const VALID_ORDER_TRANSITIONS = {
-  'Pending': ['Confirmed', 'Cancelled'],
-  'Confirmed': ['Processing', 'Packed', 'Shipped', 'Cancelled'],
-  'Processing': ['Packed', 'Shipped', 'Cancelled'],
-  'Packed': ['Shipped', 'Out for Delivery', 'Cancelled'],
-  'Shipped': ['Out for Delivery', 'Delivered', 'Returned'],
-  'Out for Delivery': ['Delivered', 'Returned'],
-  'Delivered': ['Return Requested', 'Returned'],
-  'Return Requested': ['Returned', 'Delivered'],
-  'Returned': ['Refunded'],
-  'Cancelled': [], // Terminal
-  'Refunded': []   // Terminal
+export const CANONICAL_ORDER_STATUSES = [
+  'Confirmed',
+  'Shipped',
+  'Out for Delivery',
+  'Delivered',
+  'Cancelled'
+];
+
+export const normalizeOrderStatus = (status) => {
+  if (!status) return 'Confirmed';
+  const clean = String(status).trim();
+  if (clean.toLowerCase() === 'order confirmed' || clean.toLowerCase() === 'confirmed') {
+    return 'Confirmed';
+  }
+  if (clean.toLowerCase() === 'shipped') {
+    return 'Shipped';
+  }
+  if (clean.toLowerCase() === 'out for delivery' || clean.toLowerCase() === 'out_for_delivery') {
+    return 'Out for Delivery';
+  }
+  if (clean.toLowerCase() === 'delivered') {
+    return 'Delivered';
+  }
+  if (clean.toLowerCase() === 'cancelled' || clean.toLowerCase() === 'canceled') {
+    return 'Cancelled';
+  }
+  return clean;
 };
 
 export const isValidOrderTransition = (currentStatus, targetStatus) => {
   if (!currentStatus || !targetStatus) return false;
-  if (currentStatus === targetStatus) return true;
-  const allowed = VALID_ORDER_TRANSITIONS[currentStatus] || [];
-  return allowed.includes(targetStatus);
+  const normalized = normalizeOrderStatus(targetStatus);
+  return CANONICAL_ORDER_STATUSES.includes(normalized);
 };
 
 export const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 export default Order;
+
 

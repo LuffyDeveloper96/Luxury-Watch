@@ -34,21 +34,27 @@ export const OrderTrackingModal = ({ onOpenReturnForOrder }) => {
 
   const getStageIndex = (status) => {
     switch (status) {
-      case 'Confirmed': return 1;
-      case 'In Assembly': return 2;
-      case 'Dispatched': return 3;
-      case 'Delivered': return 4;
-      default: return 1;
+      case 'Confirmed':
+      case 'Order Confirmed':
+        return 1;
+      case 'Shipped':
+        return 2;
+      case 'Out for Delivery':
+        return 3;
+      case 'Delivered':
+        return 4;
+      default:
+        return 1;
     }
   };
 
   const currentStage = searchedOrder ? getStageIndex(searchedOrder.orderStatus) : 1;
 
   const stages = [
-    { title: "Reservation Confirmed", desc: "Order validated & movement selected" },
-    { title: "Atelier Assembly & Engraving", desc: "Regulation & laser caseback personalized" },
-    { title: "Armoured Dispatch", desc: "Sealed & handed to diplomatic courier" },
-    { title: "White-Glove Delivery", desc: "Insured recipient hand-off" }
+    { title: "Order Confirmed", desc: "Security validated & allocation finalized" },
+    { title: "Shipped", desc: "Sealed & handed to express diplomatic courier" },
+    { title: "Out for Delivery", desc: "Your timepiece is on its way to you" },
+    { title: "Delivered", desc: "Insured recipient hand-off complete" }
   ];
 
   return (

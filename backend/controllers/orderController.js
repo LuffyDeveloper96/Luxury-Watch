@@ -1,5 +1,5 @@
 import { Order, Product, Coupon, ActivityLog } from '../models/index.js';
-import { isValidOrderTransition } from '../models/Order.js';
+import { isValidOrderTransition, normalizeOrderStatus, CANONICAL_ORDER_STATUSES } from '../models/Order.js';
 import { emailService } from '../services/emailService.js';
 import { escapeRegex } from '../utils/regex.js';
 
@@ -330,12 +330,14 @@ export const createOrder = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const orderStatus = req.body.orderStatus || req.body.status;
+    const rawStatus = req.body.orderStatus || req.body.status;
     const { trackingNumber, courierTier } = req.body;
 
-    if (!orderStatus) {
+    if (!rawStatus) {
       return res.status(400).json({ success: false, message: 'Order status is required.' });
     }
+
+    const orderStatus = normalizeOrderStatus(rawStatus);
 
     const existing = await Order.findOne({ $or: [{ id }, { orderNumber: id }] });
     if (!existing) {
@@ -345,7 +347,7 @@ export const updateOrderStatus = async (req, res) => {
     if (!isValidOrderTransition(existing.orderStatus, orderStatus)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid order status transition from "${existing.orderStatus}" to "${orderStatus}".`
+        message: `Invalid order status "${rawStatus}". Must be one of: ${CANONICAL_ORDER_STATUSES.join(', ')}.`
       });
     }
 
