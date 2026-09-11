@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Review, Product, ActivityLog } from '../models/index.js';
 
 export const getReviews = async (req, res) => {
@@ -109,7 +110,25 @@ export const updateReviewStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const existing = await Review.findOne({ id });
+    if (!id || typeof id !== 'string' || !id.trim()) {
+      return res.status(400).json({ success: false, message: 'Review identifier is required.' });
+    }
+
+    const allowedStatuses = ['approved', 'pending', 'hidden'];
+    if (!status || !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid review status "${status}". Allowed values: ${allowedStatuses.join(', ')}.`
+      });
+    }
+
+    const cleanId = id.trim();
+    const queryOr = [{ id: cleanId }];
+    if (mongoose.isValidObjectId(cleanId)) {
+      queryOr.push({ _id: cleanId });
+    }
+
+    const existing = await Review.findOne({ $or: queryOr });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Review not found.' });
     }
@@ -129,7 +148,17 @@ export const updateReviewStatus = async (req, res) => {
 export const deleteReview = async (req, res) => {
   try {
     const { id } = req.params;
-    const existing = await Review.findOne({ id });
+    if (!id || typeof id !== 'string' || !id.trim()) {
+      return res.status(400).json({ success: false, message: 'Review identifier is required.' });
+    }
+
+    const cleanId = id.trim();
+    const queryOr = [{ id: cleanId }];
+    if (mongoose.isValidObjectId(cleanId)) {
+      queryOr.push({ _id: cleanId });
+    }
+
+    const existing = await Review.findOne({ $or: queryOr });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Review not found.' });
     }

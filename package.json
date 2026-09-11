@@ -11,6 +11,7 @@
     "client": "npm --prefix frontend run dev",
     "frontend": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
+    "test": "node backend/test-suite.js",
     "test:api": "node backend/test-suite.js"
   },
   "dependencies": {

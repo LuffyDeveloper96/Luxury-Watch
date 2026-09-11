@@ -27,6 +27,7 @@ import {
   initiateUserSignup,
   initiateUserLogin,
   getMe,
+  updateProfile,
   addAddress,
   deleteAddress,
   setDefaultAddress,
@@ -181,6 +182,7 @@ router.post('/auth/user/login/init', authLimiter, initiateUserLogin);
 
 // Patron Profile & Address Management
 router.get('/auth/user/me', requireAuth, getMe);
+router.put('/auth/user/profile', requireAuth, updateProfile);
 router.post('/auth/user/addresses', requireAuth, addAddress);
 router.delete('/auth/user/addresses/:id', requireAuth, deleteAddress);
 router.put('/auth/user/addresses/:id/default', requireAuth, setDefaultAddress);

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Coupon, ActivityLog } from '../models/index.js';
 
 export const getCoupons = async (req, res) => {
@@ -16,7 +17,7 @@ export const getCoupons = async (req, res) => {
 export const validateCoupon = async (req, res) => {
   try {
     const { code, subtotal, items = [] } = req.body;
-    if (!code) {
+    if (!code || typeof code !== 'string' || !code.trim()) {
       return res.status(400).json({ success: false, message: 'Promotion code is required.' });
     }
 
@@ -67,12 +68,18 @@ export const createCoupon = async (req, res) => {
   try {
     const { code, discountPercent, discountAmount, minSpend, maxDiscount, description, brand, category } = req.body;
 
-    if (!code || (!discountPercent && !discountAmount)) {
+    if (!code || typeof code !== 'string' || !code.trim() || (!discountPercent && !discountAmount)) {
       return res.status(400).json({ success: false, message: 'Code and discount value are required.' });
     }
 
+    const cleanCode = code.trim().toUpperCase();
+    const existing = await Coupon.findOne({ code: cleanCode });
+    if (existing) {
+      return res.status(400).json({ success: false, message: `Coupon with code "${cleanCode}" already exists.` });
+    }
+
     const newCoupon = {
-      code: code.trim().toUpperCase(),
+      code: cleanCode,
       discountPercent: discountPercent ? Number(discountPercent) : undefined,
       discountAmount: discountAmount ? Number(discountAmount) : undefined,
       minSpend: Number(minSpend) || 0,
@@ -105,13 +112,27 @@ export const createCoupon = async (req, res) => {
 
 export const updateCoupon = async (req, res) => {
   try {
-    const { code } = req.params;
-    const updates = req.body;
-    const cleanCode = code.toUpperCase();
+    const rawTarget = req.params.id || req.params.code;
+    if (!rawTarget || typeof rawTarget !== 'string' || !rawTarget.trim()) {
+      return res.status(400).json({ success: false, message: 'Coupon identifier (ID or code) is required.' });
+    }
 
-    const existing = await Coupon.findOne({ code: cleanCode });
+    const target = rawTarget.trim();
+    const cleanCode = target.toUpperCase();
+    const updates = { ...req.body };
+
+    const queryOr = [{ code: cleanCode }];
+    if (mongoose.isValidObjectId(target)) {
+      queryOr.push({ _id: target });
+    }
+
+    const existing = await Coupon.findOne({ $or: queryOr });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Coupon not found.' });
+    }
+
+    if (updates.code && typeof updates.code === 'string') {
+      updates.code = updates.code.trim().toUpperCase();
     }
 
     const updated = await Coupon.findOneAndUpdate(
@@ -128,16 +149,26 @@ export const updateCoupon = async (req, res) => {
 
 export const deleteCoupon = async (req, res) => {
   try {
-    const { code } = req.params;
-    const cleanCode = code.toUpperCase();
+    const rawTarget = req.params.id || req.params.code;
+    if (!rawTarget || typeof rawTarget !== 'string' || !rawTarget.trim()) {
+      return res.status(400).json({ success: false, message: 'Coupon identifier (ID or code) is required.' });
+    }
 
-    const existing = await Coupon.findOne({ code: cleanCode });
+    const target = rawTarget.trim();
+    const cleanCode = target.toUpperCase();
+
+    const queryOr = [{ code: cleanCode }];
+    if (mongoose.isValidObjectId(target)) {
+      queryOr.push({ _id: target });
+    }
+
+    const existing = await Coupon.findOne({ $or: queryOr });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Coupon not found.' });
     }
 
     await Coupon.deleteOne({ _id: existing._id });
-    return res.json({ success: true, message: 'Coupon removed successfully.' });
+    return res.json({ success: true, message: `Coupon "${existing.code}" removed successfully.` });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

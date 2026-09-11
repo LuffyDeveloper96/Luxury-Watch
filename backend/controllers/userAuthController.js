@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { User, ActivityLog } from '../models/index.js';
 import { generateToken } from '../middleware/auth.js';
@@ -148,6 +149,74 @@ export const getMe = async (req, res) => {
     delete sanitizedUser.password;
 
     return res.json({ success: true, user: sanitizedUser });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * 3.1 Update Authenticated Customer Profile
+ * PUT /api/auth/user/profile
+ */
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const userEmail = req.user?.email?.toLowerCase();
+
+    if (!userId && !userEmail) {
+      return res.status(401).json({ success: false, message: 'Authentication required.' });
+    }
+
+    const { name, phone } = req.body;
+    const updates = {};
+
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ success: false, message: 'A valid patron name is required.' });
+      }
+      updates.name = name.trim();
+    }
+
+    if (phone !== undefined) {
+      if (typeof phone !== 'string') {
+        return res.status(400).json({ success: false, message: 'A valid phone number string is required.' });
+      }
+      updates.phone = phone.trim();
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ success: false, message: 'No valid profile fields provided for update.' });
+    }
+
+    updates.updatedAt = new Date();
+
+    const queryOr = [];
+    if (userId) {
+      queryOr.push({ id: userId });
+      if (mongoose.isValidObjectId(userId)) {
+        queryOr.push({ _id: userId });
+      }
+    }
+    if (userEmail) {
+      queryOr.push({ email: userEmail });
+      queryOr.push({ email: new RegExp(`^${userEmail}$`, 'i') });
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
+      { $or: queryOr },
+      { $set: updates },
+      { returnDocument: 'after' }
+    ).select('-password').lean();
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: 'Patron record not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: updatedUser
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -309,6 +378,7 @@ export default {
   initiateUserSignup,
   initiateUserLogin,
   getMe,
+  updateProfile,
   addAddress,
   deleteAddress,
   setDefaultAddress,

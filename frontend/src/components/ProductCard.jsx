@@ -64,15 +64,24 @@ export const ProductCard = ({ product, onSelectProduct }) => {
   };
   const [isHovered, setIsHovered] = useState(false);
 
-  const discountPercent = product.comparePrice
+  const discountPercent = product?.comparePrice
     ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
     : 0;
 
-  const currentImg =
-    product.images[selectedColorIdx] ||
-    (isHovered && product.images[1] ? product.images[1] : product.images[0]);
+  const fallbackImage = '/images/watches/rolex_submariner.jpg';
+  const productImages = Array.isArray(product?.images) && product.images.length > 0
+    ? product.images.filter(Boolean)
+    : (Array.isArray(product?.media) && product.media.length > 0
+      ? product.media.map(m => (typeof m === 'string' ? m : m?.url)).filter(Boolean)
+      : []);
 
-  const inWish = isInWishlist(product.id);
+  const currentImg = (productImages.length > 0 && productImages[selectedColorIdx])
+    ? productImages[selectedColorIdx]
+    : (isHovered && productImages.length > 1 && productImages[1]
+      ? productImages[1]
+      : (productImages[0] || fallbackImage));
+
+  const inWish = isInWishlist(product?.id);
 
   return (
     <div
@@ -102,7 +111,12 @@ export const ProductCard = ({ product, onSelectProduct }) => {
       >
         <img
           src={getImageUrl(currentImg)}
-          alt={product.name}
+          alt={product?.name || 'Haute Horlogerie Timepiece'}
+          onError={(e) => {
+            if (e.target.src !== fallbackImage) {
+              e.target.src = fallbackImage;
+            }
+          }}
           style={{
             position: 'absolute',
             inset: 0,

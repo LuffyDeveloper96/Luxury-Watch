@@ -82,8 +82,48 @@ export const TrackConsignmentPage = ({ onBack, onOpenReturnForOrder }) => {
         setOrderReturnsMap(returnsMap);
       }
 
-      // Default active tab
-      if (combined.length === 0 && !isAuthenticated) {
+      // Check URL query parameters from search and hash (e.g. from Order Confirmation Email link)
+      const getQueryParam = (paramName) => {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get(paramName)) return searchParams.get(paramName);
+        if (window.location.hash && window.location.hash.includes('?')) {
+          const hashParams = new URLSearchParams(window.location.hash.split('?')[1]);
+          if (hashParams.get(paramName)) return hashParams.get(paramName);
+        }
+        return null;
+      };
+
+      const directRef = (
+        getQueryParam('id') ||
+        getQueryParam('orderId') ||
+        getQueryParam('ref') ||
+        getQueryParam('order') ||
+        ''
+      ).trim();
+
+      if (directRef) {
+        setSearchQuery(directRef);
+        setActiveTab('search');
+        setSearchLoading(true);
+        try {
+          const res = await ordersAPI.getById(directRef);
+          if (res?.success && res.order) {
+            setSearchedOrder(res.order);
+            try {
+              const retRes = await returnsAPI.lookup(res.order.id || directRef);
+              if (retRes?.success && Array.isArray(retRes.returns) && retRes.returns.length > 0) {
+                setSearchedReturn(retRes.returns[0]);
+              }
+            } catch (e) {}
+          } else {
+            setErrorMessage(`No consignment record found for "${directRef}".`);
+          }
+        } catch (err) {
+          setErrorMessage(err.message || `No record found for "${directRef}".`);
+        } finally {
+          setSearchLoading(false);
+        }
+      } else if (combined.length === 0 && !isAuthenticated) {
         setActiveTab('search');
       } else {
         setActiveTab('orders');

@@ -7,8 +7,9 @@ import http from 'http';
 import crypto from 'crypto';
 import app from './index.js';
 import { env } from './config/env.js';
-import { User, Product, Order, Return } from './models/index.js';
+import { User, Product, Order, Return, Coupon, Review } from './models/index.js';
 import { generateToken } from './middleware/auth.js';
+import { emailService } from './services/emailService.js';
 
 let server;
 let baseUrl;
@@ -447,6 +448,470 @@ const runTests = async () => {
     try {
       await Return.deleteOne({ id: createdReturnId });
       await Order.deleteOne({ id: returnTestOrderId });
+    } catch (e) {}
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Phase 10: VIP Coupon CRUD & Parameter Resilience Verification
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n[Phase 10: VIP Coupon CRUD & Parameter Resilience]');
+    const testCouponCode = `TESTVIP_${Date.now()}`;
+
+    // 10A: Create Coupon (POST /api/coupons)
+    const createCouponRes = await apiFetch('/api/coupons', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        code: testCouponCode,
+        discountPercent: 15,
+        minSpend: 5000,
+        maxDiscount: 2000,
+        description: 'Automated Test VIP Coupon'
+      })
+    });
+    assert(
+      createCouponRes.status === 201 &&
+      createCouponRes.data.success &&
+      createCouponRes.data.coupon?.code === testCouponCode,
+      'Step 10A: Master Admin successfully creates new promotion coupon'
+    );
+    const createdCouponMongoId = createCouponRes.data.coupon?._id?.toString() || createCouponRes.data.coupon?.id;
+
+    // 10B: Update coupon by Coupon Code (PUT /api/coupons/:code)
+    const updateCouponByCodeRes = await apiFetch(`/api/coupons/${testCouponCode}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        discountPercent: 20,
+        description: 'Updated VIP 20% Discount'
+      })
+    });
+    assert(
+      updateCouponByCodeRes.status === 200 &&
+      updateCouponByCodeRes.data.success &&
+      updateCouponByCodeRes.data.coupon?.discountPercent === 20,
+      'Step 10B: Admin updates coupon by Code without TypeError (discountPercent -> 20)'
+    );
+
+    // 10C: Update coupon by MongoDB ID (PUT /api/coupons/:mongoId)
+    if (createdCouponMongoId) {
+      const updateCouponByIdRes = await apiFetch(`/api/coupons/${createdCouponMongoId}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({
+          discountPercent: 25
+        })
+      });
+      assert(
+        updateCouponByIdRes.status === 200 &&
+        updateCouponByIdRes.data.success &&
+        updateCouponByIdRes.data.coupon?.discountPercent === 25,
+        'Step 10C: Admin updates coupon by MongoDB _id (discountPercent -> 25)'
+      );
+    }
+
+    // 10D: Invalid / Nonexistent coupon update returns 404
+    const invalidCouponUpdateRes = await apiFetch('/api/coupons/NONEXISTENT_CODE_999', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ discountPercent: 10 })
+    });
+    assert(
+      invalidCouponUpdateRes.status === 404 &&
+      !invalidCouponUpdateRes.data.success,
+      'Step 10D: Nonexistent coupon update returns proper HTTP 404 Not Found'
+    );
+
+    // 10E: Delete coupon by Code or ID (DELETE /api/coupons/:target)
+    const deleteCouponRes = await apiFetch(`/api/coupons/${testCouponCode}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert(
+      deleteCouponRes.status === 200 &&
+      deleteCouponRes.data.success,
+      'Step 10E: Admin deletes coupon by Code without parameter mismatch or crash'
+    );
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Phase 11: Patron Profile Management & Security (PUT /api/auth/user/profile)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n[Phase 11: Patron Profile Management & Security]');
+
+    // 11A: Unauthenticated profile update rejected (HTTP 401)
+    const unauthProfileRes = await apiFetch('/api/auth/user/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ name: 'Hacker Attempt' })
+    });
+    assert(
+      unauthProfileRes.status === 401 && !unauthProfileRes.data.success,
+      'Step 11A: Unauthenticated profile update request is strictly rejected with HTTP 401'
+    );
+
+    // Create fresh dedicated patron for profile tests
+    const profileTestEmail = `patron_profile_${Date.now()}@luxurywatch.test`;
+    const profileSignup = await apiFetch('/api/auth/user/signup', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Profile Patron Initial',
+        email: profileTestEmail,
+        password: 'TestPassword123!',
+        phone: '+919123456780'
+      })
+    });
+    assert(profileSignup.status === 201 && profileSignup.data.token, 'Step 11B-0: Dedicated patron created for profile tests');
+    const profileCustomerToken = profileSignup.data.token;
+
+    // 11B: Authenticated profile update (name + phone)
+    const updatedPatronName = 'Sir Horology Patron IV';
+    const updatedPatronPhone = '+91 9876543210';
+    const authProfileRes = await apiFetch('/api/auth/user/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${profileCustomerToken}` },
+      body: JSON.stringify({
+        name: updatedPatronName,
+        phone: updatedPatronPhone,
+        role: 'admin', // Attempted privilege escalation
+        email: 'hacked@luxurywatch.test' // Attempted email takeover
+      })
+    });
+    assert(
+      authProfileRes.status === 200 &&
+      authProfileRes.data.success &&
+      authProfileRes.data.user?.name === updatedPatronName &&
+      authProfileRes.data.user?.phone === updatedPatronPhone &&
+      authProfileRes.data.user?.role === 'customer' &&
+      authProfileRes.data.user?.email === profileTestEmail &&
+      !authProfileRes.data.user?.password,
+      'Step 11B: Authenticated patron updates name & phone; role/email escalation blocked; password not exposed',
+      JSON.stringify({ status: authProfileRes.status, data: authProfileRes.data })
+    );
+
+    // 11C: Profile changes persist on fresh /me request
+    const freshMeRes = await apiFetch('/api/auth/user/me', {
+      headers: { Authorization: `Bearer ${profileCustomerToken}` }
+    });
+    assert(
+      freshMeRes.status === 200 &&
+      freshMeRes.data.user?.name === updatedPatronName &&
+      freshMeRes.data.user?.phone === updatedPatronPhone &&
+      !freshMeRes.data.user?.password,
+      'Step 11C: Profile updates persist accurately on fresh GET /api/auth/user/me',
+      JSON.stringify({ status: freshMeRes.status, data: freshMeRes.data })
+    );
+
+    // Cleanup profile test user
+    try {
+      await User.deleteOne({ email: profileTestEmail });
+    } catch (e) {}
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Phase 12: Review Moderation & ID Resolution (Custom ID and ObjectId)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n[Phase 12: Review Moderation & Identifier Resolution]');
+
+    // 12A: Submit review (POST /api/reviews)
+    const createReviewRes = await apiFetch('/api/reviews', {
+      method: 'POST',
+      body: JSON.stringify({
+        productId: 'rolex-submariner-date',
+        author: 'Lord Horologist',
+        rating: 5,
+        title: 'Masterpiece Calibre Execution',
+        comment: 'Finishing on the bevelled edges and bezel click torque is supreme.',
+        location: 'London, UK'
+      })
+    });
+    assert(
+      createReviewRes.status === 201 &&
+      createReviewRes.data.success &&
+      createReviewRes.data.review?.id,
+      'Step 12A: Patron successfully submits product review'
+    );
+    const createdReviewId = createReviewRes.data.review?.id;
+    const createdReviewMongoId = createReviewRes.data.review?._id?.toString();
+
+    // 12B: Update review status by custom ID (PATCH /api/reviews/:id/status)
+    const updateReviewStatusRes = await apiFetch(`/api/reviews/${createdReviewId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ status: 'approved' })
+    });
+    assert(
+      updateReviewStatusRes.status === 200 &&
+      updateReviewStatusRes.data.success &&
+      updateReviewStatusRes.data.review?.status === 'approved',
+      'Step 12B: Admin updates review status by custom ID (status -> approved)'
+    );
+
+    // 12C: Update review status by MongoDB _id (if available)
+    if (createdReviewMongoId) {
+      const updateReviewByMongoIdRes = await apiFetch(`/api/reviews/${createdReviewMongoId}/status`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ status: 'hidden' })
+      });
+      assert(
+        updateReviewByMongoIdRes.status === 200 &&
+        updateReviewByMongoIdRes.data.success &&
+        updateReviewByMongoIdRes.data.review?.status === 'hidden',
+        'Step 12C: Admin updates review status by MongoDB _id without crash (status -> hidden)'
+      );
+    }
+
+    // 12D: Invalid review ID handled safely (404)
+    const invalidReviewRes = await apiFetch('/api/reviews/NONEXISTENT_REV_9999/status', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ status: 'approved' })
+    });
+    assert(
+      invalidReviewRes.status === 404 && !invalidReviewRes.data.success,
+      'Step 12D: Nonexistent review ID returns proper HTTP 404 Not Found'
+    );
+
+    // 12E: Delete review by ID
+    const deleteReviewRes = await apiFetch(`/api/reviews/${createdReviewId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert(
+      deleteReviewRes.status === 200 && deleteReviewRes.data.success,
+      'Step 12E: Admin successfully deletes test review'
+    );
+
+    // =========================================================================
+    // 13. Production Order Confirmation Email System Verification
+    // =========================================================================
+    console.log('\n[Phase 13: Production Order Confirmation Email Suite]');
+    let dispatchedEmails = [];
+    let mockTransporter = {
+      sendMail: async (options) => {
+        dispatchedEmails.push(options);
+        return { messageId: `mock-msg-${Date.now()}` };
+      }
+    };
+    emailService.setTransporter(mockTransporter);
+
+    // 13A: Scenario A - Email Send Succeeds
+    const emailTestOrderId = `ORD-EML-${Date.now()}`;
+    const emailTestRecipient = `patron_email_${Date.now()}@luxurywatch.test`;
+    const testOrderDoc = await Order.create({
+      id: emailTestOrderId,
+      orderNumber: emailTestOrderId,
+      customer: {
+        fullName: 'Bespoke Patron',
+        email: emailTestRecipient,
+        phone: '+919876543210',
+        address: '10 Haute Horlogerie Avenue',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        postalCode: '400001',
+        country: 'India',
+        deliverySpeed: 'Securitas Armoured Express (Insured)'
+      },
+      items: [
+        {
+          id: 'watch-rolex-sub-01',
+          name: 'Rolex Submariner Date 41mm',
+          brand: 'Rolex',
+          price: 1450000,
+          quantity: 1
+        }
+      ],
+      subtotal: 1450000,
+      discountAmount: 50000,
+      appliedCoupon: { code: 'VIP2026', discountPercent: 5 },
+      shippingFee: 499,
+      total: 1400499,
+      currency: 'INR',
+      orderStatus: 'Confirmed',
+      paymentStatus: 'Paid',
+      courierTier: 'Securitas Armoured Express (Insured)',
+      confirmationEmailSent: false,
+      createdAt: new Date()
+    });
+
+    const emailSendResult = await emailService.sendOrderConfirmationEmail(testOrderDoc);
+    const orderDocAfterSuccess = await Order.findOne({ id: emailTestOrderId }).lean();
+
+    assert(
+      emailSendResult.success === true && dispatchedEmails.length === 1,
+      'Step 13A-1: Email sent exactly once via transporter on success'
+    );
+    assert(
+      orderDocAfterSuccess?.confirmationEmailSent === true && orderDocAfterSuccess?.confirmationEmailSentAt instanceof Date,
+      'Step 13A-2: confirmationEmailSent=true and confirmationEmailSentAt exists in DB only after sendMail success'
+    );
+    assert(
+      dispatchedEmails[0]?.to === emailTestRecipient,
+      'Step 13A-3: Email sent to actual customer email without fake fallback'
+    );
+    assert(
+      dispatchedEmails[0]?.subject?.includes(emailTestOrderId) &&
+      dispatchedEmails[0]?.subject?.includes('Order Confirmed'),
+      'Step 13A-4: Email subject line contains valid order reference ID and canonical status'
+    );
+    assert(
+      dispatchedEmails[0]?.html?.includes('Rolex Submariner Date 41mm') &&
+      dispatchedEmails[0]?.html?.includes('14,00,499') &&
+      dispatchedEmails[0]?.html?.includes('Order Confirmed') &&
+      dispatchedEmails[0]?.html?.includes('/orders?id='),
+      'Step 13A-5: Responsive HTML contains luxury branding, line items, totals, canonical status, and tracking URL'
+    );
+    assert(
+      dispatchedEmails[0]?.text?.includes('Rolex Submariner Date 41mm') &&
+      dispatchedEmails[0]?.text?.includes('Order Confirmed') &&
+      dispatchedEmails[0]?.text?.includes('/orders?id='),
+      'Step 13A-6: Plain text fallback contains comprehensive breakdown, canonical status, and tracking link'
+    );
+
+    // 13B: Scenario B - Email Send Fails (Order stays successful, confirmationEmailSent remains false, retry succeeds)
+    const failingTransporter = {
+      sendMail: async () => {
+        throw new Error('Simulated Gmail SMTP Network Disconnection');
+      }
+    };
+    emailService.setTransporter(failingTransporter);
+
+    const failTestOrderId = `ORD-FAIL-${Date.now()}`;
+    const failOrderDoc = await Order.create({
+      id: failTestOrderId,
+      orderNumber: failTestOrderId,
+      customer: {
+        fullName: 'Failover Patron',
+        email: `failover_${Date.now()}@luxurywatch.test`,
+        phone: '+919876543219',
+        address: '50 Marine Lines',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        postalCode: '400020',
+        country: 'India'
+      },
+      items: [
+        {
+          id: 'watch-rolex-sub-01',
+          name: 'Rolex Submariner Date 41mm',
+          brand: 'Rolex',
+          price: 1450000,
+          quantity: 1
+        }
+      ],
+      subtotal: 1450000,
+      total: 1450000,
+      orderStatus: 'Confirmed',
+      paymentStatus: 'Paid',
+      confirmationEmailSent: false,
+      createdAt: new Date()
+    });
+
+    const failedSendResult = await emailService.sendOrderConfirmationEmail(failOrderDoc);
+    const orderDocAfterFailure = await Order.findOne({ id: failTestOrderId }).lean();
+
+    assert(
+      failedSendResult.success === false && failedSendResult.reason === 'SEND_FAILED',
+      'Step 13B-1: Email send failure returns safe failure result without crashing'
+    );
+    assert(
+      orderDocAfterFailure?.confirmationEmailSent === false && !orderDocAfterFailure?.confirmationEmailSentAt,
+      'Step 13B-2: On failure, confirmationEmailSent remains false and confirmationEmailSentAt remains unset'
+    );
+    assert(
+      orderDocAfterFailure?.orderStatus === 'Confirmed' && orderDocAfterFailure?.paymentStatus === 'Paid',
+      'Step 13B-3: Order and payment remain completely intact and confirmed despite email error'
+    );
+
+    // Test subsequent successful retry on the failed order
+    emailService.setTransporter(mockTransporter);
+    const retrySendResult = await emailService.sendOrderConfirmationEmail(failOrderDoc);
+    const orderDocAfterRetry = await Order.findOne({ id: failTestOrderId }).lean();
+
+    assert(
+      retrySendResult.success === true && orderDocAfterRetry?.confirmationEmailSent === true,
+      'Step 13B-4: Subsequent legitimate retry succeeds and marks confirmationEmailSent=true'
+    );
+
+    // 13C: Scenario C - Concurrent duplicate attempts (Race Condition Prevention)
+    const concurrentOrderId = `ORD-CONC-${Date.now()}`;
+    const concurrentOrderDoc = await Order.create({
+      id: concurrentOrderId,
+      orderNumber: concurrentOrderId,
+      customer: {
+        fullName: 'Concurrent Patron',
+        email: `concurrent_${Date.now()}@luxurywatch.test`,
+        phone: '+919876543212',
+        address: '100 Gateway Plaza',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        postalCode: '400001',
+        country: 'India'
+      },
+      items: [
+        {
+          id: 'watch-rolex-sub-01',
+          name: 'Rolex Submariner Date 41mm',
+          brand: 'Rolex',
+          price: 1450000,
+          quantity: 1
+        }
+      ],
+      subtotal: 1450000,
+      total: 1450000,
+      orderStatus: 'Confirmed',
+      paymentStatus: 'Paid',
+      confirmationEmailSent: false,
+      createdAt: new Date()
+    });
+
+    const emailCountBefore = dispatchedEmails.length;
+    // Trigger 3 concurrent dispatch calls simultaneously
+    const concurrentResults = await Promise.all([
+      emailService.sendOrderConfirmationEmail(concurrentOrderDoc),
+      emailService.sendOrderConfirmationEmail(concurrentOrderDoc),
+      emailService.sendOrderConfirmationEmail(concurrentOrderDoc)
+    ]);
+
+    const emailCountAfter = dispatchedEmails.length;
+    const dispatchedForConcurrent = emailCountAfter - emailCountBefore;
+
+    assert(
+      dispatchedForConcurrent === 1,
+      `Step 13C: Concurrent duplicate requests dispatch exactly 1 email (dispatched: ${dispatchedForConcurrent})`
+    );
+
+    // 13D: Scenario D & E - Missing customer email is handled safely & Environment config
+    const missingEmailResult = await emailService.sendOrderConfirmationEmail({
+      id: 'ORD-NO-EMAIL',
+      customer: { email: '' }
+    });
+    assert(
+      missingEmailResult.success === false && missingEmailResult.reason === 'MISSING_RECIPIENT_EMAIL',
+      'Step 13D: Missing customer email is handled safely without throwing exception'
+    );
+
+    assert(
+      typeof env.EMAIL_USER === 'string' &&
+      typeof env.EMAIL_APP_PASSWORD === 'string' &&
+      typeof env.EMAIL_FROM_NAME === 'string',
+      'Step 13E: Email credentials and sender name read from environment variables'
+    );
+
+    assert(
+      !JSON.stringify(emailSendResult).includes('password') &&
+      !JSON.stringify(emailSendResult).includes('pass') &&
+      !JSON.stringify(failedSendResult).includes('password'),
+      'Step 13F: No secrets or passwords present in email service return values'
+    );
+
+    // Reset email transporter
+    emailService.resetTransporter();
+
+    // Cleanup user test data
+    try {
+      await User.deleteOne({ email: testEmail });
+      await Coupon.deleteOne({ code: testCouponCode });
+      if (createdReviewId) await Review.deleteOne({ id: createdReviewId });
+      if (emailTestOrderId) await Order.deleteOne({ id: emailTestOrderId });
+      if (resilientOrderId) await Order.deleteOne({ id: resilientOrderId });
     } catch (e) {}
 
   } catch (err) {

@@ -307,7 +307,11 @@ export const createOrder = async (req, res) => {
       createdAt: new Date()
     });
 
-    emailService.sendOrderConfirmationEmail(savedOrder);
+    try {
+      emailService.sendOrderConfirmationEmail(savedOrder);
+    } catch (emailErr) {
+      console.warn('[OrderController] Email dispatch notification error:', emailErr.message);
+    }
 
     const custName = savedOrder.customer?.fullName || savedOrder.customer?.email || 'Customer';
     await ActivityLog.create({

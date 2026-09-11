@@ -80,6 +80,9 @@ const orderSchema = new mongoose.Schema({
   estimatedDeliveryDate: { type: String },
   cancelReason: { type: String },
   returnId: { type: String },
+  confirmationEmailSent: { type: Boolean, default: false, index: true },
+  confirmationEmailSentAt: { type: Date },
+  confirmationEmailLock: { type: Date, index: true },
   createdAt: { type: Date, default: Date.now, index: true },
   updatedAt: { type: Date, default: Date.now }
 });
