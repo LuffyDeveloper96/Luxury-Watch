@@ -167,6 +167,89 @@ export const StoreProvider = ({ children }) => {
     }
   }, []);
 
+  // Targeted Product Catalog Refresh (Single GET request without 8-endpoint burst)
+  const refreshProducts = useCallback(async () => {
+    try {
+      const res = await productsAPI.getAll();
+      if (res && Array.isArray(res.products)) {
+        setProducts(res.products);
+        setIsBackendConnected(true);
+        setProductsError(null);
+      }
+    } catch (err) {
+      console.warn('[StoreContext] Targeted product refresh note:', err.message);
+    }
+  }, []);
+
+  // Targeted In-Memory Product State Reconciliation (0 Network Requests)
+  const upsertProduct = useCallback((product) => {
+    if (!product) return;
+    setProducts(prev => {
+      const idx = prev.findIndex(p => (product.id && p.id === product.id) || (product._id && p._id === product._id));
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...product };
+        return next;
+      }
+      return [product, ...prev];
+    });
+    setIsBackendConnected(true);
+    setProductsError(null);
+  }, []);
+
+  const removeProduct = useCallback((productId) => {
+    if (!productId) return;
+    setProducts(prev => prev.filter(p => p.id !== productId && p._id !== productId));
+  }, []);
+
+  const updateProductStock = useCallback((productId, newStock) => {
+    if (!productId) return;
+    setProducts(prev => prev.map(p => {
+      if (p.id === productId || p._id === productId) {
+        return { ...p, stock: Number(newStock) };
+      }
+      return p;
+    }));
+  }, []);
+
+  // Targeted In-Memory Brand Reconciliation (0 Network Requests)
+  const upsertBrand = useCallback((brand) => {
+    if (!brand) return;
+    setBrands(prev => {
+      const idx = prev.findIndex(b => (brand.id && b.id === brand.id) || (brand._id && b._id === brand._id) || (brand.slug && b.slug === brand.slug));
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...brand };
+        return next;
+      }
+      return [...prev, brand];
+    });
+  }, []);
+
+  const removeBrand = useCallback((brandId) => {
+    if (!brandId) return;
+    setBrands(prev => prev.filter(b => b.id !== brandId && b._id !== brandId && b.slug !== brandId));
+  }, []);
+
+  // Targeted In-Memory Coupon Reconciliation (0 Network Requests)
+  const upsertStoreCoupon = useCallback((coupon) => {
+    if (!coupon || !coupon.code) return;
+    setCoupons(prev => {
+      const idx = prev.findIndex(c => c.code?.toLowerCase() === coupon.code?.toLowerCase());
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...coupon };
+        return next;
+      }
+      return [coupon, ...prev];
+    });
+  }, []);
+
+  const removeStoreCoupon = useCallback((code) => {
+    if (!code) return;
+    setCoupons(prev => prev.filter(c => c.code?.toLowerCase() !== code.toLowerCase()));
+  }, []);
+
   useEffect(() => {
     refreshStoreData();
   }, [refreshStoreData]);
@@ -390,6 +473,14 @@ export const StoreProvider = ({ children }) => {
         addToast,
         formatPrice,
         refreshStoreData,
+        refreshProducts,
+        upsertProduct,
+        removeProduct,
+        updateProductStock,
+        upsertBrand,
+        removeBrand,
+        upsertStoreCoupon,
+        removeStoreCoupon,
         productsLoading,
         isLoadingProducts: productsLoading,
         productsError,

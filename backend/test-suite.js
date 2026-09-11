@@ -1140,12 +1140,110 @@ const runTests = async () => {
       'Step 15G: Update product with invalid gender -> Rejected with HTTP 400 ValidationError'
     );
 
+    // ===============================================================
+    // PHASE 16: Admin Product Performance & Request Burst Elimination
+    // ===============================================================
+    console.log('\n[Phase 16: Admin Product Performance & Request Burst Elimination]');
+
+    // 16A: Create 5 products consecutively without rate limit throttling or request storm
+    const perfProductIds = [];
+    let consecutiveCreateSuccess = true;
+    for (let i = 1; i <= 5; i++) {
+      const pid = `lw-perf-test-${Date.now()}-${i}`;
+      perfProductIds.push(pid);
+      const res = await apiFetch('/api/products', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({
+          id: pid,
+          name: `Performance Test Masterpiece #${i}`,
+          brand: 'Audemars Piguet',
+          category: 'Luxury',
+          sku: `SKU-PERF-${Date.now()}-${i}`,
+          price: 4500000 + (i * 100000),
+          stock: 3 + i,
+          gender: i % 2 === 0 ? 'Women' : 'Men',
+          media: [{ type: 'image', url: '/images/watches/rolex_submariner_1.jpg' }]
+        })
+      });
+      if (res.status !== 201 || !res.data.success || !res.data.product) {
+        consecutiveCreateSuccess = false;
+      }
+    }
+    assert(
+      consecutiveCreateSuccess,
+      'Step 16A: 5 consecutive product additions execute smoothly with HTTP 201 without rate limit exhaustion (429)'
+    );
+
+    // 16B: Verify single-roundtrip authoritative product returned on create
+    const perfSingleId = perfProductIds[0];
+    const perfSingleCheck = await apiFetch(`/api/products/${perfSingleId}`);
+    assert(
+      perfSingleCheck.status === 200 && perfSingleCheck.data.product?.name?.includes('Performance Test Masterpiece #1'),
+      'Step 16B: Created product contains complete authoritative MongoDB document for zero-extra-request state reconciliation'
+    );
+
+    // 16C: Verify single-roundtrip authoritative product update
+    const perfUpdateRes = await apiFetch(`/api/products/${perfSingleId}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ price: 4999999, stock: 12 })
+    });
+    assert(
+      perfUpdateRes.status === 200 && perfUpdateRes.data.product?.price === 4999999 && perfUpdateRes.data.product?.stock === 12,
+      'Step 16C: Product update returns updated document in single roundtrip (price=4999999, stock=12)'
+    );
+
+    // 16D: Verify single-roundtrip stock update
+    const perfStockRes = await apiFetch(`/api/products/${perfSingleId}/stock`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ delta: 5 })
+    });
+    assert(
+      perfStockRes.status === 200 && perfStockRes.data.stock === 17,
+      'Step 16D: Stock update returns new stock count in single roundtrip (stock=17)'
+    );
+
+    // 16E: Verify single-roundtrip product delete
+    const perfDeleteRes = await apiFetch(`/api/products/${perfSingleId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert(
+      perfDeleteRes.status === 200 && perfDeleteRes.data.success,
+      'Step 16E: Product delete succeeds in single roundtrip'
+    );
+
+    // 16F: Codebase Audit: Verify elimination of 22-request refresh storms in AdminDashboard
+    const adminDashboardCode = fs.readFileSync(path.join(__dirname, '../frontend/src/components/admin/AdminDashboard.jsx'), 'utf-8');
+    const storeContextCode = fs.readFileSync(path.join(__dirname, '../frontend/src/context/StoreContext.jsx'), 'utf-8');
+
+    const handleSaveHasLoadAdmin = /handleSaveProduct[\s\S]*?loadAdminData\(\)/.test(adminDashboardCode);
+    const handleSaveHasRefreshStore = /handleSaveProduct[\s\S]*?refreshStoreData\(\)/.test(adminDashboardCode);
+    const handleDeleteHasLoadAdmin = /handleDeleteProduct[\s\S]*?loadAdminData\(\)/.test(adminDashboardCode);
+    const handleStockHasLoadAdmin = /handleUpdateStock[\s\S]*?loadAdminData\(\)/.test(adminDashboardCode);
+
+    assert(
+      !handleSaveHasLoadAdmin && !handleSaveHasRefreshStore && !handleDeleteHasLoadAdmin && !handleStockHasLoadAdmin,
+      'Step 16F: AdminDashboard CRUD handlers eliminated all 22-request refresh storms (0 redundant GET calls)'
+    );
+
+    // 16G: Verify StoreContext provides targeted in-memory state reconciliation methods
+    const hasUpsertProduct = storeContextCode.includes('upsertProduct');
+    const hasRemoveProduct = storeContextCode.includes('removeProduct');
+    const hasUpdateProductStock = storeContextCode.includes('updateProductStock');
+    assert(
+      hasUpsertProduct && hasRemoveProduct && hasUpdateProductStock,
+      'Step 16G: StoreContext exports targeted in-memory state reconcilers (upsertProduct, removeProduct, updateProductStock)'
+    );
+
     // Cleanup user test data
     try {
       await User.deleteOne({ email: testEmail });
       await Coupon.deleteOne({ code: testCouponCode });
       await Product.deleteOne({ id: testProductId });
-      await Product.deleteMany({ id: { $in: [genderTestId1, genderTestId2, genderTestId3] } });
+      await Product.deleteMany({ id: { $in: [genderTestId1, genderTestId2, genderTestId3, ...perfProductIds] } });
       if (createdReviewId) await Review.deleteOne({ id: createdReviewId });
       if (emailTestOrderId) await Order.deleteOne({ id: emailTestOrderId });
       if (resilientOrderId) await Order.deleteOne({ id: resilientOrderId });

@@ -17,12 +17,27 @@ import {
 } from 'lucide-react';
 
 export const AdminDashboard = ({ onBackToStore }) => {
-  const { refreshStoreData } = useStore();
+  const {
+    refreshStoreData,
+    refreshProducts: refreshStoreProducts,
+    upsertProduct,
+    removeProduct,
+    updateProductStock,
+    upsertBrand,
+    removeBrand,
+    upsertStoreCoupon,
+    removeStoreCoupon,
+    setHomepageContent,
+    setStoreSettings
+  } = useStore();
   const { adminUser, logoutAdmin } = useAdminAuth();
 
   const [activeTab, setActiveTab] = useState('overview'); // overview, products, brands, categories, inventory, orders, returns, coupons, reviews, cms, settings
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [uploadingMediaIndex, setUploadingMediaIndex] = useState(null);
+  const [isSavingCoupon, setIsSavingCoupon] = useState(false);
   const [metrics, setMetrics] = useState(null);
   const [productsList, setProductsList] = useState([]);
   const [brandsList, setBrandsList] = useState([]);
@@ -156,6 +171,73 @@ export const AdminDashboard = ({ onBackToStore }) => {
     }
   };
 
+  // Modular Targeted Refresh Helpers (Single-resource refresh when explicitly needed)
+  const refreshProductsList = async () => {
+    try {
+      const res = await productsAPI.getAll();
+      if (res && Array.isArray(res.products)) {
+        setProductsList(res.products);
+      }
+    } catch (err) {
+      console.warn('[Admin] Products refresh note:', err.message);
+    }
+  };
+
+  const refreshBrandsList = async () => {
+    try {
+      const res = await brandsAPI.getAll({ all: 'true' });
+      if (res && Array.isArray(res.brands)) {
+        setBrandsList(res.brands);
+      }
+    } catch (err) {
+      console.warn('[Admin] Brands refresh note:', err.message);
+    }
+  };
+
+  const refreshOrdersList = async () => {
+    try {
+      const res = await ordersAPI.getAll();
+      if (res && Array.isArray(res.orders)) {
+        setOrdersList(res.orders);
+      }
+    } catch (err) {
+      console.warn('[Admin] Orders refresh note:', err.message);
+    }
+  };
+
+  const refreshReturnsList = async () => {
+    try {
+      const res = await returnsAPI.getAll();
+      if (res && Array.isArray(res.returns)) {
+        setReturnsList(res.returns);
+      }
+    } catch (err) {
+      console.warn('[Admin] Returns refresh note:', err.message);
+    }
+  };
+
+  const refreshCouponsList = async () => {
+    try {
+      const res = await couponsAPI.getAll();
+      if (res && Array.isArray(res.coupons)) {
+        setCouponsList(res.coupons);
+      }
+    } catch (err) {
+      console.warn('[Admin] Coupons refresh note:', err.message);
+    }
+  };
+
+  const refreshReviewsList = async () => {
+    try {
+      const res = await reviewsAPI.getAll();
+      if (res && Array.isArray(res.reviews)) {
+        setReviewsList(res.reviews);
+      }
+    } catch (err) {
+      console.warn('[Admin] Reviews refresh note:', err.message);
+    }
+  };
+
   useEffect(() => {
     loadAdminData();
   }, []);
@@ -236,9 +318,11 @@ export const AdminDashboard = ({ onBackToStore }) => {
     });
   };
 
-  // Product CRUD Handlers
+  // Product CRUD Handlers (High Performance — Targeted State Reconciliation with 0 Redundant Requests)
   const handleSaveProduct = async (e) => {
     e.preventDefault();
+    if (isSavingProduct || uploadingMediaIndex !== null) return;
+
     try {
       const mediaToSave = productForm.media || normalizeProductMedia(productForm);
       if (mediaToSave.length > 5) {
@@ -249,6 +333,8 @@ export const AdminDashboard = ({ onBackToStore }) => {
         alert('Please add at least 1 media item.');
         return;
       }
+
+      setIsSavingProduct(true);
 
       const payload = {
         ...productForm,
@@ -261,17 +347,41 @@ export const AdminDashboard = ({ onBackToStore }) => {
         delete payload.gender;
       }
 
+      let savedProduct;
       if (editingProduct) {
-        await productsAPI.update(editingProduct.id, payload);
+        const res = await productsAPI.update(editingProduct.id, payload);
+        savedProduct = res?.product;
       } else {
-        await productsAPI.create(payload);
+        const res = await productsAPI.create(payload);
+        savedProduct = res?.product;
       }
+
+      if (savedProduct) {
+        // Targeted in-memory state updates (0 additional GET requests)
+        if (editingProduct) {
+          setProductsList(prev => prev.map(p => (p.id === savedProduct.id || p._id === savedProduct._id) ? savedProduct : p));
+        } else {
+          setProductsList(prev => [savedProduct, ...prev]);
+          setMetrics(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              metrics: {
+                ...prev.metrics,
+                totalProducts: (prev.metrics?.totalProducts || 0) + 1
+              }
+            };
+          });
+        }
+        upsertProduct(savedProduct);
+      }
+
       setIsProductModalOpen(false);
       setEditingProduct(null);
-      loadAdminData();
-      refreshStoreData();
     } catch (err) {
       alert(err.message || 'Failed to save product');
+    } finally {
+      setIsSavingProduct(false);
     }
   };
 
@@ -279,8 +389,19 @@ export const AdminDashboard = ({ onBackToStore }) => {
     if (!window.confirm('Are you sure you want to delete this timepiece from the vault catalog?')) return;
     try {
       await productsAPI.delete(id);
-      loadAdminData();
-      refreshStoreData();
+      // Targeted in-memory state updates (0 additional GET requests)
+      setProductsList(prev => prev.filter(p => p.id !== id && p._id !== id));
+      removeProduct(id);
+      setMetrics(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          metrics: {
+            ...prev.metrics,
+            totalProducts: Math.max(0, (prev.metrics?.totalProducts || 1) - 1)
+          }
+        };
+      });
     } catch (err) {
       alert(err.message || 'Failed to delete product');
     }
@@ -288,9 +409,12 @@ export const AdminDashboard = ({ onBackToStore }) => {
 
   const handleUpdateStock = async (id, delta) => {
     try {
-      await productsAPI.updateStock(id, { delta });
-      loadAdminData();
-      refreshStoreData();
+      const res = await productsAPI.updateStock(id, { delta });
+      const newStock = res?.stock ?? res?.product?.stock;
+      if (newStock !== undefined) {
+        setProductsList(prev => prev.map(p => (p.id === id || p._id === id) ? { ...p, stock: newStock } : p));
+        updateProductStock(id, newStock);
+      }
     } catch (err) {
       alert(err.message || 'Failed to update stock');
     }
@@ -370,15 +494,26 @@ export const AdminDashboard = ({ onBackToStore }) => {
         isActive: Boolean(brandForm.isActive)
       };
 
+      let savedBrand;
       if (editingBrand) {
-        await brandsAPI.update(editingBrand.id, payload);
+        const res = await brandsAPI.update(editingBrand.id, payload);
+        savedBrand = res?.brand;
       } else {
-        await brandsAPI.create(payload);
+        const res = await brandsAPI.create(payload);
+        savedBrand = res?.brand;
       }
+
+      if (savedBrand) {
+        if (editingBrand) {
+          setBrandsList(prev => prev.map(b => (b.id === savedBrand.id || b._id === savedBrand._id) ? savedBrand : b));
+        } else {
+          setBrandsList(prev => [...prev, savedBrand]);
+        }
+        upsertBrand(savedBrand);
+      }
+
       setIsBrandModalOpen(false);
       setEditingBrand(null);
-      await loadAdminData();
-      refreshStoreData();
     } catch (err) {
       alert(err.message || 'Failed to save brand');
     } finally {
@@ -395,10 +530,10 @@ export const AdminDashboard = ({ onBackToStore }) => {
     if (!brandToDelete) return;
     try {
       await brandsAPI.delete(brandToDelete.id);
+      setBrandsList(prev => prev.filter(b => b.id !== brandToDelete.id && b._id !== brandToDelete.id));
+      removeBrand(brandToDelete.id);
       setIsDeleteBrandModalOpen(false);
       setBrandToDelete(null);
-      await loadAdminData();
-      refreshStoreData();
     } catch (err) {
       alert(err.message || 'Failed to delete brand');
     }
@@ -407,9 +542,11 @@ export const AdminDashboard = ({ onBackToStore }) => {
   const handleToggleBrandStatus = async (brand) => {
     try {
       const currentActive = brand.isActive !== false && brand.active !== false;
-      await brandsAPI.update(brand.id, { isActive: !currentActive, active: !currentActive });
-      await loadAdminData();
-      refreshStoreData();
+      const res = await brandsAPI.update(brand.id, { isActive: !currentActive, active: !currentActive });
+      if (res?.brand) {
+        setBrandsList(prev => prev.map(b => (b.id === brand.id || b._id === brand.id) ? res.brand : b));
+        upsertBrand(res.brand);
+      }
     } catch (err) {
       alert(err.message || 'Failed to toggle brand status');
     }
@@ -419,9 +556,11 @@ export const AdminDashboard = ({ onBackToStore }) => {
     try {
       const currentOrder = typeof brand.displayOrder === 'number' ? brand.displayOrder : 1;
       const newOrder = Math.max(1, currentOrder + delta);
-      await brandsAPI.update(brand.id, { displayOrder: newOrder });
-      await loadAdminData();
-      refreshStoreData();
+      const res = await brandsAPI.update(brand.id, { displayOrder: newOrder });
+      if (res?.brand) {
+        setBrandsList(prev => prev.map(b => (b.id === brand.id || b._id === brand.id) ? res.brand : b));
+        upsertBrand(res.brand);
+      }
     } catch (err) {
       alert(err.message || 'Failed to update display order');
     }
@@ -430,9 +569,12 @@ export const AdminDashboard = ({ onBackToStore }) => {
   // Order Status Handler
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      await ordersAPI.updateStatus(orderId, newStatus);
-      loadAdminData();
-      refreshStoreData();
+      const res = await ordersAPI.updateStatus(orderId, newStatus);
+      if (res?.order) {
+        setOrdersList(prev => prev.map(o => (o.id === orderId || o._id === orderId) ? res.order : o));
+      } else {
+        setOrdersList(prev => prev.map(o => (o.id === orderId || o._id === orderId) ? { ...o, orderStatus: newStatus, status: newStatus } : o));
+      }
     } catch (err) {
       alert(err.message || 'Failed to update order status');
     }
@@ -441,13 +583,23 @@ export const AdminDashboard = ({ onBackToStore }) => {
   // Coupon CRUD Handlers
   const handleSaveCoupon = async (e) => {
     e.preventDefault();
+    setIsSavingCoupon(true);
     try {
-      await couponsAPI.create(couponForm);
+      const res = await couponsAPI.create(couponForm);
+      const savedCoupon = res?.coupon || couponForm;
+      setCouponsList(prev => [savedCoupon, ...prev]);
+      upsertStoreCoupon(savedCoupon);
       setIsCouponModalOpen(false);
-      loadAdminData();
-      refreshStoreData();
+      setCouponForm({
+        code: '',
+        discountPercent: 10,
+        minSpend: 0,
+        description: ''
+      });
     } catch (err) {
       alert(err.message || 'Failed to create coupon');
+    } finally {
+      setIsSavingCoupon(false);
     }
   };
 
@@ -455,8 +607,8 @@ export const AdminDashboard = ({ onBackToStore }) => {
     if (!window.confirm(`Delete coupon code "${code}"?`)) return;
     try {
       await couponsAPI.delete(code);
-      loadAdminData();
-      refreshStoreData();
+      setCouponsList(prev => prev.filter(c => c.code?.toLowerCase() !== code.toLowerCase()));
+      removeStoreCoupon(code);
     } catch (err) {
       alert(err.message || 'Failed to delete coupon');
     }
@@ -467,8 +619,8 @@ export const AdminDashboard = ({ onBackToStore }) => {
     e.preventDefault();
     try {
       await homepageAPI.updateContent(cmsContent);
+      if (setHomepageContent) setHomepageContent(cmsContent);
       alert('Homepage CMS content updated successfully!');
-      refreshStoreData();
     } catch (err) {
       alert(err.message || 'Failed to update CMS content');
     }
@@ -478,10 +630,12 @@ export const AdminDashboard = ({ onBackToStore }) => {
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     try {
-      await settingsAPI.updatePaymentSettings(paymentConfig);
-      await settingsAPI.updateStoreSettings(storeConfig);
+      if (paymentConfig) await settingsAPI.updatePaymentSettings(paymentConfig);
+      if (storeConfig) {
+        await settingsAPI.updateStoreSettings(storeConfig);
+        if (setStoreSettings) setStoreSettings(prev => ({ ...prev, ...storeConfig }));
+      }
       alert('Store and payment gateway settings updated successfully!');
-      refreshStoreData();
     } catch (err) {
       alert(err.message || 'Failed to update settings');
     }
@@ -521,10 +675,14 @@ export const AdminDashboard = ({ onBackToStore }) => {
     setIsProcessingReturnAction(true);
     try {
       const statusToSet = returnActionModal.action === 'approve' ? 'Approved' : 'Rejected';
-      await returnsAPI.updateStatus(returnActionModal.returnRequest.id, statusToSet, returnActionModal.notes);
+      const res = await returnsAPI.updateStatus(returnActionModal.returnRequest.id, statusToSet, returnActionModal.notes);
+      const updatedReturn = res?.returnRequest || {
+        ...returnActionModal.returnRequest,
+        status: statusToSet,
+        notes: returnActionModal.notes
+      };
+      setReturnsList(prev => prev.map(r => (r.id === returnActionModal.returnRequest.id || r._id === returnActionModal.returnRequest._id) ? { ...r, ...updatedReturn } : r));
       setReturnActionModal({ isOpen: false, action: '', returnRequest: null, notes: '' });
-      await loadAdminData();
-      refreshStoreData();
     } catch (err) {
       alert(err.message || 'Failed to update return request status');
     } finally {
@@ -2174,13 +2332,13 @@ export const AdminDashboard = ({ onBackToStore }) => {
                           {/* File Upload / Replace */}
                           <label
                             style={{
-                              background: '#1f2937',
+                              background: uploadingMediaIndex === idx ? '#374151' : '#1f2937',
                               border: '1px solid #374151',
-                              color: '#f3e5ab',
+                              color: uploadingMediaIndex === idx ? '#9ca3af' : '#f3e5ab',
                               padding: '5px 8px',
                               borderRadius: '3px',
                               fontSize: '0.68rem',
-                              cursor: 'pointer',
+                              cursor: uploadingMediaIndex === idx ? 'wait' : 'pointer',
                               display: 'flex',
                               alignItems: 'center',
                               gap: '4px'
@@ -2188,9 +2346,10 @@ export const AdminDashboard = ({ onBackToStore }) => {
                             title="Upload/Replace Media File"
                           >
                             <Upload size={11} />
-                            <span>Upload</span>
+                            <span>{uploadingMediaIndex === idx ? 'Uploading...' : 'Upload'}</span>
                             <input
                               type="file"
+                              disabled={uploadingMediaIndex !== null || isSavingProduct}
                               accept={mediaItem.type === 'video' ? 'video/mp4,video/webm,video/ogg,video/quicktime,video/*' : 'image/jpeg,image/png,image/webp,image/gif,image/*'}
                               style={{ display: 'none' }}
                               onChange={async (e) => {
@@ -2213,6 +2372,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                                   return;
                                 }
 
+                                setUploadingMediaIndex(idx);
                                 try {
                                   const res = await productsAPI.uploadMedia(file);
                                   if (res && res.success && res.url) {
@@ -2224,6 +2384,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                                 } catch (err) {
                                   alert('Upload failed: ' + (err.message || 'Network connection error'));
                                 } finally {
+                                  setUploadingMediaIndex(null);
                                   e.target.value = '';
                                 }
                               }}
@@ -2233,7 +2394,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                           {/* Move Up */}
                           <button
                             type="button"
-                            disabled={idx === 0}
+                            disabled={idx === 0 || uploadingMediaIndex !== null || isSavingProduct}
                             onClick={() => handleMoveMedia(idx, idx - 1)}
                             style={{
                               background: '#1f2937',
@@ -2251,7 +2412,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                           {/* Move Down */}
                           <button
                             type="button"
-                            disabled={idx === (productForm.media || []).length - 1}
+                            disabled={idx === (productForm.media || []).length - 1 || uploadingMediaIndex !== null || isSavingProduct}
                             onClick={() => handleMoveMedia(idx, idx + 1)}
                             style={{
                               background: '#1f2937',
@@ -2269,6 +2430,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                           {/* Delete */}
                           <button
                             type="button"
+                            disabled={uploadingMediaIndex !== null || isSavingProduct}
                             onClick={() => handleDeleteMedia(idx)}
                             style={{
                               background: 'rgba(239, 68, 68, 0.1)',
@@ -2276,7 +2438,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                               color: '#f87171',
                               padding: '5px',
                               borderRadius: '3px',
-                              cursor: 'pointer'
+                              cursor: (uploadingMediaIndex !== null || isSavingProduct) ? 'not-allowed' : 'pointer'
                             }}
                             title="Delete Media"
                           >
@@ -2301,11 +2463,27 @@ export const AdminDashboard = ({ onBackToStore }) => {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button type="button" onClick={() => setIsProductModalOpen(false)} style={{ background: '#1f2937', border: '1px solid #374151', color: '#ffffff', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}>
+                <button
+                  type="button"
+                  disabled={isSavingProduct || uploadingMediaIndex !== null}
+                  onClick={() => setIsProductModalOpen(false)}
+                  style={{ background: '#1f2937', border: '1px solid #374151', color: '#ffffff', padding: '8px 16px', borderRadius: '4px', cursor: (isSavingProduct || uploadingMediaIndex !== null) ? 'not-allowed' : 'pointer' }}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn-gold" style={{ padding: '8px 20px' }}>
-                  <span>SAVE TIMEPIECE</span>
+                <button
+                  type="submit"
+                  disabled={isSavingProduct || uploadingMediaIndex !== null}
+                  className="btn-gold"
+                  style={{
+                    padding: '8px 20px',
+                    opacity: (isSavingProduct || uploadingMediaIndex !== null) ? 0.7 : 1,
+                    cursor: (isSavingProduct || uploadingMediaIndex !== null) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <span>
+                    {isSavingProduct ? 'Saving Timepiece...' : uploadingMediaIndex !== null ? 'Uploading Media...' : 'SAVE TIMEPIECE'}
+                  </span>
                 </button>
               </div>
             </form>
