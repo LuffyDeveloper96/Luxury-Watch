@@ -36,6 +36,9 @@ const Storefront = ({
 }) => {
   const {
     products,
+    productsLoading,
+    productsError,
+    refreshStoreData,
     selectedProductDetails,
     setSelectedProductDetails
   } = useStore();
@@ -289,22 +292,81 @@ const Storefront = ({
           </div>
 
           {/* Product Grid */}
-          {filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#64748b' }}>
-              <p>No timepieces found in this category allocation.</p>
+          {productsLoading ? (
+            <div style={{ textAlign: 'center', padding: '5rem 1rem', color: '#64748b' }}>
+              <div style={{
+                margin: '0 auto 1.5rem auto',
+                width: '40px',
+                height: '40px',
+                border: '3px solid rgba(180, 140, 30, 0.2)',
+                borderTopColor: '#8a6709',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+              <p style={{ fontFamily: 'var(--font-brand)', fontSize: '1.05rem', color: '#0f172a', letterSpacing: '0.05em' }}>
+                Accessing Haute Horlogerie Vault...
+              </p>
+              <p style={{ fontSize: '0.8rem', color: '#8a6709', marginTop: '0.25rem' }}>
+                Retrieving authenticated master allocations
+              </p>
+            </div>
+          ) : productsError && products.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '4.5rem 1.5rem',
+              backgroundColor: '#ffffff',
+              borderRadius: '8px',
+              border: '1px dashed #cbd5e1',
+              maxWidth: '480px',
+              margin: '0 auto'
+            }}>
+              <p style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', color: '#0f172a', marginBottom: '0.5rem', fontWeight: 700 }}>
+                Vault Connection Notice
+              </p>
+              <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                {productsError || 'Unable to retrieve master allocations from database. Please check connection and retry.'}
+              </p>
               <button
-                onClick={() => setActiveCategory('All')}
+                onClick={() => refreshStoreData && refreshStoreData()}
                 className="btn-gold"
-                style={{ marginTop: '1rem', padding: '8px 18px', fontSize: '0.8rem' }}
+                style={{ padding: '8px 20px', fontSize: '0.8rem' }}
               >
-                View All Timepieces
+                Retry Vault Connection
               </button>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '4.5rem 1.5rem',
+              backgroundColor: '#ffffff',
+              borderRadius: '8px',
+              border: '1px dashed #cbd5e1',
+              maxWidth: '480px',
+              margin: '0 auto'
+            }}>
+              <p style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', color: '#0f172a', marginBottom: '0.5rem', fontWeight: 700 }}>
+                {products.length === 0 ? 'No Masterpieces Currently in Vault' : 'No timepieces found in this category allocation.'}
+              </p>
+              <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: products.length > 0 && activeCategory !== 'All' ? '1.5rem' : '0', lineHeight: 1.5 }}>
+                {products.length === 0
+                  ? 'The catalog is currently empty. New master allocations will appear here once registered by atelier administrators.'
+                  : 'Try selecting another category or viewing the full horology catalog.'}
+              </p>
+              {products.length > 0 && activeCategory !== 'All' && (
+                <button
+                  onClick={() => setActiveCategory('All')}
+                  className="btn-gold"
+                  style={{ padding: '8px 20px', fontSize: '0.8rem' }}
+                >
+                  View All Timepieces
+                </button>
+              )}
             </div>
           ) : (
             <div className="product-grid">
               {filtered.map(product => (
                 <ProductCard
-                  key={product.id}
+                  key={product.id || product._id}
                   product={product}
                   onSelectProduct={(p) => setSelectedProductDetails(p)}
                 />

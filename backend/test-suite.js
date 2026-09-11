@@ -5,11 +5,17 @@
 
 import http from 'http';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import app from './index.js';
 import { env } from './config/env.js';
 import { User, Product, Order, Return, Coupon, Review } from './models/index.js';
 import { generateToken } from './middleware/auth.js';
 import { emailService } from './services/emailService.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let server;
 let baseUrl;
@@ -905,10 +911,241 @@ const runTests = async () => {
     // Reset email transporter
     emailService.resetTransporter();
 
+    // 14. Phase 14: Product Catalog MongoDB Single Source of Truth & Admin CRUD Suite
+    console.log('\n[Phase 14: Product Catalog MongoDB Single Source of Truth & Admin CRUD]');
+    
+    // 14A: Public GET /api/products returns products directly from MongoDB
+    const liveProductsRes = await apiFetch('/api/products');
+    assert(
+      liveProductsRes.status === 200 && Array.isArray(liveProductsRes.data.products),
+      'Step 14A: GET /api/products returns MongoDB products array with metadata'
+    );
+
+    // 14B: Master Admin creates a new product via POST /api/products
+    const testProductSku = `SKU-TEST-${Date.now()}`;
+    const testProductId = `lw-test-watch-${Date.now()}`;
+    const newProductPayload = {
+      id: testProductId,
+      name: 'Audemars Piguet Royal Oak Chronograph Limited',
+      subtitle: 'Selfwinding Chronograph 41mm | 18-Carat Pink Gold',
+      brand: 'Audemars Piguet',
+      category: 'Chronographs',
+      gender: 'Men',
+      sku: testProductSku,
+      price: 4250000,
+      comparePrice: 4800000,
+      stock: 3,
+      rating: 5.0,
+      media: [
+        { type: 'image', url: '/images/watches/rolex_submariner_1.jpg', order: 0 }
+      ],
+      specs: {
+        movement: 'Selfwinding Calibre 4401',
+        powerReserve: '70 Hours',
+        caseDiameter: '41 mm',
+        caseMaterial: '18-carat Pink Gold'
+      }
+    };
+
+    const createProductRes = await apiFetch('/api/products', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify(newProductPayload)
+    });
+
+    assert(
+      createProductRes.status === 201 && createProductRes.data.success && createProductRes.data.product?.id === testProductId,
+      'Step 14B: Admin creates product via POST /api/products with MongoDB persistence'
+    );
+
+    // 14C: Newly created product is queryable by ID and in catalog
+    const fetchCreated = await apiFetch(`/api/products/${testProductId}`);
+    assert(
+      fetchCreated.status === 200 && fetchCreated.data.product?.name === 'Audemars Piguet Royal Oak Chronograph Limited',
+      'Step 14C: Newly created product is immediately returned by GET /api/products/:id'
+    );
+
+    // 14D: Master Admin updates product specifications
+    const updateProductRes = await apiFetch(`/api/products/${testProductId}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        price: 4350000,
+        subtitle: 'Updated: 18-Carat Pink Gold & Grande Tapisserie Dial'
+      })
+    });
+    assert(
+      updateProductRes.status === 200 && updateProductRes.data.product?.price === 4350000,
+      'Step 14D: Admin updates product specifications via PUT /api/products/:id'
+    );
+
+    // 14E: Master Admin updates vault stock
+    const updateStockRes = await apiFetch(`/api/products/${testProductId}/stock`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ absolute: 7 })
+    });
+    assert(
+      updateStockRes.status === 200 && updateStockRes.data.stock === 7,
+      'Step 14E: Admin updates stock via PATCH /api/products/:id/stock'
+    );
+
+    // 14F: Master Admin deletes the product
+    const deleteProductRes = await apiFetch(`/api/products/${testProductId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert(
+      deleteProductRes.status === 200 && deleteProductRes.data.success,
+      'Step 14F: Admin deletes product via DELETE /api/products/:id'
+    );
+
+    // 14G: Deleted product is permanently absent (HTTP 404)
+    const verifyDeleted = await apiFetch(`/api/products/${testProductId}`);
+    assert(
+      verifyDeleted.status === 404,
+      'Step 14G: Deleted product returns HTTP 404 (absent from vault without hardcoded fallback)'
+    );
+
+    // 14H: Zero active products / unmatched filter returns empty array
+    const emptyFilterRes = await apiFetch('/api/products?brand=NonExistentVaultBrandXYZ999');
+    assert(
+      emptyFilterRes.status === 200 && Array.isArray(emptyFilterRes.data.products) && emptyFilterRes.data.products.length === 0,
+      'Step 14H: Query matching 0 active products returns products: [] authoritatively'
+    );
+
+    // 14I: Frontend architecture verification - StoreContext does NOT import INITIAL_PRODUCTS and initializes as []
+    const storeContextSrc = fs.readFileSync(path.resolve(__dirname, '../frontend/src/context/StoreContext.jsx'), 'utf-8');
+    const hasInitialProductsImport = storeContextSrc.includes('INITIAL_PRODUCTS');
+    const initializesEmptyArray = storeContextSrc.includes('const [products, setProducts] = useState([]);');
+    assert(
+      !hasInitialProductsImport && initializesEmptyArray,
+      'Step 14I: Frontend StoreContext initializes products as [] and does NOT import INITIAL_PRODUCTS'
+    );
+
+    // 15. Phase 15: Product Gender Enum Validation & Optional Field Lifecycle
+    console.log('\n[Phase 15: Product Gender Enum Validation & Optional Field Lifecycle]');
+
+    // 15A: Create product with valid enum gender ('Women')
+    const genderTestId1 = `lw-gender-women-${Date.now()}`;
+    const createWithValidGenderRes = await apiFetch('/api/products', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        id: genderTestId1,
+        name: 'Patek Philippe Calatrava Diamond Ribbon',
+        brand: 'Patek Philippe',
+        category: 'Diamond Editions',
+        sku: `SKU-WOMEN-${Date.now()}`,
+        price: 3200000,
+        gender: 'Women',
+        media: [{ type: 'image', url: '/images/watches/rolex_submariner_1.jpg' }]
+      })
+    });
+    assert(
+      createWithValidGenderRes.status === 201 && createWithValidGenderRes.data.product?.gender === 'Women',
+      'Step 15A: Create product with gender = "Women" (valid enum value) -> HTTP 201 PASS'
+    );
+
+    // 15B: Create product with gender omitted (optional field)
+    const genderTestId2 = `lw-gender-omitted-${Date.now()}`;
+    const createWithOmittedGenderRes = await apiFetch('/api/products', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        id: genderTestId2,
+        name: 'Vacheron Constantin Overseas Dual Time',
+        brand: 'Vacheron Constantin',
+        category: 'Luxury',
+        sku: `SKU-OMIT-${Date.now()}`,
+        price: 2800000,
+        media: [{ type: 'image', url: '/images/watches/rolex_submariner_1.jpg' }]
+      })
+    });
+    assert(
+      createWithOmittedGenderRes.status === 201 && createWithOmittedGenderRes.data.success,
+      'Step 15B: Create product with gender omitted -> HTTP 201 PASS'
+    );
+
+    // 15C: Create product with gender = "" (empty string from unselected form)
+    const genderTestId3 = `lw-gender-empty-${Date.now()}`;
+    const createWithEmptyGenderRes = await apiFetch('/api/products', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        id: genderTestId3,
+        name: 'IWC Portugieser Perpetual Calendar',
+        brand: 'IWC',
+        category: 'Chronographs',
+        sku: `SKU-EMPTY-${Date.now()}`,
+        price: 3100000,
+        gender: '',
+        media: [{ type: 'image', url: '/images/watches/rolex_submariner_1.jpg' }]
+      })
+    });
+    assert(
+      createWithEmptyGenderRes.status === 201 && createWithEmptyGenderRes.data.success,
+      'Step 15C: Create product with gender = "" -> Normalized safely -> HTTP 201 PASS (No enum error)'
+    );
+
+    // 15D: Create product with invalid non-empty gender
+    const createWithInvalidGenderRes = await apiFetch('/api/products', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        name: 'Invalid Gender Watch',
+        brand: 'Cartier',
+        category: 'Luxury',
+        sku: `SKU-INVALID-${Date.now()}`,
+        price: 1500000,
+        gender: 'ArbitraryInvalidGenderValue123',
+        media: [{ type: 'image', url: '/images/watches/rolex_submariner_1.jpg' }]
+      })
+    });
+    assert(
+      createWithInvalidGenderRes.status === 400 && createWithInvalidGenderRes.data.message?.includes('gender'),
+      'Step 15D: Create product with invalid non-empty gender -> Rejected with HTTP 400 ValidationError'
+    );
+
+    // 15E: Update product while preserving / changing to valid gender ('Unisex')
+    const updateValidGenderRes = await apiFetch(`/api/products/${genderTestId1}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ gender: 'Unisex' })
+    });
+    assert(
+      updateValidGenderRes.status === 200 && updateValidGenderRes.data.product?.gender === 'Unisex',
+      'Step 15E: Update product to valid gender "Unisex" -> HTTP 200 PASS'
+    );
+
+    // 15F: Update product while clearing optional gender (gender = "")
+    const updateClearGenderRes = await apiFetch(`/api/products/${genderTestId1}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ gender: '' })
+    });
+    assert(
+      updateClearGenderRes.status === 200 && updateClearGenderRes.data.success,
+      'Step 15F: Update product while clearing gender (gender: "") -> HTTP 200 PASS (Cleared without enum error)'
+    );
+
+    // 15G: Update product with invalid gender
+    const updateInvalidGenderRes = await apiFetch(`/api/products/${genderTestId1}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ gender: 'AlienFormat' })
+    });
+    assert(
+      updateInvalidGenderRes.status === 400 && updateInvalidGenderRes.data.message?.includes('gender'),
+      'Step 15G: Update product with invalid gender -> Rejected with HTTP 400 ValidationError'
+    );
+
     // Cleanup user test data
     try {
       await User.deleteOne({ email: testEmail });
       await Coupon.deleteOne({ code: testCouponCode });
+      await Product.deleteOne({ id: testProductId });
+      await Product.deleteMany({ id: { $in: [genderTestId1, genderTestId2, genderTestId3] } });
       if (createdReviewId) await Review.deleteOne({ id: createdReviewId });
       if (emailTestOrderId) await Order.deleteOne({ id: emailTestOrderId });
       if (resilientOrderId) await Order.deleteOne({ id: resilientOrderId });

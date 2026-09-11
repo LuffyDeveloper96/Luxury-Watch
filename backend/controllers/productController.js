@@ -278,6 +278,20 @@ export const createProduct = async (req, res) => {
       ? validatedMedia.map(m => m.url) 
       : (Array.isArray(newProductData.images) ? newProductData.images.slice(0, 5) : []);
 
+    // Normalize optional gender field
+    let normalizedGender = undefined;
+    if (typeof newProductData.gender === 'string') {
+      const trimmedGender = newProductData.gender.trim();
+      if (trimmedGender !== '') {
+        const validEnum = ['Men', 'Women', 'Unisex'].find(
+          v => v.toLowerCase() === trimmedGender.toLowerCase()
+        );
+        normalizedGender = validEnum || trimmedGender;
+      }
+    } else if (newProductData.gender) {
+      normalizedGender = newProductData.gender;
+    }
+
     const productToInsert = {
       ...newProductData,
       media: validatedMedia,
@@ -294,6 +308,12 @@ export const createProduct = async (req, res) => {
       createdAt: new Date()
     };
 
+    if (normalizedGender !== undefined) {
+      productToInsert.gender = normalizedGender;
+    } else {
+      delete productToInsert.gender;
+    }
+
     const created = await Product.create(productToInsert);
 
     await ActivityLog.create({
@@ -309,6 +329,9 @@ export const createProduct = async (req, res) => {
       product: created
     });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     return res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -321,6 +344,27 @@ export const updateProduct = async (req, res) => {
     const existing = await Product.findOne({ $or: [{ id }, { slug: id }] });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Timepiece not found.' });
+    }
+
+    const unsetFields = {};
+
+    // Normalize optional gender field
+    if ('gender' in updates) {
+      if (typeof updates.gender === 'string') {
+        const trimmedGender = updates.gender.trim();
+        if (trimmedGender === '') {
+          delete updates.gender;
+          unsetFields.gender = 1;
+        } else {
+          const validEnum = ['Men', 'Women', 'Unisex'].find(
+            v => v.toLowerCase() === trimmedGender.toLowerCase()
+          );
+          updates.gender = validEnum || trimmedGender;
+        }
+      } else if (updates.gender === null || updates.gender === undefined) {
+        delete updates.gender;
+        unsetFields.gender = 1;
+      }
     }
 
     // Media validation (Maximum 5 media items)
@@ -358,10 +402,17 @@ export const updateProduct = async (req, res) => {
       }));
     }
 
+    const updateOperation = {
+      $set: { ...updates, updatedAt: new Date() }
+    };
+    if (Object.keys(unsetFields).length > 0) {
+      updateOperation.$unset = unsetFields;
+    }
+
     const updated = await Product.findOneAndUpdate(
       { _id: existing._id },
-      { $set: { ...updates, updatedAt: new Date() } },
-      { returnDocument: 'after' }
+      updateOperation,
+      { returnDocument: 'after', runValidators: true }
     );
 
     await ActivityLog.create({
@@ -377,6 +428,9 @@ export const updateProduct = async (req, res) => {
       product: updated
     });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     return res.status(500).json({ success: false, message: err.message });
   }
 };

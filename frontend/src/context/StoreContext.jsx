@@ -5,7 +5,6 @@ import {
 } from '../services/api';
 import {
   INITIAL_BRANDS,
-  INITIAL_PRODUCTS,
   INITIAL_REVIEWS,
   INITIAL_ORDERS,
   INITIAL_COUPONS
@@ -15,8 +14,10 @@ import { formatCurrency } from '../utils/currency';
 const StoreContext = createContext();
 
 export const StoreProvider = ({ children }) => {
-  // Products Catalog (initialized with built-in catalog, updated when backend responds)
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  // Products Catalog (Strictly MongoDB / backend-driven single source of truth, starts empty)
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState(null);
   // Brands
   const [brands, setBrands] = useState(INITIAL_BRANDS);
   // Categories
@@ -105,6 +106,7 @@ export const StoreProvider = ({ children }) => {
 
   // Sync data with Backend API
   const refreshStoreData = useCallback(async () => {
+    setProductsLoading(true);
     try {
       const results = await Promise.allSettled([
         productsAPI.getAll(),
@@ -119,10 +121,17 @@ export const StoreProvider = ({ children }) => {
 
       const [prodRes, brandRes, catRes, revRes, cpnRes, actRes, hpRes, setRes] = results;
 
-      if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value?.products) && prodRes.value.products.length > 0) {
+      // Authoritative Product Catalog Single Source of Truth
+      if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value?.products)) {
         setProducts(prodRes.value.products);
         setIsBackendConnected(true);
+        setProductsError(null);
+      } else if (prodRes.status === 'rejected') {
+        setProducts([]);
+        setIsBackendConnected(false);
+        setProductsError(prodRes.reason?.message || 'Failed to connect to vault database.');
       }
+
       if (brandRes.status === 'fulfilled' && Array.isArray(brandRes.value?.brands) && brandRes.value.brands.length > 0) {
         setBrands(brandRes.value.brands);
       }
@@ -152,6 +161,9 @@ export const StoreProvider = ({ children }) => {
       }
     } catch (err) {
       console.warn('[StoreContext] Backend sync note:', err.message);
+      setProductsError(err.message || 'Failed to load catalog');
+    } finally {
+      setProductsLoading(false);
     }
   }, []);
 
@@ -378,6 +390,10 @@ export const StoreProvider = ({ children }) => {
         addToast,
         formatPrice,
         refreshStoreData,
+        productsLoading,
+        isLoadingProducts: productsLoading,
+        productsError,
+        setProductsError,
         isBackendConnected
       }}
     >

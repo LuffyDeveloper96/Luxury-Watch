@@ -134,7 +134,11 @@ export const AdminDashboard = ({ onBackToStore }) => {
       const [mRes, pRes, bRes, cRes, oRes, retRes, cpnRes, rRes, aRes, hpRes, payRes, setRes] = results;
 
       if (mRes.status === 'fulfilled' && mRes.value?.metrics) setMetrics(mRes.value);
-      if (pRes.status === 'fulfilled' && pRes.value?.products) setProductsList(pRes.value.products);
+      if (pRes.status === 'fulfilled' && Array.isArray(pRes.value?.products)) {
+        setProductsList(pRes.value.products);
+      } else if (pRes.status === 'rejected') {
+        setProductsList([]);
+      }
       if (bRes.status === 'fulfilled' && bRes.value?.brands) setBrandsList(bRes.value.brands);
       if (cRes.status === 'fulfilled' && cRes.value?.categories) setCategoriesList(cRes.value.categories);
       if (oRes.status === 'fulfilled' && oRes.value?.orders) setOrdersList(oRes.value.orders);
@@ -251,6 +255,11 @@ export const AdminDashboard = ({ onBackToStore }) => {
         media: mediaToSave,
         images: mediaToSave.map(m => m.url)
       };
+
+      // Clean optional gender field so empty string is not sent
+      if (typeof payload.gender === 'string' && payload.gender.trim() === '') {
+        delete payload.gender;
+      }
 
       if (editingProduct) {
         await productsAPI.update(editingProduct.id, payload);
@@ -1948,7 +1957,7 @@ export const AdminDashboard = ({ onBackToStore }) => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label className="lux-label" style={{ color: '#94a3b8' }}>Brand *</label>
                   <input
@@ -1983,6 +1992,20 @@ export const AdminDashboard = ({ onBackToStore }) => {
                     <option value="Automatic" />
                     <option value="Diamond Editions" />
                   </datalist>
+                </div>
+                <div>
+                  <label className="lux-label" style={{ color: '#94a3b8' }}>Gender</label>
+                  <select
+                    value={productForm.gender || ''}
+                    onChange={(e) => setProductForm({ ...productForm, gender: e.target.value })}
+                    className="lux-input"
+                    style={{ background: '#0b0f19', color: '#ffffff', borderColor: '#374151' }}
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Men">Men</option>
+                    <option value="Women">Women</option>
+                    <option value="Unisex">Unisex</option>
+                  </select>
                 </div>
               </div>
 

@@ -113,45 +113,53 @@ export const SearchModal = () => {
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-            {results.map(prod => (
-              <div
-                key={prod.id}
-                onClick={() => {
-                  setIsSearchOpen(false);
-                  setSelectedProductDetails(prod);
-                }}
-                style={{
-                  background: '#ffffff',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
-                  boxShadow: 'var(--shadow-sm)',
-                  borderRadius: '6px',
-                  padding: '10px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <img
-                  src={prod.images?.[0]}
-                  alt=""
-                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px', background: '#f8f7f4', marginBottom: '8px' }}
-                />
-                <span style={{ fontSize: '0.65rem', color: '#8a6709', textTransform: 'uppercase', fontWeight: 600 }}>{prod.category}</span>
-                <h4 style={{ fontSize: '0.85rem', color: '#0f172a', fontFamily: 'var(--font-brand)', margin: '2px 0', fontWeight: 700 }}>
-                  {prod.name}
-                </h4>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-                  <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>
-                    {formatPrice(prod.price)}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                    <Star size={11} color="#d4af37" fill="#d4af37" />
-                    <span style={{ fontSize: '0.72rem', color: '#0f172a', fontWeight: 600 }}>{prod.rating}</span>
+          {results.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
+              <p style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 600 }}>
+                {products.length === 0 ? 'No timepieces currently in vault.' : 'No timepieces found matching your query.'}
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+              {results.map(prod => (
+                <div
+                  key={prod.id || prod._id}
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                    setSelectedProductDetails(prod);
+                  }}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid rgba(0, 0, 0, 0.08)',
+                    boxShadow: 'var(--shadow-sm)',
+                    borderRadius: '6px',
+                    padding: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <img
+                    src={prod.images?.[0] || prod.media?.[0]?.url || '/images/watches/rolex_submariner.jpg'}
+                    alt=""
+                    style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px', background: '#f8f7f4', marginBottom: '8px' }}
+                  />
+                  <span style={{ fontSize: '0.65rem', color: '#8a6709', textTransform: 'uppercase', fontWeight: 600 }}>{prod.category}</span>
+                  <h4 style={{ fontSize: '0.85rem', color: '#0f172a', fontFamily: 'var(--font-brand)', margin: '2px 0', fontWeight: 700 }}>
+                    {prod.name}
+                  </h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                    <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>
+                      {formatPrice(prod.price)}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      <Star size={11} color="#d4af37" fill="#d4af37" />
+                      <span style={{ fontSize: '0.72rem', color: '#0f172a', fontWeight: 600 }}>{prod.rating || 5.0}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
